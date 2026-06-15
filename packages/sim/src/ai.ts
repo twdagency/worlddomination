@@ -9,9 +9,25 @@ import {
   isUnitVisible,
   visibleEnemyUnits,
 } from './visibility';
-import type { Id, LeaderWeights, Millis, Order, Territory, Unit, WorldState } from './types';
+import type { Id, LeaderTempo, LeaderWeights, Millis, Order, Territory, Unit, WorldState } from './types';
 
 const ALLOWED_ORDER_KINDS = new Set<Order['kind']>(['move', 'build', 'upgradeInfra']);
+
+export const TEMPO_COMMIT_FRACTION: Record<LeaderTempo, number> = {
+  fast: 0.75,
+  steady: 0.5,
+  slow: 0.3,
+};
+
+/** Fraction of available force/resources committed after intent is chosen. */
+export function tempoCommitFraction(tempo: LeaderTempo): number {
+  return TEMPO_COMMIT_FRACTION[tempo];
+}
+
+export function committedCount(available: number, fraction: number): number {
+  if (available <= 0) return 0;
+  return Math.max(1, Math.min(available, Math.floor(available * fraction)));
+}
 
 interface ScoredOrder {
   score: number;
@@ -32,6 +48,58 @@ function leaderWeights(world: WorldState, factionId: Id): LeaderWeights {
   const faction = world.factions[factionId];
   const leader = faction ? world.leaders[faction.leaderId] : undefined;
   return leader?.weights ?? { aggression: 5, risk: 5, economy: 5, expansion: 5 };
+}
+
+function leaderTempo(world: WorldState, factionId: Id): LeaderTempo {
+  const faction = world.factions[factionId];
+  const leader = faction ? world.leaders[faction.leaderId] : undefined;
+  return leader?.tempo ?? 'steady';
+}
+
+function maxAffordableBuildCount(
+  world: WorldState,
+  territoryId: Id,
+  unitTypeId: Id,
+  factionId: Id,
+  cap: number = 10,
+): number {
+  let max = 0;
+  for (let count = 1; count <= cap; count++) {
+    if (canBuild(world, territoryId, unitTypeId, count, factionId).ok) {
+      max = count;
+    }
+  }
+  return max;
+}
+
+/** Scale order magnitude by leader tempo after scoring — does not change intent or target. */
+export function applyTempoCommitment(
+  world: WorldState,
+  factionId: Id,
+  order: Order,
+): Order {
+  const fraction = tempoCommitFraction(leaderTempo(world, factionId));
+
+  if (order.kind === 'move') {
+    const unit = world.units[order.unitId];
+    if (!unit) return order;
+    const count = committedCount(unit.count, fraction);
+    return count >= unit.count ? order : { ...order, count };
+  }
+
+  if (order.kind === 'build') {
+    const affordable = maxAffordableBuildCount(
+      world,
+      order.territoryId,
+      order.unitTypeId,
+      factionId,
+    );
+    if (affordable <= 0) return order;
+    const count = committedCount(affordable, fraction);
+    return { ...order, count };
+  }
+
+  return order;
 }
 
 function scoreDefend(
@@ -229,7 +297,7 @@ export function decideOrders(world: WorldState, factionId: Id, decisionTickMs: M
   if (candidates.length === 0) return [];
 
   candidates.sort((a, b) => b.score - a.score);
-  const orders = [candidates[0].order];
+  const orders = [applyTempoCommitment(world, factionId, candidates[0].order)];
   assertAiOrders(orders);
   return orders;
 }

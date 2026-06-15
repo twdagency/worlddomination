@@ -44,6 +44,8 @@ export type TraitKey =
   | 'espionageMult'
   | 'counterIntelMult';
 
+export type LeaderTempo = 'fast' | 'steady' | 'slow';
+
 export interface Leader {
   id: Id;
   name: string;
@@ -51,6 +53,7 @@ export interface Leader {
   era: string;
   weights: LeaderWeights;
   traits: Partial<Record<TraitKey, number>>;
+  tempo: LeaderTempo;
 }
 
 export interface UnitType {
@@ -146,6 +149,7 @@ export type Order =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+      count?: number;
     }
   | {
       kind: 'build';

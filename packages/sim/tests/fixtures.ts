@@ -41,6 +41,7 @@ const BASELINE_LEADER: Leader = {
   era: 'Modern',
   weights: { aggression: 5, risk: 5, economy: 5, expansion: 5 },
   traits: {},
+  tempo: 'steady',
 };
 
 export function makeFaction(leaderId: string): Faction {

@@ -28,12 +28,16 @@ export {
 export { advanceTo, mergeAccruedIncome, nextEventMs, unitPosition, previewMoveEtaMs, moveDistanceKm } from './clock';
 export {
   assertAiOrders,
+  applyTempoCommitment,
   collectAiOrders,
+  committedCount,
   decideOrders,
   isAiDecisionMs,
   isAttackTargetVisible,
   isMoveTargetVisible,
   nextAiDecisionMs,
+  tempoCommitFraction,
+  TEMPO_COMMIT_FRACTION,
 } from './ai';
 export {
   computeVisibility,

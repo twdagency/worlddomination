@@ -65,6 +65,9 @@ describe('ai', () => {
     const first = decideOrders(world, 'faction-ai', world.nowMs);
     const second = decideOrders(world, 'faction-ai', world.nowMs);
     expect(second).toEqual(first);
+    if (first[0]?.kind === 'move') {
+      expect(first[0].count).toBe(7);
+    }
   });
 
   it('aggressive leader attacks while mercantile leader builds', () => {
@@ -86,11 +89,15 @@ describe('ai', () => {
     if (genghisOrders[0]?.kind === 'move') {
       expect(genghisOrders[0].toTerritoryId).toBe(PARIS.id);
       expect(genghisOrders[0].stanceOnArrival).toBe('assault');
+      expect(genghisOrders[0].intent).toBe('attack');
+      expect(genghisOrders[0].count).toBe(7);
     }
 
     expect(elizabethOrders[0]?.kind).toBe('build');
     if (elizabethOrders[0]?.kind === 'build') {
       expect(elizabethOrders[0].unitTypeId).toBe('levy-t1');
+      expect(elizabethOrders[0].intent).toBe('build');
+      expect(elizabethOrders[0].count).toBe(1);
     }
   });
 
