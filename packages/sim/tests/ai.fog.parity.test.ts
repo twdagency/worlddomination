@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { computeVisibility, SCOUT_UNIT_TYPE_ID, tick } from '../src';
+import {
+  computeVisibility,
+  formAlliance,
+  formTreaty,
+  recordAlliedObservations,
+  recordIntelObservations,
+  recordTreatyObservations,
+  SCOUT_UNIT_TYPE_ID,
+  tick,
+} from '../src';
 import { createSprint5World } from '../../shared/src/scenario-sprint5';
 import { LONDON, PARIS, makeWorld } from './fixtures';
 import type { WorldState } from '../src/types';
@@ -10,6 +19,9 @@ const BELGRADE = 'territory-belgrade';
 const ISTANBUL = 'territory-istanbul';
 const START_MS = 1_700_500_000_000;
 const START_S5_MS = 1_700_960_000_000;
+const ALPHA = 'faction-alpha';
+const BETA = 'faction-beta';
+const ENEMY = 'faction-enemy';
 
 /** Symmetric observers — fog rules must not privilege either faction. */
 function symmetricScoutWorld(): WorldState {
@@ -152,5 +164,84 @@ describe('fog parity', () => {
     expect(playerView[ISTANBUL]).toBeDefined();
     expect(romeView[ISTANBUL]).toBeDefined();
     expect(playerView[ISTANBUL]).toBe(romeView[ISTANBUL]);
+  });
+
+  it('allied intel sharing preserves symmetric tri-state under mirror scout positions', () => {
+    const allied = formAlliance(symmetricScoutWorld(), ALPHA, BETA, START_MS);
+    const { world: observed } = tick(allied, [], 3_600_000);
+    const withDirect = recordIntelObservations(observed);
+    const withAllied = recordAlliedObservations({ ...observed, intel: withDirect });
+
+    const alphaView = foreignTerritoryStates(
+      { ...observed, intel: withAllied },
+      ALPHA,
+      [ALPHA],
+    );
+    const betaView = foreignTerritoryStates(
+      { ...observed, intel: withAllied },
+      BETA,
+      [BETA],
+    );
+
+    expect(alphaView[BERLIN]).toBeDefined();
+    expect(betaView[BERLIN]).toBeDefined();
+    expect(alphaView[BERLIN]).toBe(betaView[BERLIN]);
+  });
+
+  it('treaty intel sharing preserves symmetric tri-state under mirror treaty scope', () => {
+    const base = symmetricScoutWorld();
+    const treatyAlpha = formTreaty(base, {
+      partyA: ALPHA,
+      partyB: ENEMY,
+      territoryIds: [BERLIN],
+      formedAt: START_MS,
+      expiresAt: START_MS + 48 * 3_600_000,
+    });
+    const treatyBeta = formTreaty(treatyAlpha, {
+      partyA: BETA,
+      partyB: ENEMY,
+      territoryIds: [BERLIN],
+      formedAt: START_MS,
+      expiresAt: START_MS + 48 * 3_600_000,
+    });
+
+    const { world: observed } = tick(treatyBeta, [], 3_600_000);
+    const withDirect = recordIntelObservations(observed);
+    const withTreaty = recordTreatyObservations({ ...observed, intel: withDirect });
+
+    const alphaView = foreignTerritoryStates(
+      { ...observed, intel: withTreaty },
+      ALPHA,
+      [ALPHA],
+    );
+    const betaView = foreignTerritoryStates(
+      { ...observed, intel: withTreaty },
+      BETA,
+      [BETA],
+    );
+
+    expect(alphaView[BERLIN]).toBeDefined();
+    expect(betaView[BERLIN]).toBeDefined();
+    expect(alphaView[BERLIN]).toBe(betaView[BERLIN]);
+  });
+
+  it('allied and treaty sources merge to identical visibility states for symmetric receivers', () => {
+    const allied = formAlliance(symmetricScoutWorld(), ALPHA, BETA, START_MS);
+    const observedAt = START_MS + 3_600_000;
+    const { world: ticked } = tick(allied, [], 3_600_000);
+    const base = { ...ticked, nowMs: observedAt };
+    const withDirect = recordIntelObservations(base);
+    const withAllied = recordAlliedObservations({ ...base, intel: withDirect }, observedAt);
+    const withTreaty = recordTreatyObservations({ ...base, intel: withAllied }, observedAt);
+    const world = { ...base, intel: withTreaty };
+
+    const alphaStates = computeVisibility(world, ALPHA).territoryStates;
+    const betaStates = computeVisibility(world, BETA).territoryStates;
+
+    for (const territoryId of Object.keys(world.territories)) {
+      const ownerId = world.territories[territoryId]?.ownerId;
+      if (ownerId === ALPHA || ownerId === BETA) continue;
+      expect(alphaStates[territoryId]?.state).toBe(betaStates[territoryId]?.state);
+    }
   });
 });

@@ -16,10 +16,12 @@ import { advanceTo } from '../src/clock';
 import { renderDigestText } from '../src/compaction';
 import { compactDispatchFeed, renderCompactDigestText } from '../src/compaction';
 import { collectAiOrders } from '../src/ai';
+import { applyAiDiplomaticDecisions } from '../src/diplomaticAi';
 import { AI_DECISION_INTERVAL_MS } from '../src/constants';
 import { computeStance, STANCE_WINDOW_MS } from '../src/stance';
 import { buildBenchWorld } from './benchWorld';
 import { runIntelBenchmarks } from './intelStore.bench';
+import { runDiplomacyBenchmarks } from './diplomacy.bench';
 
 const BENCH_START_MS = 1_700_000_000_000;
 const WARMUP = 25;
@@ -97,6 +99,7 @@ function runBenchmarks(): {
   advance: BenchResult[];
   legibility: BenchResult[];
   intel: ReturnType<typeof runIntelBenchmarks>;
+  diplomacy: ReturnType<typeof runDiplomacyBenchmarks>;
   legibilitySharePct: number;
 } {
   const decisionMs = BENCH_START_MS + AI_DECISION_INTERVAL_MS;
@@ -141,8 +144,9 @@ function runBenchmarks(): {
   const legibilityTotal = legibility.reduce((sum, row) => sum + row.medianMs, 0);
   const legibilitySharePct = advance24 > 0 ? (legibilityTotal / advance24) * 100 : 0;
   const intel = runIntelBenchmarks();
+  const diplomacy = runDiplomacyBenchmarks();
 
-  return { decision, advance, legibility, intel, legibilitySharePct };
+  return { decision, advance, legibility, intel, diplomacy, legibilitySharePct };
 }
 
 function renderBaseline(results: ReturnType<typeof runBenchmarks>): string {
@@ -176,11 +180,15 @@ function renderBaseline(results: ReturnType<typeof runBenchmarks>): string {
     .map(([label, count]) => `| ${label} | ${count} |`)
     .join('\n');
 
+  const diplomacyRows = results.diplomacy.diplomacy
+    .map((row) => `| ${row.label} | ${fmtMs(row.medianMs)} | ${fmtMs(row.p95Ms)} |`)
+    .join('\n');
+
   return `# Sim performance baseline
 
 Recorded: ${date}  
 Commit: \`${commit}\`  
-Runners: \`packages/sim/perf/aiDecision.bench.ts\`, \`packages/sim/perf/intelStore.bench.ts\`
+Runners: \`packages/sim/perf/aiDecision.bench.ts\`, \`packages/sim/perf/intelStore.bench.ts\`, \`packages/sim/perf/diplomacy.bench.ts\`
 
 ## Methodology
 
@@ -246,6 +254,18 @@ ${recordCountRows}
 
 If merge or record counts grow superlinearly with skip length, treat as a Sprint 6 optimization candidate — do not tune in sprint close.
 
+## Diplomacy (Sprint 6 — \`createSprint4World\`)
+
+Alliance formation, breaking, AI diplomatic pass, and allied/treaty emission on a 24h allied world.
+
+| Operation | Median | p95 |
+|-----------|--------|-----|
+${diplomacyRows}
+
+**Allied/treaty record counts (24h skip, steppe–britain alliance):** ${results.diplomacy.alliedRecordCount24h} allied, ${results.diplomacy.treatyRecordCount24h} treaty.
+
+At four-faction sprint4 scale, diplomacy overhead per tick is negligible. Watch allied record growth if faction/alliance count scales in future sprints.
+
 ## Review thresholds (guidance)
 
 | Check | Target | Rationale |
@@ -260,6 +280,7 @@ If merge or record counts grow superlinearly with skip length, treat as a Sprint
 \`\`\`bash
 pnpm --filter sim bench:ai
 pnpm --filter sim bench:intel
+pnpm --filter sim bench:diplomacy
 pnpm --filter sim bench:ai -- --write-baseline
 \`\`\`
 
@@ -298,6 +319,14 @@ function main(): void {
   for (const [label, count] of Object.entries(results.intel.recordCounts)) {
     console.log(`  ${label} records: ${count}`);
   }
+
+  console.log('\n=== Diplomacy (createSprint4World) ===');
+  for (const row of results.diplomacy.diplomacy) {
+    console.log(`${row.label}: median ${fmtMs(row.medianMs)}, p95 ${fmtMs(row.p95Ms)}`);
+  }
+  console.log(
+    `Allied/treaty records (24h): ${results.diplomacy.alliedRecordCount24h} allied, ${results.diplomacy.treatyRecordCount24h} treaty`,
+  );
 
   if (writeBaseline) {
     const dir = dirname(fileURLToPath(import.meta.url));

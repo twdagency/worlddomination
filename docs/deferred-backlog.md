@@ -150,6 +150,22 @@ presses multiple fronts and the player must ALLOCATE forces, not just relocate t
 
 - **Treaty term richness (Sprint 6.5 candidate)**: Sprint 6 ships single-territory treaties with fixed 48h duration. Deferred: multi-territory scope, adjustable duration, source-type filtering, cadence options.
 
+- **Treaty acceptance threshold tuning (Sprint 6.5 post-play-test)**: Alliance accept threshold 50 vs treaty 35 is a first-pass gap. Cold-play may suggest adjusting; tunable in `diplomaticAi.ts`.
+
+- **Positive reputation events (Sprint 6.5)**: Sprint 6 only penalizes via alliance breaks. Need positive events to balance break penalty and enable high-reputation acceptance paths (e.g. isolationist Caesar).
+
+- **AI-initiated treaty proposals (Sprint 6.5)**: Sprint 6 AI proposes alliances only; treaties are player-initiated.
+
+- **Two-Elizabeth scenario naming (Sprint 6.5 scenario polish)**: `createSprint4World` has player Elizabeth at London and AI Elizabeth at Madrid. Rename AI faction leader or accept fixture-merge convention for cold-reads.
+
+## Deferred — Sprint 7+ diplomacy
+
+- **Multi-party alliances**: coalitions beyond bilateral pairs.
+- **Alliance strength / warmth progression**: graduated commitment beyond binary allied/neutral.
+- **Full reputation system**: decay, positive events, scenario starting values, observer drift.
+- **Diplomatic chat / messages / formal war declarations**: narrative layer above mechanical events.
+- **Multi-step negotiation / counter-offers**: pending proposal queue extended beyond accept/decline.
+
 
 Sprint 6 candidate: Scout intel richness
 
