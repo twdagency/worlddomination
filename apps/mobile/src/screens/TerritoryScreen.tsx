@@ -13,6 +13,7 @@ import { UNIT_TYPES } from 'shared';
 import { useGame } from '../game/GameContext';
 import { playerOwnedTerritories, PLAYER_FACTION_ID } from '../game/playerView';
 import type { ActionStackParamList } from '../navigation/types';
+import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -40,7 +41,7 @@ type TerritoryRoute = RouteProp<ActionStackParamList, 'Territory'>;
 
 export function TerritoryScreen() {
   const route = useRoute<TerritoryRoute>();
-  const { world, issueBuild, issueUpgradeInfra } = useGame();
+  const { world, issueBuild, issueUpgradeInfra, actionFeedback } = useGame();
   const faction = world.factions[PLAYER_FACTION];
 
   const playerTerritories = useMemo(
@@ -92,6 +93,8 @@ export function TerritoryScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>Territory</Text>
+
+      <ActionFeedbackBanner action={['build', 'upgradeInfra']} feedback={actionFeedback} />
 
       <Text style={styles.section}>Location</Text>
       {playerTerritories.map((t) => (
@@ -194,7 +197,7 @@ function BuildUnitRow({
       : undefined;
 
   return (
-    <Pressable onPress={onBuild} disabled={blocked}>
+    <Pressable onPress={onBuild}>
       <TerminalCard style={blocked ? styles.blocked : undefined}>
         <Text style={styles.optionTitle}>
           {unitType.name} (tier {unitType.tier})

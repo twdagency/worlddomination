@@ -1,7 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import type { SimEvent, TransitOrder, WorldState } from 'sim';
-import { nextEventMs } from 'sim';
+import {
+  hasPendingProposalBetween,
+  nextEventMs,
+  playerAcceptProposal,
+  playerBreakAlliance,
+  playerDeclineProposal,
+  playerFactionId,
+  playerProposeAlliance,
+  playerProposeTreaty,
+  previewMoveEtaMs,
+} from 'sim';
 import {
   catchUp,
   issueBuild,
@@ -11,13 +21,13 @@ import {
   skipToNextEvent,
 } from './actions';
 import {
-  playerAcceptProposal,
-  playerBreakAlliance,
-  playerDeclineProposal,
-  playerFactionId,
-  playerProposeAlliance,
-  playerProposeTreaty,
-} from 'sim';
+  buildActionFeedback,
+  dispatchActionFeedback,
+  type ActionFeedback,
+  type ActionFeedbackContext,
+  type ActionKind,
+} from './actionFeedback';
+import { useToast } from '../components/feedback/ToastProvider';
 import {
   createWorldForScenario,
   DEFAULT_SCENARIO_ID,
@@ -42,9 +52,14 @@ interface GameContextValue {
   dispatches: SimEvent[];
   awayMs: number;
   scenarioId: DevScenarioId;
-  /** Wall-clock ms for live ETA display (campaign time tracks real time). */
   wallNowMs: number;
-  confirmMove: (unitId: string, toTerritoryId: string, stanceOnArrival?: TransitOrder['stanceOnArrival']) => Promise<void>;
+  actionFeedback: ActionFeedback | null;
+  clearActionFeedback: () => void;
+  confirmMove: (
+    unitId: string,
+    toTerritoryId: string,
+    stanceOnArrival?: TransitOrder['stanceOnArrival'],
+  ) => Promise<void>;
   issueBuild: (territoryId: string, unitTypeId: string, count?: number) => Promise<void>;
   issueUpgradeInfra: (territoryId: string) => Promise<void>;
   skipNext: () => Promise<void>;
@@ -72,18 +87,60 @@ function resolveScenarioId(stored: string | null): DevScenarioId {
 }
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
+  const { showToast } = useToast();
   const [ready, setReady] = useState(false);
   const [scenarioId, setScenarioId] = useState<DevScenarioId>(DEFAULT_SCENARIO_ID);
   const [world, setWorld] = useState<WorldState>(() => createWorldForScenario(DEFAULT_SCENARIO_ID));
   const [dispatches, setDispatches] = useState<SimEvent[]>([]);
   const [awayMs, setAwayMs] = useState(0);
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
+  const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const worldRef = useRef(world);
   const dispatchesRef = useRef(dispatches);
   worldRef.current = world;
   dispatchesRef.current = dispatches;
 
   const hasPendingEvents = nextEventMs(world) !== null;
+
+  const clearActionFeedback = useCallback(() => {
+    setActionFeedback(null);
+  }, []);
+
+  const applyAction = useCallback(
+    async (
+      action: ActionKind,
+      context: ActionFeedbackContext,
+      execute: () => { world: WorldState; events: SimEvent[] },
+    ) => {
+      const result = execute();
+      const applied = dispatchActionFeedback(
+        {
+          action,
+          priorWorld: worldRef.current,
+          nextWorld: result.world,
+          events: result.events,
+          context,
+          showToast,
+        },
+        mergeDispatches,
+        dispatchesRef.current,
+      );
+      setWorld(applied.world);
+      setDispatches(applied.dispatches);
+      setActionFeedback(applied.feedback);
+      await persist(applied.world, applied.dispatches);
+    },
+    [showToast],
+  );
+
+  const applyBlockedAction = useCallback(
+    async (action: ActionKind, context: ActionFeedbackContext) => {
+      const feedback = buildActionFeedback(action, worldRef.current, [], context);
+      showToast(feedback.toastMessage, feedback.toastTone);
+      setActionFeedback(feedback);
+    },
+    [showToast],
+  );
 
   const applyCatchUp = async (
     baseWorld: WorldState,
@@ -170,11 +227,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     toTerritoryId: string,
     stanceOnArrival: TransitOrder['stanceOnArrival'] = 'assault',
   ) => {
-    const { world: nextWorld, events } = issueMove(world, unitId, toTerritoryId, stanceOnArrival);
-    const merged = mergeDispatches(nextWorld, dispatches, events);
-    setWorld(nextWorld);
-    setDispatches(merged);
-    await persist(nextWorld, merged);
+    const unit = world.units[unitId];
+    const preview = previewMoveEtaMs(world, unitId, toTerritoryId);
+    await applyAction(
+      'move',
+      {
+        unitId,
+        fromTerritoryId: unit?.locationId,
+        toTerritoryId,
+        stanceOnArrival,
+        moveEtaMs: preview?.etaMs,
+      },
+      () => issueMove(world, unitId, toTerritoryId, stanceOnArrival),
+    );
   };
 
   const issueBuildOrder = async (
@@ -182,19 +247,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     unitTypeId: string,
     count: number = 1,
   ) => {
-    const { world: nextWorld, events } = issueBuild(world, territoryId, unitTypeId, count);
-    const merged = mergeDispatches(nextWorld, dispatches, events);
-    setWorld(nextWorld);
-    setDispatches(merged);
-    await persist(nextWorld, merged);
+    await applyAction(
+      'build',
+      { territoryId, unitTypeId, count },
+      () => issueBuild(world, territoryId, unitTypeId, count),
+    );
   };
 
   const issueUpgrade = async (territoryId: string) => {
-    const { world: nextWorld, events } = issueUpgradeInfra(world, territoryId);
-    const merged = mergeDispatches(nextWorld, dispatches, events);
-    setWorld(nextWorld);
-    setDispatches(merged);
-    await persist(nextWorld, merged);
+    await applyAction(
+      'upgradeInfra',
+      { territoryId },
+      () => issueUpgradeInfra(world, territoryId),
+    );
   };
 
   const skipNext = async () => {
@@ -212,50 +277,82 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setScenarioId(id);
     setAwayMs(0);
     setDispatches([]);
+    setActionFeedback(null);
     setWorld(fresh);
     await clearCampaignStorage();
-    await Promise.all([saveScenarioId(id), saveWorld(fresh), saveDispatches([]), saveLastActiveMs(Date.now())]);
-  };
-
-  const applyDiplomacy = async (
-    result: { world: WorldState; events: SimEvent[] },
-  ) => {
-    const merged = mergeDispatches(result.world, dispatches, result.events);
-    setWorld(result.world);
-    setDispatches(merged);
-    await persist(result.world, merged);
+    await Promise.all([
+      saveScenarioId(id),
+      saveWorld(fresh),
+      saveDispatches([]),
+      saveLastActiveMs(Date.now()),
+    ]);
   };
 
   const proposeAlliance = async (targetFactionId: string) => {
     const playerId = playerFactionId(world);
     if (!playerId) return;
-    await applyDiplomacy(playerProposeAlliance(world, playerId, targetFactionId, world.nowMs));
+    if (hasPendingProposalBetween(world, playerId, targetFactionId, 'alliance')) {
+      await applyBlockedAction('proposeAlliance', {
+        targetFactionId,
+        blockedMessage: `${world.leaders[world.factions[targetFactionId]?.leaderId ?? '']?.name ?? 'Faction'} — alliance proposal already pending`,
+      });
+      return;
+    }
+    await applyAction(
+      'proposeAlliance',
+      { targetFactionId },
+      () => playerProposeAlliance(world, playerId, targetFactionId, world.nowMs),
+    );
   };
 
   const breakAlliance = async (allyFactionId: string) => {
     const playerId = playerFactionId(world);
     if (!playerId) return;
-    await applyDiplomacy(playerBreakAlliance(world, playerId, allyFactionId, world.nowMs));
+    await applyAction(
+      'breakAlliance',
+      { allyFactionId },
+      () => playerBreakAlliance(world, playerId, allyFactionId, world.nowMs),
+    );
   };
 
   const proposeTreaty = async (targetFactionId: string, territoryId: string) => {
     const playerId = playerFactionId(world);
     if (!playerId) return;
-    await applyDiplomacy(
-      playerProposeTreaty(world, playerId, targetFactionId, territoryId, world.nowMs),
+    if (hasPendingProposalBetween(world, playerId, targetFactionId, 'treaty')) {
+      await applyBlockedAction('proposeTreaty', {
+        targetFactionId,
+        territoryId,
+        blockedMessage: `${world.leaders[world.factions[targetFactionId]?.leaderId ?? '']?.name ?? 'Faction'} — treaty proposal already pending`,
+      });
+      return;
+    }
+    await applyAction(
+      'proposeTreaty',
+      { targetFactionId, territoryId },
+      () => playerProposeTreaty(world, playerId, targetFactionId, territoryId, world.nowMs),
     );
   };
 
   const acceptProposal = async (proposalId: string) => {
     const playerId = playerFactionId(world);
     if (!playerId) return;
-    await applyDiplomacy(playerAcceptProposal(world, playerId, proposalId, world.nowMs));
+    const proposal = world.pendingProposals.find((row) => row.id === proposalId);
+    await applyAction(
+      'acceptProposal',
+      { proposalId, targetFactionId: proposal?.from },
+      () => playerAcceptProposal(world, playerId, proposalId, world.nowMs),
+    );
   };
 
   const declineProposal = async (proposalId: string) => {
     const playerId = playerFactionId(world);
     if (!playerId) return;
-    await applyDiplomacy(playerDeclineProposal(world, playerId, proposalId, world.nowMs));
+    const proposal = world.pendingProposals.find((row) => row.id === proposalId);
+    await applyAction(
+      'declineProposal',
+      { proposalId, targetFactionId: proposal?.from },
+      () => playerDeclineProposal(world, playerId, proposalId, world.nowMs),
+    );
   };
 
   return (
@@ -267,6 +364,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         awayMs,
         scenarioId,
         wallNowMs,
+        actionFeedback,
+        clearActionFeedback,
         confirmMove,
         issueBuild: issueBuildOrder,
         issueUpgradeInfra: issueUpgrade,

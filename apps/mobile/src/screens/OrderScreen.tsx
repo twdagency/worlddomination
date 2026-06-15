@@ -4,6 +4,7 @@ import type { TransitOrder } from 'sim';
 import { moveDistanceKm, previewMoveEtaMs } from 'sim';
 import { useGame } from '../game/GameContext';
 import { formatIntelAge } from '../game/intelDisplay';
+import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import {
   getPlayerVisibleTerritory,
   ownerIdForIntelDisplay,
@@ -28,7 +29,7 @@ const STANCES: { id: TransitOrder['stanceOnArrival']; label: string; hint: strin
 ];
 
 export function OrderScreen() {
-  const { world, confirmMove } = useGame();
+  const { world, confirmMove, actionFeedback } = useGame();
   const movableUnits = playerMovableUnits(world);
 
   const [unitId, setUnitId] = useState(movableUnits[0]?.id ?? '');
@@ -87,6 +88,8 @@ export function OrderScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>Issue Move Order</Text>
+
+      <ActionFeedbackBanner action="move" feedback={actionFeedback} />
 
       <Text style={styles.section}>Force</Text>
       {movableUnits.length === 0 ? (

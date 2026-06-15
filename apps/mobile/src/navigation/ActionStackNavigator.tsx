@@ -25,10 +25,10 @@ export function ActionStackNavigator() {
         component={ActionMenuScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="Order" component={OrderScreen} />
-      <Stack.Screen name="Diplomacy" component={DiplomacyScreen} />
-      <Stack.Screen name="Territory" component={TerritoryScreen} />
-      <Stack.Screen name="Forces" component={ForcesScreen} />
+      <Stack.Screen name="Order" component={OrderScreen} options={{ title: '', headerBackTitle: 'Actions' }} />
+      <Stack.Screen name="Diplomacy" component={DiplomacyScreen} options={{ title: '', headerBackTitle: 'Actions' }} />
+      <Stack.Screen name="Territory" component={TerritoryScreen} options={{ title: '', headerBackTitle: 'Actions' }} />
+      <Stack.Screen name="Forces" component={ForcesScreen} options={{ title: '', headerBackTitle: 'Actions' }} />
     </Stack.Navigator>
   );
 }

@@ -20,6 +20,7 @@ import {
 import { useGame } from '../game/GameContext';
 import { isTimestampedDispatch } from '../game/actions';
 import { formatStanceDetail, stanceColor } from '../game/diplomacyStanceDisplay';
+import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { PLAYER_FACTION_ID } from '../game/playerView';
 import type { ActionStackParamList } from '../navigation/types';
 import { TerminalCard } from '../components/TerminalCard';
@@ -45,6 +46,7 @@ export function DiplomacyScreen() {
   const {
     world,
     dispatches,
+    actionFeedback,
     proposeAlliance,
     breakAlliance,
     proposeTreaty,
@@ -106,6 +108,10 @@ export function DiplomacyScreen() {
       ListHeaderComponent={
         <View>
           <Text style={styles.title}>Diplomacy</Text>
+          <ActionFeedbackBanner
+            action={['proposeAlliance', 'proposeTreaty', 'breakAlliance', 'acceptProposal', 'declineProposal']}
+            feedback={actionFeedback}
+          />
           <Text style={styles.hint}>
             Player actions are unconditional. AI acceptance uses reputation and posture only.
           </Text>
