@@ -1,7 +1,8 @@
 import { AI_DECISION_INTERVAL_MS, INFRA_UPGRADE_BASE_COST, MAX_INFRA_LEVEL } from './constants';
 import { taggedOrderFields, assertActionableOrderTagged } from './dispatch';
 import { haversineKm } from './geo';
-import { buildTransit } from './movement';
+import { INTEL_DECAY_WINDOW_MS } from './intel';
+import { buildTransit, estimateTravelMs } from './movement';
 import { canBuild } from './production';
 import { SCOUT_UNIT_TYPE_ID, isScoutUnit } from './scout';
 import {
@@ -24,6 +25,23 @@ import type {
 } from './types';
 
 const ALLOWED_ORDER_KINDS = new Set<Order['kind']>(['move', 'build', 'upgradeInfra']);
+
+/** Scales scout intel value by reachable freshness — 0 when transit exceeds decay window. */
+export function transitAwareIntelMultiplier(travelMs: Millis): number {
+  if (travelMs >= INTEL_DECAY_WINDOW_MS) return 0;
+  return Math.max(0, (INTEL_DECAY_WINDOW_MS - travelMs) / INTEL_DECAY_WINDOW_MS);
+}
+
+function hypotheticalScoutUnit(factionId: Id, locationId: Id): Unit {
+  return {
+    id: '__scout-preview__',
+    typeId: SCOUT_UNIT_TYPE_ID,
+    ownerId: factionId,
+    count: 1,
+    locationId,
+    stance: 'hold',
+  };
+}
 
 /** Territories within this distance are treated as strategic neighbors on the Sprint 4 map. */
 const FRONTIER_KM = 1_100;
@@ -153,7 +171,14 @@ function scoreScoutMove(
       };
       if (!buildTransit(world, scout, territory.id, moveFields, world.nowMs)) continue;
 
-      const score = targetScore + priorityScoutBias(priority) + scoutUrgencyBonus(world, factionId, priority);
+      const travelMs = estimateTravelMs(world, scout, territory.id);
+      if (travelMs === null) continue;
+
+      const baseScore =
+        targetScore + priorityScoutBias(priority) + scoutUrgencyBonus(world, factionId, priority);
+      const score = baseScore * transitAwareIntelMultiplier(travelMs);
+      if (score <= 0) continue;
+
       const order: Order = {
         kind: 'move',
         unitId: scout.id,
@@ -225,13 +250,22 @@ function scoreScoutBuild(
   for (const territory of ownedTerritories(world, factionId)) {
     if (!canBuild(world, territory.id, SCOUT_UNIT_TYPE_ID, 1, factionId).ok) continue;
 
+    const previewScout = hypotheticalScoutUnit(factionId, territory.id);
+    const reachableTargetValue = unknownTargets.reduce((sum, target) => {
+      const base = scoreScoutTarget(world, factionId, target, priority, weights);
+      if (base <= 0) return sum;
+      const travelMs = estimateTravelMs(world, previewScout, target.id);
+      if (travelMs === null) return sum;
+      return sum + base * transitAwareIntelMultiplier(travelMs);
+    }, 0);
+
     const score =
       priorityScoutBias(priority) * 3 +
       scoutUrgencyBonus(world, factionId, priority) +
       weights.economy * 2 +
-      unknownTargets.filter((target) => scoreScoutTarget(world, factionId, target, priority, weights) > 0)
-        .length *
-        8;
+      reachableTargetValue;
+
+    if (score <= 0) continue;
 
     const order: Order = {
       kind: 'build',

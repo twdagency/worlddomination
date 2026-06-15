@@ -8,7 +8,7 @@ import {
 } from '../src';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import { LONDON, NEW_YORK, PARIS, makeWorld } from './fixtures';
-import type { Order, WorldState } from '../src/types';
+import type { Order, Territory, WorldState } from '../src/types';
 
 const START_MS = 1_700_600_000_000;
 const TWENTY_FOUR_HOURS_MS = 24 * 3_600_000;
@@ -44,12 +44,28 @@ function scoutOrders(orders: Order[]): Order[] {
 }
 
 describe('AI scouting behavior', () => {
-  it('Genghis scouts hostile borders — move toward enemy capital', () => {
-    const base = withoutCombatUnits(createSprint4World(START_MS), 'faction-steppe');
+  it('Genghis scouts hostile borders — move toward reachable enemy territory', () => {
+    const startMs = 1_700_900_000_000;
+    const base = createSprint4World(startMs);
+    const nearHostile: Territory = {
+      id: 'territory-near-hostile',
+      name: 'Near Hostile',
+      coord: { lat: 52.58, lon: 13.42 },
+      ownerId: 'faction-rome',
+      baseYield: 50,
+      infraLevel: 1,
+      resources: {},
+    };
     const world: WorldState = {
       ...base,
+      territories: {
+        ...base.territories,
+        [nearHostile.id]: nearHostile,
+      },
       units: {
-        ...base.units,
+        ...Object.fromEntries(
+          Object.entries(base.units).filter(([, unit]) => unit.ownerId !== 'faction-steppe'),
+        ),
         'unit-steppe-scout': {
           id: 'unit-steppe-scout',
           typeId: SCOUT_UNIT_TYPE_ID,
@@ -62,14 +78,11 @@ describe('AI scouting behavior', () => {
       intel: {},
     };
 
-    const orders = decideOrders(world, 'faction-steppe', world.nowMs);
-    const scouting = scoutOrders(orders);
-    expect(scouting.length).toBeGreaterThan(0);
-    const move = scouting.find((order) => order.kind === 'move');
+    const orders = decideOrders(world, 'faction-steppe', startMs);
+    const move = orders.find((order) => order.kind === 'move');
     expect(move?.kind).toBe('move');
     if (move?.kind === 'move') {
-      expect([LONDON_ID, PARIS_ID, MADRID_ID]).toContain(move.toTerritoryId);
-      expect(move.stanceOnArrival).toBe('hold');
+      expect(move.toTerritoryId).toBe(nearHostile.id);
     }
   });
 

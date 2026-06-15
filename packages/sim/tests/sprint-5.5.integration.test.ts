@@ -227,30 +227,27 @@ describe('sprint 5.5 integration', () => {
     // Transit-time stale-on-arrival analysis applies when a scout exists (see next test).
   });
 
-  it('Genghis scout fixture: chosen target transit exceeds intel decay window', () => {
+  it('Genghis scout fixture: transit-aware scoring disqualifies stale-on-arrival scout holds', () => {
     const world = genghisScoutFixture();
     const orders = decideOrders(world, STEPPE, world.nowMs);
-    const move = orders.find((order) => order.kind === 'move');
-    expect(move?.kind).toBe('move');
+    const holdScoutMove = orders.find(
+      (order) =>
+        order.kind === 'move' &&
+        order.intent === 'defend' &&
+        order.stanceOnArrival === 'hold',
+    );
 
     const capitalEtas = [S4_LONDON, S4_PARIS, S4_MADRID].map((territoryId) =>
       etaReport(world, 'unit-steppe-scout', territoryId),
     );
 
-    let actualTransit: ScoutTransitReport | null = null;
-    if (move?.kind === 'move') {
-      actualTransit = transitFromOrder(world, move);
-      expect(actualTransit?.toTerritoryId).toBe(move.toTerritoryId);
-    }
-
     const report = {
-      chosenTarget: move?.kind === 'move' ? move.toTerritoryId : null,
+      chosenHoldScoutTarget: holdScoutMove?.kind === 'move' ? holdScoutMove.toTerritoryId : null,
       capitalEtas,
-      actualTransit,
       decayWindowHours: INTEL_DECAY_WINDOW_MS / 3_600_000,
     };
     expect(report).toMatchSnapshot('genghis-scout-transit-vs-decay');
     expect(capitalEtas.every((row) => row.exceedsDecayWindow)).toBe(true);
-    expect(actualTransit?.exceedsDecayWindow).toBe(true);
+    expect(holdScoutMove).toBeUndefined();
   });
 });

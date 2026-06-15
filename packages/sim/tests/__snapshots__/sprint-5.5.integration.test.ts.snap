@@ -10,17 +10,8 @@ exports[`sprint 5.5 integration > 72h sprint4: records Genghis scout activity an
 }
 `;
 
-exports[`sprint 5.5 integration > Genghis scout fixture: chosen target transit exceeds intel decay window > genghis-scout-transit-vs-decay 1`] = `
+exports[`sprint 5.5 integration > Genghis scout fixture: transit-aware scoring disqualifies stale-on-arrival scout holds > genghis-scout-transit-vs-decay 1`] = `
 {
-  "actualTransit": {
-    "distanceKm": 1869,
-    "exceedsDecayWindow": true,
-    "fromTerritoryId": "territory-berlin",
-    "toTerritoryId": "territory-madrid",
-    "transitHours": 249.2194419164361,
-    "transitMs": 897189990.8991699,
-    "unitId": "unit-steppe-scout",
-  },
   "capitalEtas": [
     {
       "distanceKm": 932,
@@ -44,7 +35,7 @@ exports[`sprint 5.5 integration > Genghis scout fixture: chosen target transit e
       "travelMs": 897189990.8991699,
     },
   ],
-  "chosenTarget": "territory-madrid",
+  "chosenHoldScoutTarget": null,
   "decayWindowHours": 24,
 }
 `;

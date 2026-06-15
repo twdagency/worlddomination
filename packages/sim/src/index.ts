@@ -21,6 +21,7 @@ export {
   applyMoveOrders,
   resolveArrivals,
   effectiveSpeedKmh,
+  estimateTravelMs,
   transitFraction,
   buildTransit,
   pendingArrivalMs,
@@ -38,6 +39,7 @@ export {
   nextAiDecisionMs,
   tempoCommitFraction,
   TEMPO_COMMIT_FRACTION,
+  transitAwareIntelMultiplier,
 } from './ai';
 export {
   computeVisibility,
