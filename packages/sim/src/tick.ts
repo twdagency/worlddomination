@@ -2,7 +2,7 @@ import type { AccruedIncome } from './economy';
 import type { Order, SimEvent, WorldState } from './types';
 import { MS_PER_DAY } from './constants';
 import { accrueEconomy } from './economy';
-import { ensureIntelStore, recordIntelObservations } from './intel';
+import { ensureIntelStore, pruneAlliedIntelOnBreak, recordAlliedObservations, recordIntelObservations } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
@@ -92,7 +92,8 @@ export function tick(
   };
 
   const priorIntel = ensureIntelStore(resolved);
-  const nextIntel = recordIntelObservations(resolved);
+  const afterDirectIntel = recordIntelObservations(resolved);
+  const nextIntel = recordAlliedObservations({ ...resolved, intel: afterDirectIntel });
   events.push(...emitIntelReportEvents(resolved, priorIntel, nextIntel));
 
   const next: WorldState = {

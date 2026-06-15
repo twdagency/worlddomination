@@ -70,8 +70,11 @@ export {
   mergeAllTerritoryVisibility,
   mergeTerritoryVisibility,
   pruneExpiredRecords,
+  pruneAlliedIntelOnBreak,
+  pruneRecordsByObserver,
   recordDestroyedScoutIntel,
   recordDirectObservations,
+  recordAlliedObservations,
   recordIntelObservations,
   recordScoutFinalObservations,
 } from './intel';

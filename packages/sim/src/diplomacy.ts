@@ -7,6 +7,7 @@ import type {
   Treaty,
   WorldState,
 } from './types';
+import { pruneAlliedIntelOnBreak } from './intel';
 
 // SPRINT-6 PHASE-6: pending player proposals need a queue structure — design when DiplomacyScreen is wired.
 
@@ -150,10 +151,14 @@ export function breakAlliance(world: WorldState, factionA: Id, factionB: Id): Wo
   const next = world.alliances.filter((pair) => !(pair.factionA === a && pair.factionB === b));
   if (next.length === world.alliances.length) return world;
 
-  return {
-    ...world,
-    alliances: next,
-  };
+  return pruneAlliedIntelOnBreak(
+    {
+      ...world,
+      alliances: next,
+    },
+    a,
+    b,
+  );
 }
 
 export interface FormTreatyParams {
