@@ -153,6 +153,44 @@ describe('scout dispatch integration', () => {
     expect(groupEventsByBeat(world, [departure, scoutReport])).toHaveLength(2);
   });
 
+  it('dedupes per tick only — scout report fires after direct source ends', () => {
+    const world = createSprint4World(START_MS);
+    const observationTime = world.nowMs;
+    const snapshot = {
+      ownerId: 'faction-steppe',
+      infraLevel: 1,
+      garrisonCount: 8,
+      visibleEnemyGarrison: 0,
+      inTransitCount: 0,
+      buildQueueCount: 0,
+    };
+    const scoutRecord: IntelRecord = {
+      observerFaction: 'faction-player',
+      territoryId: BERLIN,
+      observationTime,
+      source: 'scout',
+      snapshot,
+    };
+    const directRecord: IntelRecord = { ...scoutRecord, source: 'direct' };
+
+    const deduped = emitIntelReportEvents(
+      world,
+      { 'faction-player': [] },
+      { 'faction-player': [scoutRecord, directRecord] },
+      observationTime,
+    );
+    expect(deduped.filter((event) => event.kind === 'intelReport')).toHaveLength(0);
+
+    const nextTick = observationTime + 3_600_000;
+    const scoutOnly = emitIntelReportEvents(
+      world,
+      { 'faction-player': [directRecord] },
+      { 'faction-player': [directRecord, { ...scoutRecord, observationTime: nextTick }] },
+      nextTick,
+    );
+    expect(scoutOnly.filter((event) => event.kind === 'intelReport')).toHaveLength(1);
+  });
+
   it('cold-read: build scout, move toward Berlin, skip 12h digest', () => {
     let world = createSprint4World(START_MS);
     const allEvents: SimEvent[] = [];

@@ -119,6 +119,7 @@ export {
 } from './intelDispatch';
 export type { IntelReportVariant } from './intelDispatch';
 export type { DispatchBeatGroup, DispatchFeedItem } from './dispatch';
+export type { ScoutingPriority } from './types';
 export {
   compactDispatchFeed,
   renderCompactDigestText,

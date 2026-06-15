@@ -15,15 +15,16 @@ Genghis — tick 1700443200000
 INTEL — Infrastructure upgraded at Berlin (Genghis)
 Elizabeth — tick 1700443200000
 INTEL — Construction begun at Madrid (Elizabeth)
-INTEL — Elizabeth — 1× Levy ready at Madrid
 Caesar — tick 1700464800000
 INTEL — Caesar forces advancing from Paris toward London
 Elizabeth — tick 1700464800000
 INTEL — Construction begun at Madrid (Elizabeth)
 PRODUCTION — Your 1× Scout ready at London
-INTEL — Elizabeth — 2× Levy ready at Madrid
+INTEL — Elizabeth — 1× Scout ready at Madrid
 Elizabeth — tick 1700464800000
 INTEL — Scouts report Genghis forces massing at Berlin
+Elizabeth — tick 1700464800000
+INTEL — Scouts report Caesar forces massing at Paris
 INCOME — funding 10825.5
 Elizabeth — tick 1700464800000
 DEPARTURE — Your forces advancing from London toward Berlin
@@ -31,11 +32,16 @@ Caesar — tick 1700486400000
 INTEL — Caesar forces advancing from Paris toward London
 Elizabeth — tick 1700486400000
 INTEL — Construction begun at Madrid (Elizabeth)
-INTEL — Elizabeth — 3× Levy ready at Madrid
+INTEL — Elizabeth — 3× Scout ready at Madrid
+Elizabeth — tick 1700486400000
+INTEL — Scouts report Caesar forces massing at Paris
 Caesar — tick 1700508000000
 INTEL — Caesar forces advancing from Paris toward London
 Elizabeth — tick 1700508000000
 INTEL — Construction begun at Madrid (Elizabeth)
+INTEL — Elizabeth — 3× Scout ready at Madrid
 INTEL — Elizabeth — 3× Levy ready at Madrid
+Elizabeth — tick 1700508000000
+INTEL — Scouts report Caesar forces massing at Paris
 INCOME — funding 7302"
 `;

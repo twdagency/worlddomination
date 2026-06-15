@@ -23,11 +23,14 @@ export interface RngState {
   seed: number;
 }
 
+export type ScoutingPriority = 'aggressive' | 'defensive' | 'broad';
+
 export interface LeaderWeights {
   aggression: number;
   risk: number;
   economy: number;
   expansion: number;
+  scoutingPriority: ScoutingPriority;
 }
 
 export type TraitKey =

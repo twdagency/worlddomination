@@ -3,15 +3,30 @@ import { taggedOrderFields, assertActionableOrderTagged } from './dispatch';
 import { haversineKm } from './geo';
 import { buildTransit } from './movement';
 import { canBuild } from './production';
+import { SCOUT_UNIT_TYPE_ID, isScoutUnit } from './scout';
 import {
   computeVisibility,
   isTerritoryVisible,
   isUnitVisible,
   visibleEnemyUnits,
 } from './visibility';
-import type { Id, LeaderTempo, LeaderWeights, Millis, Order, Territory, Unit, WorldState } from './types';
+import type {
+  Id,
+  LeaderTempo,
+  LeaderWeights,
+  Millis,
+  Order,
+  ScoutingPriority,
+  Territory,
+  TerritoryVisibilityState,
+  Unit,
+  WorldState,
+} from './types';
 
 const ALLOWED_ORDER_KINDS = new Set<Order['kind']>(['move', 'build', 'upgradeInfra']);
+
+/** Territories within this distance are treated as strategic neighbors on the Sprint 4 map. */
+const FRONTIER_KM = 1_100;
 
 export const TEMPO_COMMIT_FRACTION: Record<LeaderTempo, number> = {
   fast: 0.75,
@@ -40,6 +55,197 @@ function idleUnits(world: WorldState, factionId: Id): Unit[] {
   );
 }
 
+function idleScouts(world: WorldState, factionId: Id): Unit[] {
+  return idleUnits(world, factionId).filter((unit) => isScoutUnit(world, unit));
+}
+
+function scoutingPriority(world: WorldState, factionId: Id): ScoutingPriority {
+  return leaderWeights(world, factionId).scoutingPriority;
+}
+
+function territoryIntelState(
+  world: WorldState,
+  factionId: Id,
+  territoryId: Id,
+): TerritoryVisibilityState['state'] {
+  return computeVisibility(world, factionId).territoryStates[territoryId]?.state ?? 'unknown';
+}
+
+function needsScoutIntel(world: WorldState, factionId: Id, territoryId: Id): boolean {
+  const state = territoryIntelState(world, factionId, territoryId);
+  return state === 'unknown' || state === 'stale';
+}
+
+function isFrontierTerritory(world: WorldState, factionId: Id, territoryId: Id): boolean {
+  const territory = world.territories[territoryId];
+  if (!territory || territory.ownerId !== factionId) return false;
+
+  return Object.values(world.territories).some((other) => {
+    if (other.id === territoryId || other.ownerId === factionId) return false;
+    return haversineKm(territory.coord, other.coord) <= FRONTIER_KM;
+  });
+}
+
+function isNearOwnedTerritory(world: WorldState, factionId: Id, territory: Territory): boolean {
+  return ownedTerritories(world, factionId).some(
+    (owned) => haversineKm(owned.coord, territory.coord) <= FRONTIER_KM,
+  );
+}
+
+function scoreScoutTarget(
+  world: WorldState,
+  factionId: Id,
+  territory: Territory,
+  priority: ScoutingPriority,
+  weights: LeaderWeights,
+): number {
+  if (!needsScoutIntel(world, factionId, territory.id)) return 0;
+
+  const intelBonus = territoryIntelState(world, factionId, territory.id) === 'unknown' ? 20 : 10;
+  const isEnemy = Boolean(territory.ownerId && territory.ownerId !== factionId);
+  const isOwn = territory.ownerId === factionId;
+  const frontier = isOwn && isFrontierTerritory(world, factionId, territory.id);
+
+  switch (priority) {
+    case 'aggressive':
+      if (!isEnemy) return 0;
+      return intelBonus + weights.aggression * 3;
+    case 'defensive':
+      if (isEnemy) return intelBonus * 0.4;
+      if (frontier) return intelBonus + weights.risk * 5;
+      if (!territory.ownerId && isNearOwnedTerritory(world, factionId, territory)) {
+        return intelBonus + weights.risk * 3;
+      }
+      return 0;
+    case 'broad':
+      return (
+        intelBonus +
+        weights.expansion * 2 +
+        (isEnemy ? 5 : 0) +
+        (!territory.ownerId ? 4 : 0) +
+        (frontier ? 2 : 0)
+      );
+  }
+}
+
+function scoreScoutMove(
+  world: WorldState,
+  factionId: Id,
+  weights: LeaderWeights,
+  decisionTickMs: Millis,
+): ScoredOrder | null {
+  const scouts = idleScouts(world, factionId);
+  if (scouts.length === 0) return null;
+
+  const priority = scoutingPriority(world, factionId);
+  let best: ScoredOrder | null = null;
+
+  for (const scout of scouts) {
+    for (const territory of Object.values(world.territories)) {
+      const targetScore = scoreScoutTarget(world, factionId, territory, priority, weights);
+      if (targetScore <= 0) continue;
+      if (scout.locationId === territory.id) continue;
+
+      const tags = taggedOrderFields(factionId, decisionTickMs, 'defend');
+      const moveFields = {
+        stanceOnArrival: 'hold' as const,
+        ...tags,
+      };
+      if (!buildTransit(world, scout, territory.id, moveFields, world.nowMs)) continue;
+
+      const score = targetScore + priorityScoutBias(priority) + scoutUrgencyBonus(world, factionId, priority);
+      const order: Order = {
+        kind: 'move',
+        unitId: scout.id,
+        toTerritoryId: territory.id,
+        ...moveFields,
+      };
+      if (!best || score > best.score) best = { score, order };
+    }
+  }
+
+  return best;
+}
+
+function priorityScoutBias(priority: ScoutingPriority): number {
+  switch (priority) {
+    case 'aggressive':
+      return 18;
+    case 'defensive':
+      return 16;
+    case 'broad':
+      return 14;
+  }
+}
+
+function scoutUrgencyBonus(
+  world: WorldState,
+  factionId: Id,
+  priority: ScoutingPriority,
+): number {
+  const unknownHostile = Object.values(world.territories).filter(
+    (territory) =>
+      territory.ownerId &&
+      territory.ownerId !== factionId &&
+      needsScoutIntel(world, factionId, territory.id),
+  ).length;
+  const unknownNearOwned = Object.values(world.territories).filter(
+    (territory) =>
+      !territory.ownerId &&
+      isNearOwnedTerritory(world, factionId, territory) &&
+      needsScoutIntel(world, factionId, territory.id),
+  ).length;
+
+  switch (priority) {
+    case 'aggressive':
+      return unknownHostile > 0 ? 95 : 0;
+    case 'defensive':
+      return unknownNearOwned > 0 || unknownHostile > 0 ? 75 : 0;
+    case 'broad':
+      return unknownHostile + unknownNearOwned > 0 ? 65 : 0;
+  }
+}
+
+function scoreScoutBuild(
+  world: WorldState,
+  factionId: Id,
+  weights: LeaderWeights,
+  decisionTickMs: Millis,
+): ScoredOrder | null {
+  if (idleScouts(world, factionId).length > 0) return null;
+
+  const priority = scoutingPriority(world, factionId);
+  const unknownTargets = Object.values(world.territories).filter((territory) =>
+    needsScoutIntel(world, factionId, territory.id),
+  );
+  if (unknownTargets.length === 0) return null;
+
+  let best: ScoredOrder | null = null;
+
+  for (const territory of ownedTerritories(world, factionId)) {
+    if (!canBuild(world, territory.id, SCOUT_UNIT_TYPE_ID, 1, factionId).ok) continue;
+
+    const score =
+      priorityScoutBias(priority) * 3 +
+      scoutUrgencyBonus(world, factionId, priority) +
+      weights.economy * 2 +
+      unknownTargets.filter((target) => scoreScoutTarget(world, factionId, target, priority, weights) > 0)
+        .length *
+        8;
+
+    const order: Order = {
+      kind: 'build',
+      territoryId: territory.id,
+      unitTypeId: SCOUT_UNIT_TYPE_ID,
+      count: 1,
+      ...taggedOrderFields(factionId, decisionTickMs, 'build'),
+    };
+    if (!best || score > best.score) best = { score, order };
+  }
+
+  return best;
+}
+
 function ownedTerritories(world: WorldState, factionId: Id): Territory[] {
   return Object.values(world.territories).filter((territory) => territory.ownerId === factionId);
 }
@@ -47,7 +253,13 @@ function ownedTerritories(world: WorldState, factionId: Id): Territory[] {
 function leaderWeights(world: WorldState, factionId: Id): LeaderWeights {
   const faction = world.factions[factionId];
   const leader = faction ? world.leaders[faction.leaderId] : undefined;
-  return leader?.weights ?? { aggression: 5, risk: 5, economy: 5, expansion: 5 };
+  return leader?.weights ?? {
+    aggression: 5,
+    risk: 5,
+    economy: 5,
+    expansion: 5,
+    scoutingPriority: 'broad',
+  };
 }
 
 function leaderTempo(world: WorldState, factionId: Id): LeaderTempo {
@@ -176,7 +388,8 @@ function scoreAttack(
         weights.aggression * 12 +
         weights.expansion * 6 -
         weights.risk * Math.max(1, defenderPower / Math.max(1, unit.count)) -
-        weights.economy * 2;
+        weights.economy * 2 -
+        (needsScoutIntel(world, factionId, territory.id) ? weights.aggression * 5 : 0);
 
       const order: Order = {
         kind: 'move',
@@ -291,6 +504,8 @@ export function decideOrders(world: WorldState, factionId: Id, decisionTickMs: M
     scoreDefend(world, factionId, weights, decisionTickMs),
     scoreAttack(world, factionId, weights, decisionTickMs),
     scoreExpand(world, factionId, weights, decisionTickMs),
+    scoreScoutMove(world, factionId, weights, decisionTickMs),
+    scoreScoutBuild(world, factionId, weights, decisionTickMs),
     scoreBuild(world, factionId, weights, decisionTickMs),
   ].filter((candidate): candidate is ScoredOrder => candidate !== null);
 

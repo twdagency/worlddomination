@@ -10,6 +10,8 @@ import {
 } from './importance';
 import type { Id, Millis, SimEvent, WorldState } from './types';
 
+// SPRINT-6: continuous direct observations may repeat each tick — compact on state change only.
+
 interface MediumBucket {
   factionId: Id;
   category: MediumCompactionCategory;
