@@ -187,6 +187,8 @@ export interface BattleReport {
   narrative: string;
 }
 
+export type IntelReportVariant = 'activity' | 'massing' | 'construction';
+
 export type SimEvent =
   | {
       kind: 'departure';
@@ -199,6 +201,7 @@ export type SimEvent =
       count: number;
       stanceOnArrival: TransitOrder['stanceOnArrival'];
       intent: OrderIntent;
+      source: IntelSource;
       beatId: string;
       decisionTickMs: Millis;
       importance?: DispatchImportance;
@@ -214,6 +217,7 @@ export type SimEvent =
       stanceOnArrival: TransitOrder['stanceOnArrival'];
       fromTerritoryId: Id;
       intent: OrderIntent;
+      source: IntelSource;
       beatId: string;
       decisionTickMs: Millis;
       importance?: DispatchImportance;
@@ -265,6 +269,7 @@ export type SimEvent =
       unitTypeId: Id;
       count: number;
       intent: OrderIntent;
+      source: IntelSource;
       beatId: string;
       decisionTickMs: Millis;
       importance?: DispatchImportance;
@@ -275,6 +280,20 @@ export type SimEvent =
       territoryId: Id;
       factionId: Id;
       infraLevel: number;
+      intent: OrderIntent;
+      source: IntelSource;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'intelReport';
+      at: Millis;
+      observerFaction: Id;
+      territoryId: Id;
+      source: IntelSource;
+      variant: IntelReportVariant;
+      subjectFactionId?: Id;
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;

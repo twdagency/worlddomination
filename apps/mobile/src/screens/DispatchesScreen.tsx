@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useGame } from '../game/GameContext';
 import { formatDispatchLine, buildDisplayDispatchFeed, isDispatchDetailEvent, isTimestampedDispatch } from '../game/actions';
 import { BattleDetailCard } from '../components/BattleDetailCard';
+import { IntelSourceHint } from '../components/IntelSourceHint';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { DevScenarioSelector } from '../components/DevScenarioSelector';
 import { TerminalCard } from '../components/TerminalCard';
@@ -14,6 +15,7 @@ function dispatchAccent(kind: string): string {
   if (kind === 'withdrawal') return terminal.warning;
   if (kind === 'secured') return terminal.accent;
   if (kind === 'income' || kind === 'production' || kind === 'buildStarted' || kind === 'infraUpgraded') return terminal.accent;
+  if (kind === 'intelReport') return terminal.text;
   if (kind === 'buildBlocked') return terminal.warning;
   return terminal.text;
 }
@@ -64,6 +66,9 @@ export function DispatchesScreen() {
                 <Text style={[styles.line, { color: dispatchAccent(item.event.kind) }]}>
                   {item.line}
                 </Text>
+                {item.event.kind === 'intelReport' && (
+                  <IntelSourceHint sources={[item.event.source]} />
+                )}
                 {isExpanded && item.event.kind === 'battle' && (
                   <BattleDetailCard
                     report={item.event.report}

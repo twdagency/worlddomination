@@ -1,4 +1,4 @@
-import type { Id, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
 import {
   formatBattleNarrative,
   formatProductionNarrative,
@@ -8,10 +8,14 @@ import {
 
 const ACTIONABLE_KINDS = new Set<Order['kind']>(['move', 'build', 'upgradeInfra']);
 
-/** Deterministic beat id from faction + AI decision tick only (seed-safe). */
-export function computeBeatId(factionId: Id, decisionTickMs: Millis): string {
+/** Deterministic beat id from faction + AI decision tick + intel source (seed-safe). */
+export function computeBeatId(
+  factionId: Id,
+  decisionTickMs: Millis,
+  source: IntelSource = 'direct',
+): string {
   let hash = 2_166_136_261;
-  const input = `${factionId}:${decisionTickMs}`;
+  const input = `${factionId}:${decisionTickMs}:${source}`;
   for (let i = 0; i < input.length; i++) {
     hash ^= input.charCodeAt(i);
     hash = Math.imul(hash, 1_677_761_9);
@@ -125,6 +129,32 @@ export function formatInfraUpgradedLine(
   return `${prefix} — Infrastructure upgraded at ${place} (${who})`;
 }
 
+/** Mechanical scout phrasing — predictable forms for cold-read tests. */
+export function formatIntelReportLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'intelReport' }>,
+): string {
+  const place = territoryName(world, event.territoryId);
+  const prefix = 'INTEL';
+
+  switch (event.variant) {
+    case 'construction':
+      return `${prefix} — Scouts report construction at ${place}`;
+    case 'massing': {
+      const who = event.subjectFactionId
+        ? factionName(world, event.subjectFactionId)
+        : 'enemy';
+      return `${prefix} — Scouts report ${who} forces massing at ${place}`;
+    }
+    case 'activity': {
+      const who = event.subjectFactionId
+        ? factionName(world, event.subjectFactionId)
+        : 'enemy';
+      return `${prefix} — Scouts report ${who} activity at ${place}`;
+    }
+  }
+}
+
 export interface DispatchFeedItem {
   key: string;
   header?: string;
@@ -142,6 +172,8 @@ export function dispatchLineForEvent(world: WorldState, event: SimEvent): string
       return formatBuildStartedLine(world, event);
     case 'infraUpgraded':
       return formatInfraUpgradedLine(world, event);
+    case 'intelReport':
+      return formatIntelReportLine(world, event);
     case 'battle':
       return event.report.narrative || formatBattleNarrative(event.report, world, event.territoryId);
     case 'withdrawal':
@@ -223,11 +255,13 @@ export function groupEventsByBeat(world: WorldState, events: SimEvent[]): Dispat
     if (!('beatId' in event) || !event.beatId) continue;
     const beatId = event.beatId;
     const factionId =
-      'ownerId' in event
-        ? event.ownerId
-        : 'factionId' in event
-          ? event.factionId
-          : undefined;
+      'observerFaction' in event
+        ? event.observerFaction
+        : 'ownerId' in event
+          ? event.ownerId
+          : 'factionId' in event
+            ? event.factionId
+            : undefined;
     const decisionTickMs = 'decisionTickMs' in event ? event.decisionTickMs : undefined;
     if (!factionId || decisionTickMs === undefined) continue;
 

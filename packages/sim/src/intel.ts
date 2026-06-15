@@ -165,6 +165,9 @@ function recordSourceObservations(
  *
  * SPRINT-6: a unit that observes then dies in the same tick (e.g. arrival combat)
  * does not contribute to tick-end sight — use `recordScoutFinalObservations` on death.
+ *
+ * SPRINT-6: scouts in transit observe only at tick boundaries; sub-tick passes through
+ * small zones may not record.
  */
 export function recordIntelObservations(world: WorldState): IntelStore {
   const store: IntelStore = { ...ensureIntelStore(world) };

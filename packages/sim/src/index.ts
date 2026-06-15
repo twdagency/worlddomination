@@ -106,10 +106,18 @@ export {
   formatInfraUpgradedLine,
   formatIntentArrivalLine,
   formatIntentDepartureLine,
+  formatIntelReportLine,
   groupEventsByBeat,
   intentFromMoveStance,
   taggedOrderFields,
 } from './dispatch';
+export {
+  emitIntelReportEvents,
+  inferIntelReportIntent,
+  intelReportFromRecord,
+  resolveIntelReportVariant,
+} from './intelDispatch';
+export type { IntelReportVariant } from './intelDispatch';
 export type { DispatchBeatGroup, DispatchFeedItem } from './dispatch';
 export {
   compactDispatchFeed,

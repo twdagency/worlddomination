@@ -58,6 +58,7 @@ describe('movement', () => {
       count: 1,
       stanceOnArrival: 'hold',
       intent: 'defend',
+      source: 'direct',
       beatId: move.beatId,
       decisionTickMs: world.nowMs,
       importance: 'medium',

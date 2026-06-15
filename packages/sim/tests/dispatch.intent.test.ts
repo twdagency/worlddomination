@@ -51,6 +51,7 @@ describe('dispatch intent phrasing', () => {
       count: 8,
       stanceOnArrival: 'assault',
       intent: 'attack',
+      source: 'direct',
       ...tags,
     });
     expect(line).toBe('INTEL — Genghis forces advancing from London toward Paris');
@@ -68,6 +69,7 @@ describe('dispatch intent phrasing', () => {
       count: 4,
       stanceOnArrival: 'hold',
       intent: 'defend',
+      source: 'direct',
       ...taggedOrderFields('faction-steppe', world.nowMs, 'defend'),
     });
     expect(line).toBe('INTEL — Genghis forces repositioning to New York');
@@ -85,6 +87,7 @@ describe('dispatch intent phrasing', () => {
       count: 4,
       stanceOnArrival: 'secure',
       intent: 'expand',
+      source: 'direct',
       ...taggedOrderFields('faction-steppe', world.nowMs, 'expand'),
     });
     expect(line).toBe('INTEL — Genghis forces moving to claim New York');
@@ -99,6 +102,7 @@ describe('dispatch intent phrasing', () => {
       unitTypeId: 'levy-t1',
       count: 40,
       intent: 'build',
+      source: 'direct',
       ...taggedOrderFields('faction-britain', world.nowMs, 'build'),
     });
     const infraLine = formatInfraUpgradedLine(world, {
@@ -108,6 +112,7 @@ describe('dispatch intent phrasing', () => {
       factionId: 'faction-britain',
       infraLevel: 2,
       intent: 'build',
+      source: 'direct',
       ...taggedOrderFields('faction-britain', world.nowMs, 'build'),
     });
     expect(buildLine).toBe('INTEL — Construction begun at London (Elizabeth)');
@@ -127,6 +132,7 @@ describe('dispatch intent phrasing', () => {
       stanceOnArrival: 'assault',
       fromTerritoryId: LONDON.id,
       intent: 'attack',
+      source: 'direct',
       ...tags,
     });
     expect(line).toBe('INTEL — Genghis forces arrived at Paris — contact expected');

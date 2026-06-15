@@ -8,6 +8,7 @@ import {
   formatInfraUpgradedLine,
   formatIntentArrivalLine,
   formatIntentDepartureLine,
+  formatIntelReportLine,
   formatProductionNarrative,
   formatSecuredNarrative,
   formatWithdrawalNarrative,
@@ -138,6 +139,10 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
 
   if (event.kind === 'infraUpgraded') {
     return formatInfraUpgradedLine(world, event);
+  }
+
+  if (event.kind === 'intelReport') {
+    return formatIntelReportLine(world, event);
   }
 
   if (event.kind === 'battle') {

@@ -133,6 +133,7 @@ export function applyMoveOrders(
       count: moveCount,
       stanceOnArrival: order.stanceOnArrival,
       intent: order.intent,
+      source: 'direct',
       beatId: order.beatId,
       decisionTickMs: order.decisionTickMs,
       importance: departureImportance(order.intent),
@@ -203,6 +204,7 @@ export function resolveArrivals(
         stanceOnArrival,
         fromTerritoryId: unit.transit.fromId,
         intent: unit.transit.intent,
+        source: 'direct',
         beatId: unit.transit.beatId,
         decisionTickMs: unit.transit.decisionTickMs,
         importance: arrivalImportance(

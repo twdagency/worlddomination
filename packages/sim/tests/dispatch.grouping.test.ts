@@ -37,6 +37,7 @@ describe('dispatch beat grouping', () => {
     beatId,
     decisionTickMs,
     intent: 'attack' as const,
+    source: 'direct' as const,
   };
 
   const departure: SimEvent = {
@@ -62,6 +63,7 @@ describe('dispatch beat grouping', () => {
     intent: 'build',
     beatId: computeBeatId('faction-rome', decisionTickMs),
     decisionTickMs,
+    source: 'direct' as const,
   };
 
   it('groups events sharing beatId under one header', () => {
@@ -93,9 +95,27 @@ describe('dispatch beat grouping', () => {
     expect(feed[1].header).toBeDefined();
   });
 
-  it('computeBeatId is stable for faction + tick only', () => {
+  it('computeBeatId is stable for faction + tick + source', () => {
     expect(computeBeatId('faction-steppe', decisionTickMs)).toBe(beatId);
     expect(computeBeatId('faction-steppe', decisionTickMs + 1)).not.toBe(beatId);
     expect(computeBeatId('faction-rome', decisionTickMs)).not.toBe(beatId);
+    expect(computeBeatId('faction-steppe', decisionTickMs, 'scout')).not.toBe(beatId);
+  });
+
+  it('direct and scout beats group separately at the same tick', () => {
+    const scoutReport: SimEvent = {
+      kind: 'intelReport',
+      at: world.nowMs,
+      observerFaction: 'faction-steppe',
+      territoryId: PARIS.id,
+      source: 'scout',
+      variant: 'activity',
+      subjectFactionId: 'faction-rome',
+      intent: 'defend',
+      beatId: computeBeatId('faction-steppe', decisionTickMs, 'scout'),
+      decisionTickMs,
+    };
+    const groups = groupEventsByBeat(world, [departure, scoutReport]);
+    expect(groups).toHaveLength(2);
   });
 });

@@ -8,6 +8,7 @@ import {
   sidePower,
 } from './combat';
 import { recordDestroyedScoutIntel, ensureIntelStore } from './intel';
+import { emitIntelReportEvents } from './intelDispatch';
 import {
   formatBattleNarrative,
   formatSecuredNarrative,
@@ -122,12 +123,21 @@ export function resolveHostileArrival(
     const unitsBeforeWithdrawal = { ...units };
     units = applyUnitLosses(units, casualties.defenderLossesByUnit);
     units = applyUnitLosses(units, casualties.attackerLossesByUnit);
+    const intelBeforeWithdrawal = intel;
     intel = recordDestroyedScoutIntel(
       { ...world, units: unitsBeforeWithdrawal, territories, rng },
       unitsBeforeWithdrawal,
       units,
       at,
       intel,
+    );
+    events.push(
+      ...emitIntelReportEvents(
+        { ...world, units, territories, rng, intel },
+        intelBeforeWithdrawal,
+        intel,
+        at,
+      ),
     );
 
     const fleeingSurvivors = fleeing
@@ -204,12 +214,21 @@ export function resolveHostileArrival(
 
   units = applyUnitLosses(units, battle.attackerLossesByUnit);
   units = applyUnitLosses(units, battle.defenderLossesByUnit);
+  const intelBeforeBattle = intel;
   intel = recordDestroyedScoutIntel(
     { ...world, units: unitsBeforeBattle, territories, rng },
     unitsBeforeBattle,
     units,
     at,
     intel,
+  );
+  events.push(
+    ...emitIntelReportEvents(
+      { ...world, units, territories, rng, intel },
+      intelBeforeBattle,
+      intel,
+      at,
+    ),
   );
 
   if (battle.winnerId === attackerId) {

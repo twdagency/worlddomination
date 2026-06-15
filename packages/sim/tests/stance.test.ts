@@ -4,7 +4,7 @@ import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import type { SimEvent, WorldState } from '../src';
 
 const AS_OF = 1_700_000_000_000;
-const BEAT = { beatId: 'abc', decisionTickMs: AS_OF };
+const BEAT = { beatId: 'abc', decisionTickMs: AS_OF, source: 'direct' as const };
 
 function emptyWorld(): WorldState {
   return createSprint4World(AS_OF);
