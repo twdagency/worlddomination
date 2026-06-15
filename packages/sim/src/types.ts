@@ -126,6 +126,20 @@ export interface Territory {
 
 export type DiplomacyState = 'neutral' | 'allied' | 'at-war';
 
+export type PendingProposalType = 'alliance' | 'treaty';
+
+/** In-flight diplomatic offer awaiting accept/decline (typically AI → player). */
+export interface PendingProposal {
+  id: Id;
+  from: Id;
+  to: Id;
+  type: PendingProposalType;
+  scope?: { territoryIds: Id[] };
+  durationMs?: Millis;
+  proposedAt: Millis;
+  expiresAt: Millis;
+}
+
 export interface Policies {
   taxation: number;
   economyFocus: number;
@@ -350,6 +364,51 @@ export type SimEvent =
       importance?: DispatchImportance;
     }
   | {
+      kind: 'allianceProposed';
+      at: Millis;
+      proposalId: Id;
+      from: Id;
+      to: Id;
+      expiresAt: Millis;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allianceDeclined';
+      at: Millis;
+      from: Id;
+      to: Id;
+      declinedBy: Id;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'treatyProposed';
+      at: Millis;
+      proposalId: Id;
+      from: Id;
+      to: Id;
+      territoryIds: Id[];
+      expiresAt: Millis;
+      durationMs: Millis;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'treatyDeclined';
+      at: Millis;
+      from: Id;
+      to: Id;
+      declinedBy: Id;
+      territoryIds?: Id[];
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
       kind: 'buildBlocked';
       at: Millis;
       territoryId: Id;
@@ -427,6 +486,7 @@ export interface WorldState {
   alliances: AlliancePair[];
   treaties: Treaty[];
   reputation: Reputation;
+  pendingProposals: PendingProposal[];
   scenarioId: Id;
   victoryThreshold?: number;
 }

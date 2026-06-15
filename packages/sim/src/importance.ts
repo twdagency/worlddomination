@@ -23,17 +23,25 @@ export function arrivalImportance(
   return 'low';
 }
 
-const HIGH_KINDS = new Set<SimEvent['kind']>(['battle', 'withdrawal', 'secured']);
+const HIGH_KINDS = new Set<SimEvent['kind']>([
+  'battle',
+  'withdrawal',
+  'secured',
+  'allianceFormed',
+  'allianceBroken',
+  'allianceProposed',
+  'treatyProposed',
+]);
 
 const MEDIUM_KINDS = new Set<SimEvent['kind']>([
   'buildStarted',
   'infraUpgraded',
   'production',
   'buildBlocked',
-  'allianceFormed',
-  'allianceBroken',
   'treatyFormed',
   'treatyExpired',
+  'allianceDeclined',
+  'treatyDeclined',
   'intelReport',
 ]);
 

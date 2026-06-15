@@ -1,15 +1,13 @@
-import {
-  areAllied,
-  breakAlliance,
-  formAlliance,
-  getAlliancesFor,
-} from './diplomacy';
+import { getAlliancesFor } from './diplomacy';
 import { allianceBrokenEvent, allianceFormedEvent } from './diplomaticDispatch';
+import { expirePendingProposals, queueAllianceProposal } from './playerDiplomacy';
+import { hasPendingProposalBetween } from './pendingProposals';
 import {
   REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED,
   REPUTATION_PENALTY_ALLIANCE_BREAK_OBSERVER,
 } from './reputation';
 import type { DiplomaticPosture, Id, LeaderWeights, Millis, SimEvent, WorldState } from './types';
+import { areAllied, breakAlliance, formAlliance } from './diplomacy';
 
 export const RELATIVE_POWER_PEER_RATIO_MIN = 0.5;
 export const RELATIVE_POWER_PEER_RATIO_MAX = 2.0;
@@ -17,6 +15,7 @@ export const RELATIVE_POWER_PEER_RATIO_MAX = 2.0;
 export const ALLIANCE_PROPOSE_THRESHOLD = 55;
 export const ALLIANCE_ACCEPT_THRESHOLD = 50;
 export const ALLIANCE_BREAK_THRESHOLD = 60;
+export const TREATY_ACCEPT_THRESHOLD = 35;
 
 const SHARED_ENEMY_BONUS = 18;
 const PEER_POWER_BONUS = 22;
@@ -207,6 +206,31 @@ export function scoreAllianceBreak(world: WorldState, breaker: Id, ally: Id): nu
   return score;
 }
 
+/** Treaty acceptance — lower bar than alliances; scoped to one territory. */
+export function scoreTreatyAcceptance(
+  world: WorldState,
+  target: Id,
+  proposer: Id,
+  territoryId: Id,
+): number {
+  if (proposer === target || areAllied(world, target, proposer)) return 0;
+
+  const posture = leaderWeights(world, target).diplomaticPosture;
+  let score = 20 + postureAcceptModifier(posture) * 0.5;
+
+  const targetViewOfProposer = world.reputation[target]?.[proposer] ?? 0;
+  score += targetViewOfProposer * 0.5;
+
+  if (world.territories[territoryId]?.ownerId === target) {
+    score += 12;
+  }
+
+  score += sharedEnemies(world, target, proposer).length * (SHARED_ENEMY_BONUS * 0.5);
+  score += peerPowerBonus(world, target, proposer) * 0.5;
+
+  return score;
+}
+
 function allFactionIds(world: WorldState): Id[] {
   return Object.keys(world.factions).sort();
 }
@@ -232,6 +256,10 @@ export function applyAiDiplomaticDecisions(
   let current = world;
   const events: SimEvent[] = [];
 
+  const expired = expirePendingProposals(current, atMs);
+  current = expired.world;
+  events.push(...expired.events);
+
   for (const breaker of aiFactionIds(current)) {
     for (const ally of getAlliancesFor(current, breaker)) {
       const breakScore = scoreAllianceBreak(current, breaker, ally);
@@ -246,7 +274,7 @@ export function applyAiDiplomaticDecisions(
     let bestTarget: Id | null = null;
     let bestProposalScore = 0;
 
-    for (const target of allFactionIds(current)) {
+    for (const target of aiFactionIds(current)) {
       if (target === proposer) continue;
       const proposalScore = scoreAllianceProposal(current, proposer, target);
       if (proposalScore > bestProposalScore) {
@@ -261,6 +289,24 @@ export function applyAiDiplomaticDecisions(
     if (acceptanceScore >= ALLIANCE_ACCEPT_THRESHOLD) {
       current = formAlliance(current, proposer, bestTarget, atMs);
       events.push(allianceFormedEvent(proposer, bestTarget, atMs, proposer));
+    }
+  }
+
+  const playerId = Object.values(current.factions).find((faction) => faction.isPlayer)?.id;
+  if (playerId) {
+    for (const proposer of aiFactionIds(current)) {
+      if (areAllied(current, proposer, playerId)) continue;
+      if (hasPendingProposalBetween(current, proposer, playerId, 'alliance')) continue;
+
+      const proposalScore = scoreAllianceProposal(current, proposer, playerId);
+      if (proposalScore < ALLIANCE_PROPOSE_THRESHOLD) continue;
+
+      const acceptanceScore = scoreAllianceAcceptance(current, playerId, proposer);
+      if (acceptanceScore >= ALLIANCE_ACCEPT_THRESHOLD) {
+        const queued = queueAllianceProposal(current, proposer, playerId, atMs);
+        current = queued.world;
+        events.push(...queued.events);
+      }
     }
   }
 

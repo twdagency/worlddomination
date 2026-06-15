@@ -15,7 +15,7 @@ import {
 
 export { createInitialReputation } from './reputation';
 
-// SPRINT-6 PHASE-6: pending player proposals need a queue structure — design when DiplomacyScreen is wired.
+// SPRINT-6 PHASE-6: pending proposals queue in pendingProposals.ts + playerDiplomacy.ts.
 
 /** Lexicographic ordering for symmetric faction pairs (alliances, treaty parties). */
 export function normalizeFactionPair(factionA: Id, factionB: Id): [Id, Id] {
@@ -53,11 +53,13 @@ export function diplomacyDefaults(factions: Record<Id, Faction>): {
   alliances: AlliancePair[];
   treaties: Treaty[];
   reputation: Reputation;
+  pendingProposals: [];
 } {
   return {
     alliances: [],
     treaties: [],
     reputation: createInitialReputation(factions),
+    pendingProposals: [],
   };
 }
 
@@ -81,6 +83,7 @@ export function ensureWorldDiplomacy(world: WorldState): WorldState {
     alliances: sortAlliances(alliances),
     treaties: sortTreaties(treaties),
     reputation,
+    pendingProposals: world.pendingProposals ?? [],
   };
 }
 

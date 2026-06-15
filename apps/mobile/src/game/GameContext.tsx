@@ -11,6 +11,14 @@ import {
   skipToNextEvent,
 } from './actions';
 import {
+  playerAcceptProposal,
+  playerBreakAlliance,
+  playerDeclineProposal,
+  playerFactionId,
+  playerProposeAlliance,
+  playerProposeTreaty,
+} from 'sim';
+import {
   createWorldForScenario,
   DEFAULT_SCENARIO_ID,
   isDevScenarioId,
@@ -41,6 +49,11 @@ interface GameContextValue {
   issueUpgradeInfra: (territoryId: string) => Promise<void>;
   skipNext: () => Promise<void>;
   loadScenario: (id: DevScenarioId) => Promise<void>;
+  proposeAlliance: (targetFactionId: string) => Promise<void>;
+  breakAlliance: (allyFactionId: string) => Promise<void>;
+  proposeTreaty: (targetFactionId: string, territoryId: string) => Promise<void>;
+  acceptProposal: (proposalId: string) => Promise<void>;
+  declineProposal: (proposalId: string) => Promise<void>;
 }
 
 const GameContext = React.createContext<GameContextValue | null>(null);
@@ -204,6 +217,47 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     await Promise.all([saveScenarioId(id), saveWorld(fresh), saveDispatches([]), saveLastActiveMs(Date.now())]);
   };
 
+  const applyDiplomacy = async (
+    result: { world: WorldState; events: SimEvent[] },
+  ) => {
+    const merged = mergeDispatches(result.world, dispatches, result.events);
+    setWorld(result.world);
+    setDispatches(merged);
+    await persist(result.world, merged);
+  };
+
+  const proposeAlliance = async (targetFactionId: string) => {
+    const playerId = playerFactionId(world);
+    if (!playerId) return;
+    await applyDiplomacy(playerProposeAlliance(world, playerId, targetFactionId, world.nowMs));
+  };
+
+  const breakAlliance = async (allyFactionId: string) => {
+    const playerId = playerFactionId(world);
+    if (!playerId) return;
+    await applyDiplomacy(playerBreakAlliance(world, playerId, allyFactionId, world.nowMs));
+  };
+
+  const proposeTreaty = async (targetFactionId: string, territoryId: string) => {
+    const playerId = playerFactionId(world);
+    if (!playerId) return;
+    await applyDiplomacy(
+      playerProposeTreaty(world, playerId, targetFactionId, territoryId, world.nowMs),
+    );
+  };
+
+  const acceptProposal = async (proposalId: string) => {
+    const playerId = playerFactionId(world);
+    if (!playerId) return;
+    await applyDiplomacy(playerAcceptProposal(world, playerId, proposalId, world.nowMs));
+  };
+
+  const declineProposal = async (proposalId: string) => {
+    const playerId = playerFactionId(world);
+    if (!playerId) return;
+    await applyDiplomacy(playerDeclineProposal(world, playerId, proposalId, world.nowMs));
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -218,6 +272,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         issueUpgradeInfra: issueUpgrade,
         skipNext,
         loadScenario,
+        proposeAlliance,
+        breakAlliance,
+        proposeTreaty,
+        acceptProposal,
+        declineProposal,
       }}
     >
       {children}

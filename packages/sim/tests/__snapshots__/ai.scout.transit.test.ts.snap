@@ -8,11 +8,6 @@ exports[`transit-aware scout scoring > 72h cold-play #2 records post-transit obs
       "factionB": "faction-steppe",
       "formedAt": 1700921600000,
     },
-    {
-      "factionA": "faction-player",
-      "factionB": "faction-steppe",
-      "formedAt": 1700943200000,
-    },
   ],
   "genghisOrdersAtEnd": [],
   "scoutBuilds": 0,

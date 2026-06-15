@@ -3,15 +3,18 @@
 exports[`scenario sprint5 > locks 24h compact digest for cold-read regression 1`] = `
 "Caesar — tick 1700121600000
 INTEL — Caesar forces advancing from Bucharest toward Belgrade
-Genghis — tick 1700121600000
 INTEL — Genghis forces advancing from Sofia toward Belgrade
 INTEL — 4 construction projects begun (Elizabeth)
+Genghis — tick 1700121600000
+DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 INTEL — Genghis forces arrived at Belgrade — contact expected
 Bloody clash at Belgrade: Elizabeth prevailed over Genghis (3 casualties, enemy 6 fallen).
 Caesar — tick 1700143200000
 INTEL — Caesar forces advancing from Bucharest toward Belgrade
-Genghis — tick 1700143200000
 INTEL — Genghis forces advancing from Sofia toward Belgrade
+Genghis — tick 1700143200000
+DIPLOMACY — Genghis has broken alliance with Elizabeth.
 INTEL — Genghis forces arrived at Belgrade — contact expected
 Elizabeth at Belgrade — Genghis annihilated, no casualties.
 Caesar — tick 1700164800000

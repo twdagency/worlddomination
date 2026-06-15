@@ -146,6 +146,10 @@ presses multiple fronts and the player must ALLOCATE forces, not just relocate t
 
 - **Scout transit vs intel decay (Sprint 4 geography)**: Addressed in Sprint 6 Phase 4c via `transitAwareIntelMultiplier`. Fixture proof: near-hostile target is chosen; sprint4 capitals from Berlin remain disqualified.
 
+- **Intel dispatch phrasing polish (Sprint 6.5)**: Allied intel where observer-ally reports their own territory reads tautologically ("Genghis's forces report Genghis activity at Berlin"). Consider dropping redundant subject when `subjectFactionId === observerFaction`, or separate phrasing for own-state vs third-party reports.
+
+- **Treaty term richness (Sprint 6.5 candidate)**: Sprint 6 ships single-territory treaties with fixed 48h duration. Deferred: multi-territory scope, adjustable duration, source-type filtering, cadence options.
+
 
 Sprint 6 candidate: Scout intel richness
 

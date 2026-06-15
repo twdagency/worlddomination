@@ -2,11 +2,11 @@
 
 exports[`dispatch diplomacy cold-read snapshot > britain-player 72h digest includes diplomatic layer > sprint6-phase5-britain-72h-digest 1`] = `
 "Genghis — tick 1700921600000
-DIPLOMACY — Alliance formed with Genghis.
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700921600000
 INTEL — Caesar forces advancing from Paris toward London
-Elizabeth — tick 1700921600000
-INTEL — Genghis's forces report Genghis activity at Berlin
+INCOME — funding 3523.5
+DIPLOMACY — Alliance formed with Genghis.
 Caesar — tick 1700943200000
 INTEL — Caesar forces advancing from Paris toward London
 Elizabeth — tick 1700943200000
@@ -33,5 +33,5 @@ Caesar — tick 1701159200000
 INTEL — Infrastructure upgraded at Paris (Caesar)
 Elizabeth — tick 1701159200000
 INTEL — Genghis's forces report Genghis activity at Berlin
-INCOME — funding 44875.284244862334"
+INCOME — funding 41351.784244862334"
 `;

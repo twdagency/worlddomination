@@ -3,6 +3,7 @@ import {
   buildDispatchFeed,
   compactDispatchFeed,
   COMPACTION_THRESHOLD_MS,
+  dispatchLineForEvent,
   filterDispatchesForFaction,
   formatBattleNarrative,
   formatBuildStartedLine,
@@ -131,6 +132,22 @@ function formatIncomeLine(
 }
 
 export function formatDispatchLine(event: SimEvent, world: WorldState): string {
+  if (
+    event.kind === 'allianceFormed' ||
+    event.kind === 'allianceBroken' ||
+    event.kind === 'treatyFormed' ||
+    event.kind === 'treatyExpired' ||
+    event.kind === 'allianceProposed' ||
+    event.kind === 'allianceDeclined' ||
+    event.kind === 'treatyProposed' ||
+    event.kind === 'treatyDeclined'
+  ) {
+    const playerId = world.factions['faction-player']?.isPlayer
+      ? 'faction-player'
+      : Object.values(world.factions).find((faction) => faction.isPlayer)?.id;
+    return dispatchLineForEvent(world, event, playerId);
+  }
+
   if (event.kind === 'departure') {
     return formatIntentDepartureLine(world, event);
   }

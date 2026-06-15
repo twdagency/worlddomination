@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`player diplomacy cold-play > player proposes to Caesar, breaks Genghis alliance, reputation shifts in digest > sprint6-phase6-player-diplomacy-cold-play 1`] = `
+{
+  "breakDigest": "Elizabeth — tick 1700900000000
+DIPLOMACY — Elizabeth has broken alliance with Genghis.",
+  "caesarDigest": "Caesar — tick 1700900000000
+DIPLOMACY — Caesar declined alliance with Elizabeth.",
+  "caesarProposalAccepted": false,
+  "caesarProposalDeclined": true,
+  "genghisReputationAfterBreak": -40,
+  "genghisReputationLabel": "Wary",
+}
+`;

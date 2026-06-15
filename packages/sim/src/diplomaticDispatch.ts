@@ -2,6 +2,8 @@ import { computeBeatId } from './dispatch';
 import { normalizeFactionPair } from './diplomacy';
 import type { Id, Millis, SimEvent, TerritorySnapshot, Treaty, WorldState } from './types';
 
+export const DEFAULT_TREATY_DURATION_MS = 48 * 3_600_000;
+
 export function garrisonDescriptor(snapshot: TerritorySnapshot): string {
   const strength = snapshot.visibleEnemyGarrison + snapshot.garrisonCount + snapshot.inTransitCount;
   if (strength > 50) return 'heavy';
@@ -22,7 +24,7 @@ export function allianceFormedEvent(
     initiatingFaction,
     beatId: computeBeatId(initiatingFaction, atMs, 'direct'),
     decisionTickMs: atMs,
-    importance: 'medium',
+    importance: 'high',
   };
 }
 
@@ -35,7 +37,7 @@ export function allianceBrokenEvent(breaker: Id, betrayed: Id, atMs: Millis): Si
     parties: normalizeFactionPair(breaker, betrayed),
     beatId: computeBeatId(breaker, atMs, 'direct'),
     decisionTickMs: atMs,
-    importance: 'medium',
+    importance: 'high',
   };
 }
 
@@ -62,6 +64,88 @@ export function treatyExpiredEvent(treaty: Treaty, atMs: Millis): SimEvent {
     parties: treaty.parties,
     territoryIds: treaty.scope.territoryIds,
     beatId: computeBeatId(treaty.parties[0], atMs, 'treaty'),
+    decisionTickMs: atMs,
+    importance: 'medium',
+  };
+}
+
+export function allianceProposedEvent(
+  proposalId: Id,
+  from: Id,
+  to: Id,
+  atMs: Millis,
+  expiresAt: Millis,
+): SimEvent {
+  return {
+    kind: 'allianceProposed',
+    at: atMs,
+    proposalId,
+    from,
+    to,
+    expiresAt,
+    beatId: computeBeatId(from, atMs, 'direct'),
+    decisionTickMs: atMs,
+    importance: 'high',
+  };
+}
+
+export function allianceDeclinedEvent(
+  from: Id,
+  to: Id,
+  declinedBy: Id,
+  atMs: Millis,
+): SimEvent {
+  return {
+    kind: 'allianceDeclined',
+    at: atMs,
+    from,
+    to,
+    declinedBy,
+    beatId: computeBeatId(declinedBy, atMs, 'direct'),
+    decisionTickMs: atMs,
+    importance: 'medium',
+  };
+}
+
+export function treatyProposedEvent(
+  proposalId: Id,
+  from: Id,
+  to: Id,
+  territoryIds: Id[],
+  atMs: Millis,
+  expiresAt: Millis,
+  durationMs: Millis,
+): SimEvent {
+  return {
+    kind: 'treatyProposed',
+    at: atMs,
+    proposalId,
+    from,
+    to,
+    territoryIds,
+    expiresAt,
+    durationMs,
+    beatId: computeBeatId(from, atMs, 'treaty'),
+    decisionTickMs: atMs,
+    importance: 'high',
+  };
+}
+
+export function treatyDeclinedEvent(
+  from: Id,
+  to: Id,
+  declinedBy: Id,
+  atMs: Millis,
+  territoryIds?: Id[],
+): SimEvent {
+  return {
+    kind: 'treatyDeclined',
+    at: atMs,
+    from,
+    to,
+    declinedBy,
+    territoryIds,
+    beatId: computeBeatId(declinedBy, atMs, 'treaty'),
     decisionTickMs: atMs,
     importance: 'medium',
   };

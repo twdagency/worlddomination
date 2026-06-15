@@ -133,22 +133,50 @@ export {
   ALLIANCE_PROPOSE_THRESHOLD,
   RELATIVE_POWER_PEER_RATIO_MAX,
   RELATIVE_POWER_PEER_RATIO_MIN,
+  TREATY_ACCEPT_THRESHOLD,
   applyAiDiplomaticDecisions,
   factionMilitaryPower,
   isEnemyOf,
   scoreAllianceAcceptance,
   scoreAllianceBreak,
   scoreAllianceProposal,
+  scoreTreatyAcceptance,
   sharedEnemies,
 } from './diplomaticAi';
 export {
   allianceBrokenEvent,
+  allianceDeclinedEvent,
   allianceFormedEvent,
+  allianceProposedEvent,
+  DEFAULT_TREATY_DURATION_MS,
   expiredTreatyEvents,
   garrisonDescriptor,
+  treatyDeclinedEvent,
   treatyExpiredEvent,
   treatyFormedEvent,
+  treatyProposedEvent,
 } from './diplomaticDispatch';
+export {
+  diplomaticRelationshipStatus,
+} from './diplomacyDisplay';
+export type { DiplomaticRelationshipStatus } from './diplomacyDisplay';
+export {
+  expirePendingProposals,
+  playerAcceptProposal,
+  playerBreakAlliance,
+  playerDeclineProposal,
+  playerProposeAlliance,
+  playerProposeTreaty,
+  queueAllianceProposal,
+} from './playerDiplomacy';
+export {
+  deterministicProposalId,
+  hasPendingProposalBetween,
+  pendingProposalsForFaction,
+  proposalExpiresAt,
+} from './pendingProposals';
+export { reputationCategory } from './reputationDisplay';
+export type { ReputationCategory } from './reputationDisplay';
 export {
   areAllied,
   breakAlliance,

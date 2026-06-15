@@ -10,6 +10,7 @@ import {
   formTreaty,
   groupEventsByBeat,
   isDispatchVisibleToFaction,
+  playerAcceptProposal,
   playerFactionId,
   recordAlliedObservations,
   recordIntelObservations,
@@ -146,19 +147,35 @@ describe('dispatch diplomacy', () => {
   });
 
   it('72h cold-play as Britain includes alliance formation in digest', () => {
-    const { events, world } = advanceTo(
-      britainPlayerWorld(createSprint4World(START_MS)),
-      START_MS + SEVENTY_TWO_HOURS_MS,
-    );
-    const playerId = playerFactionId(world);
-    const digest = renderDigestText(world, events, undefined, playerId);
+    let world = britainPlayerWorld(createSprint4World(START_MS));
+    let allEvents: SimEvent[] = [];
+    const firstTick = START_MS + 6 * 3_600_000;
+    const step1 = advanceTo(world, firstTick);
+    world = step1.world;
+    allEvents.push(...step1.events);
 
-    expect(events.some((event) => event.kind === 'allianceFormed')).toBe(true);
+    const proposal = world.pendingProposals.find(
+      (row) => row.from === GENGHIS && row.to === BRITAIN,
+    );
+    if (proposal) {
+      const accepted = playerAcceptProposal(world, BRITAIN, proposal.id, world.nowMs);
+      world = accepted.world;
+      allEvents.push(...accepted.events);
+    }
+
+    const step2 = advanceTo(world, START_MS + SEVENTY_TWO_HOURS_MS);
+    world = step2.world;
+    allEvents.push(...step2.events);
+
+    const playerId = playerFactionId(world);
+    const digest = renderDigestText(world, allEvents, undefined, playerId);
+
+    expect(allEvents.some((event) => event.kind === 'allianceFormed')).toBe(true);
     expect(digest).toContain('DIPLOMACY');
     expect(digest).toContain('Alliance formed with Genghis');
     expect(digest).toContain("Genghis's forces report");
     expect(digest).toContain('Caesar forces advancing');
-    expect(filterDispatchesForFaction(world, events, PLAYER).some((e) => e.kind === 'treatyFormed')).toBe(
+    expect(filterDispatchesForFaction(world, allEvents, CAESAR).some((e) => e.kind === 'treatyFormed')).toBe(
       false,
     );
   });
@@ -194,11 +211,27 @@ describe('dispatch diplomacy', () => {
 
 describe('dispatch diplomacy cold-read snapshot', () => {
   it('britain-player 72h digest includes diplomatic layer', () => {
-    const { events, world } = advanceTo(
-      britainPlayerWorld(createSprint4World(START_MS)),
-      START_MS + SEVENTY_TWO_HOURS_MS,
+    let world = britainPlayerWorld(createSprint4World(START_MS));
+    let allEvents: SimEvent[] = [];
+    const firstTick = START_MS + 6 * 3_600_000;
+    const step1 = advanceTo(world, firstTick);
+    world = step1.world;
+    allEvents.push(...step1.events);
+
+    const proposal = world.pendingProposals.find(
+      (row) => row.from === GENGHIS && row.to === BRITAIN,
     );
-    const digest = renderDigestText(world, events, undefined, playerFactionId(world));
+    if (proposal) {
+      const accepted = playerAcceptProposal(world, BRITAIN, proposal.id, world.nowMs);
+      world = accepted.world;
+      allEvents.push(...accepted.events);
+    }
+
+    const step2 = advanceTo(world, START_MS + SEVENTY_TWO_HOURS_MS);
+    world = step2.world;
+    allEvents.push(...step2.events);
+
+    const digest = renderDigestText(world, allEvents, undefined, playerFactionId(world));
     expect(digest).toMatchSnapshot('sprint6-phase5-britain-72h-digest');
   });
 });
