@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { tick } from '../src/tick';
 import { MS_PER_DAY } from '../src/constants';
+import { diplomacyDefaults } from '../src/diplomacy';
 import type { WorldState } from '../src/types';
 
 function makeWorld(): WorldState {
   const start = 0;
+  const factions = {};
   return {
     nowMs: start,
     day: 1,
@@ -12,10 +14,11 @@ function makeWorld(): WorldState {
     rng: { seed: 12345 },
     territories: {},
     units: {},
-    factions: {},
+    factions,
     leaders: {},
     unitTypes: {},
     intel: {},
+    ...diplomacyDefaults(factions),
     scenarioId: 'test',
   };
 }

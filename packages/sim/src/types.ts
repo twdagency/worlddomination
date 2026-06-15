@@ -337,6 +337,25 @@ export interface IntelRecord {
 
 export type IntelStore = Record<Id, IntelRecord[]>;
 
+/** Symmetric alliance between two factions. Stored with lexicographically ordered pair. */
+export interface AlliancePair {
+  factionA: Id;
+  factionB: Id;
+  formedAt: Millis;
+}
+
+/** Time-bounded information-sharing agreement scoped to specific territories. */
+export interface Treaty {
+  id: Id;
+  parties: [Id, Id];
+  scope: { territoryIds: Id[] };
+  formedAt: Millis;
+  expiresAt: Millis;
+}
+
+/** reputation[observer][subject] — how observer views subject. Materialized at world creation. */
+export type Reputation = Record<Id, Record<Id, number>>;
+
 export type TerritoryVisibilityState =
   | { state: 'live'; snapshot: TerritorySnapshot; sources: IntelSource[] }
   | {
@@ -358,6 +377,9 @@ export interface WorldState {
   leaders: Record<Id, Leader>;
   unitTypes: Record<Id, UnitType>;
   intel: IntelStore;
+  alliances: AlliancePair[];
+  treaties: Treaty[];
+  reputation: Reputation;
   scenarioId: Id;
   victoryThreshold?: number;
 }

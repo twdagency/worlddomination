@@ -116,6 +116,21 @@ export {
 } from './dispatch';
 export { formatIntelSourceLabel } from './intelDisplay';
 export {
+  areAllied,
+  breakAlliance,
+  createInitialReputation,
+  diplomacyDefaults,
+  ensureWorldDiplomacy,
+  formAlliance,
+  formTreaty,
+  getActiveTreaties,
+  getAlliancesFor,
+  getTreatiesBetween,
+  normalizeFactionPair,
+  pruneExpiredTreaties,
+} from './diplomacy';
+export type { FormTreatyParams } from './diplomacy';
+export {
   emitIntelReportEvents,
   inferIntelReportIntent,
   intelReportFromRecord,

@@ -1,4 +1,5 @@
 import type { Faction, Leader, Territory, Unit, UnitType, WorldState } from '../src/types';
+import { diplomacyDefaults } from '../src/diplomacy';
 
 export const COMBAT_UNIT_TYPES: Record<string, UnitType> = {
   'levy-t1': {
@@ -131,6 +132,10 @@ export function makeCombatWorld(overrides: Partial<WorldState> = {}): WorldState
     leaders: { [BASELINE.id]: BASELINE },
     unitTypes: COMBAT_UNIT_TYPES,
     intel: {},
+    ...diplomacyDefaults({
+      'faction-attacker': ATTACKER_FACTION,
+      'faction-defender': DEFENDER_FACTION,
+    }),
     scenarioId: 'combat-test',
     ...overrides,
   };
