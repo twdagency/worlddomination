@@ -37,7 +37,7 @@ export function playerVisibleTerritories(world: WorldState): Territory[] {
 }
 
 export function playerOwnedTerritories(world: WorldState): Territory[] {
-  return playerVisibleTerritories(world).filter(
+  return Object.values(world.territories).filter(
     (territory) => territory.ownerId === PLAYER_FACTION_ID,
   );
 }

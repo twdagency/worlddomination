@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   canBuild,
@@ -10,7 +10,7 @@ import {
 import type { ResourceId, UnitType } from 'sim';
 import { UNIT_TYPES } from 'shared';
 import { useGame } from '../game/GameContext';
-import { getPlayerVisibleTerritory, playerOwnedTerritories, PLAYER_FACTION_ID } from '../game/playerView';
+import { playerOwnedTerritories, PLAYER_FACTION_ID } from '../game/playerView';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -43,9 +43,19 @@ export function TerritoryScreen() {
     [world],
   );
 
-  const [territoryId, setTerritoryId] = useState(playerTerritories[0]?.id ?? '');
+  const [territoryId, setTerritoryId] = useState('');
 
-  const territory = getPlayerVisibleTerritory(world, territoryId);
+  useEffect(() => {
+    if (playerTerritories.length === 0) {
+      setTerritoryId('');
+      return;
+    }
+    setTerritoryId((prev) =>
+      playerTerritories.some((t) => t.id === prev) ? prev : playerTerritories[0].id,
+    );
+  }, [playerTerritories]);
+
+  const territory = playerTerritories.find((t) => t.id === territoryId);
   const maxTier = territory ? maxBuildableTier(territory.infraLevel) : 0;
   const facilityLabel = territory && territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
 
@@ -59,7 +69,7 @@ export function TerritoryScreen() {
     );
   }, [world, territory, territoryId]);
 
-  if (!territory || !faction) {
+  if (playerTerritories.length === 0 || !territory || !faction) {
     return (
       <View style={styles.container}>
         <Text style={styles.muted}>No territories under your control.</Text>
