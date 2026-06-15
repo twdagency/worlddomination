@@ -66,4 +66,19 @@ export {
   formatSecuredNarrative,
   formatWithdrawalNarrative,
 } from './reports';
+export {
+  assertActionableOrderTagged,
+  beatHeader,
+  buildDispatchFeed,
+  computeBeatId,
+  formatBuildStartedLine,
+  formatInfraUpgradedLine,
+  formatIntentArrivalLine,
+  formatIntentDepartureLine,
+  groupEventsByBeat,
+  intentFromMoveStance,
+  renderDigestText,
+  taggedOrderFields,
+} from './dispatch';
+export type { DispatchBeatGroup, DispatchFeedItem } from './dispatch';
 export { resolveHostileArrival } from './arrivalCombat';

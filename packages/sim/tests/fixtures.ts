@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { Faction, Leader, Territory, Unit, UnitType, WorldState } from '../src/types';
+import type { Faction, Id, Leader, Order, OrderIntent, Territory, Unit, UnitType, WorldState } from '../src/types';
+import { intentFromMoveStance, taggedOrderFields } from '../src/dispatch';
 import { LEADERS_BY_ID } from '../../shared/src/leaders';
 import { UNIT_TYPES_BY_ID } from '../../shared/src/units';
 
@@ -105,4 +106,34 @@ export function withSecondUnit(world: WorldState, unit: Unit): WorldState {
     ...world,
     units: { ...world.units, [unit.id]: unit },
   };
+}
+
+const DEFAULT_FACTION = 'faction-player';
+
+export function tagOrder(
+  world: WorldState,
+  order: Omit<Order, 'intent' | 'beatId' | 'decisionTickMs'>,
+  factionId: Id = DEFAULT_FACTION,
+  decisionTickMs: number = world.nowMs,
+  intent?: OrderIntent,
+): Order {
+  if (order.kind === 'move') {
+    const unit = world.units[order.unitId];
+    const resolvedIntent =
+      intent ??
+      intentFromMoveStance(
+        order.stanceOnArrival,
+        unit?.ownerId ?? factionId,
+        order.toTerritoryId,
+        world,
+      );
+    return { ...order, ...taggedOrderFields(factionId, decisionTickMs, resolvedIntent) };
+  }
+  if (order.kind === 'build' || order.kind === 'upgradeInfra') {
+    return {
+      ...order,
+      ...taggedOrderFields(factionId, decisionTickMs, intent ?? 'build'),
+    };
+  }
+  return order as Order;
 }

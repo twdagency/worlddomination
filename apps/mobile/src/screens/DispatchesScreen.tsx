@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useGame } from '../game/GameContext';
-import { formatDispatchLine, isDispatchDetailEvent, isTimestampedDispatch } from '../game/actions';
+import { formatDispatchLine, buildDispatchFeed, isDispatchDetailEvent, isTimestampedDispatch } from '../game/actions';
 import { BattleDetailCard } from '../components/BattleDetailCard';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { TerminalCard } from '../components/TerminalCard';
@@ -12,7 +12,7 @@ function dispatchAccent(kind: string): string {
   if (kind === 'battle') return terminal.danger;
   if (kind === 'withdrawal') return terminal.warning;
   if (kind === 'secured') return terminal.accent;
-  if (kind === 'income' || kind === 'production') return terminal.accent;
+  if (kind === 'income' || kind === 'production' || kind === 'buildStarted' || kind === 'infraUpgraded') return terminal.accent;
   if (kind === 'buildBlocked') return terminal.warning;
   return terminal.text;
 }
@@ -21,7 +21,8 @@ export function DispatchesScreen() {
   const { world, dispatches, awayMs } = useGame();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const faction = world.factions['faction-player'];
-  const recent = [...dispatches].filter(isTimestampedDispatch).reverse();
+  const recent = [...dispatches].filter(isTimestampedDispatch);
+  const feed = buildDispatchFeed(world, recent, formatDispatchLine).reverse();
 
   return (
     <View style={styles.container}>
@@ -37,8 +38,8 @@ export function DispatchesScreen() {
       {__DEV__ && <DevTimeSkip />}
 
       <FlatList
-        data={recent}
-        keyExtractor={(_, i) => String(i)}
+        data={feed}
+        keyExtractor={(item) => item.key}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <TerminalCard>
@@ -47,7 +48,7 @@ export function DispatchesScreen() {
         }
         renderItem={({ item, index }) => {
           const isExpanded = expandedIndex === index;
-          const showDetail = isDispatchDetailEvent(item) && item.kind === 'battle';
+          const showDetail = isDispatchDetailEvent(item.event) && item.event.kind === 'battle';
 
           return (
             <Pressable
@@ -56,14 +57,15 @@ export function DispatchesScreen() {
               }
             >
               <TerminalCard>
-                <Text style={styles.timestamp}>{formatDateTime(item.at)}</Text>
-                <Text style={[styles.line, { color: dispatchAccent(item.kind) }]}>
-                  {formatDispatchLine(item, world)}
+                {item.header && <Text style={styles.beatHeader}>{item.header}</Text>}
+                <Text style={styles.timestamp}>{formatDateTime(item.event.at)}</Text>
+                <Text style={[styles.line, { color: dispatchAccent(item.event.kind) }]}>
+                  {item.line}
                 </Text>
-                {isExpanded && item.kind === 'battle' && (
+                {isExpanded && item.event.kind === 'battle' && (
                   <BattleDetailCard
-                    report={item.report}
-                    territoryId={item.territoryId}
+                    report={item.event.report}
+                    territoryId={item.event.territoryId}
                     world={world}
                   />
                 )}
@@ -106,6 +108,15 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 11,
     marginBottom: 6,
+  },
+  beatHeader: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   line: {
     fontFamily: terminal.mono,

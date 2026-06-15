@@ -279,6 +279,17 @@ export function applyBuildOrders(
         ),
         buildQueue: [...(territory!.buildQueue ?? []), queueItem],
       };
+      events.push({
+        kind: 'buildStarted',
+        at: world.nowMs,
+        territoryId: order.territoryId,
+        factionId,
+        unitTypeId: order.unitTypeId,
+        count: order.count,
+        intent: order.intent,
+        beatId: order.beatId,
+        decisionTickMs: order.decisionTickMs,
+      });
       continue;
     }
 
@@ -312,10 +323,21 @@ export function applyBuildOrders(
       }
 
       factions[factionId] = { ...faction, funding: faction.funding - cost };
+      const infraLevel = territory.infraLevel + 1;
       territories[order.territoryId] = {
         ...territory,
-        infraLevel: territory.infraLevel + 1,
+        infraLevel,
       };
+      events.push({
+        kind: 'infraUpgraded',
+        at: world.nowMs,
+        territoryId: order.territoryId,
+        factionId,
+        infraLevel,
+        intent: order.intent,
+        beatId: order.beatId,
+        decisionTickMs: order.decisionTickMs,
+      });
     }
   }
 

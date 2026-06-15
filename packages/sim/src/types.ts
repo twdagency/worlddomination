@@ -69,6 +69,8 @@ export interface UnitType {
   capacity?: number;
 }
 
+export type OrderIntent = 'defend' | 'attack' | 'expand' | 'build';
+
 export interface TransitOrder {
   fromId: Id;
   toCoord: Coord;
@@ -77,6 +79,9 @@ export interface TransitOrder {
   arriveMs: Millis;
   distanceKm: number;
   stanceOnArrival: 'assault' | 'secure' | 'hold';
+  intent: OrderIntent;
+  beatId: string;
+  decisionTickMs: Millis;
 }
 
 export interface Unit {
@@ -138,9 +143,26 @@ export type Order =
       unitId: Id;
       toTerritoryId: Id;
       stanceOnArrival: TransitOrder['stanceOnArrival'];
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     }
-  | { kind: 'build'; territoryId: Id; unitTypeId: Id; count: number }
-  | { kind: 'upgradeInfra'; territoryId: Id }
+  | {
+      kind: 'build';
+      territoryId: Id;
+      unitTypeId: Id;
+      count: number;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
+  | {
+      kind: 'upgradeInfra';
+      territoryId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
   | { kind: 'setPolicy'; factionId: Id; policies: Partial<Policies> }
   | { kind: 'setStance'; unitId: Id; stance: Unit['stance'] }
   | { kind: 'eventChoice'; eventId: Id; choiceId: Id }
@@ -170,6 +192,9 @@ export type SimEvent =
       unitTypeId: Id;
       count: number;
       stanceOnArrival: TransitOrder['stanceOnArrival'];
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     }
   | {
       kind: 'arrival';
@@ -181,6 +206,9 @@ export type SimEvent =
       count: number;
       stanceOnArrival: TransitOrder['stanceOnArrival'];
       fromTerritoryId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     }
   | { kind: 'battle'; at: Millis; territoryId: Id; report: BattleReport }
   | {
@@ -216,6 +244,27 @@ export type SimEvent =
       unitTypeId: Id;
       count: number;
       factionId: Id;
+    }
+  | {
+      kind: 'buildStarted';
+      at: Millis;
+      territoryId: Id;
+      factionId: Id;
+      unitTypeId: Id;
+      count: number;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
+  | {
+      kind: 'infraUpgraded';
+      at: Millis;
+      territoryId: Id;
+      factionId: Id;
+      infraLevel: number;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     }
   | { kind: 'buildBlocked'; at: Millis; territoryId: Id; reason: string; missing?: ResourceId }
   | { kind: 'procedural'; at: Millis; eventId: Id; templateId: Id; payload: unknown }

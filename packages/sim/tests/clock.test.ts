@@ -3,8 +3,12 @@ import { advanceTo, nextEventMs, unitPosition } from '../src/clock';
 import { haversineKm } from '../src/geo';
 import { tick } from '../src/tick';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
-import { LONDON, NEW_YORK, PARIS, makeWorld, withSecondUnit } from './fixtures';
+import { LONDON, NEW_YORK, PARIS, makeWorld, tagOrder, withSecondUnit } from './fixtures';
 import type { Unit } from '../src/types';
+
+function holdMove(world: ReturnType<typeof makeWorld>, unitId: string, toTerritoryId: string) {
+  return tagOrder(world, { kind: 'move', unitId, toTerritoryId, stanceOnArrival: 'hold' });
+}
 
 describe('clock', () => {
   it('advanceTo does not mutate the input world', () => {
@@ -19,22 +23,14 @@ describe('clock', () => {
 
   it('nextEventMs returns the soonest arrival', () => {
     const world = makeWorld();
-    const { world: afterMove } = tick(
-      world,
-      [{ kind: 'move', unitId: 'unit-1', toTerritoryId: NEW_YORK.id, stanceOnArrival: 'hold' }],
-      0,
-    );
+    const { world: afterMove } = tick(world, [holdMove(world, 'unit-1', NEW_YORK.id)], 0);
     const arriveMs = afterMove.units['unit-1'].transit!.arriveMs;
     expect(nextEventMs(afterMove)).toBe(arriveMs);
   });
 
   it('advanceTo jumps exactly to the next arrival via time-skip', () => {
     const world = makeWorld();
-    const { world: afterMove } = tick(
-      world,
-      [{ kind: 'move', unitId: 'unit-1', toTerritoryId: NEW_YORK.id, stanceOnArrival: 'hold' }],
-      0,
-    );
+    const { world: afterMove } = tick(world, [holdMove(world, 'unit-1', NEW_YORK.id)], 0);
     const target = nextEventMs(afterMove)!;
     const { world: arrived, events } = advanceTo(afterMove, target);
 
@@ -55,8 +51,8 @@ describe('clock', () => {
     const world = withSecondUnit(makeWorld(), unit2);
 
     const ordersA = [
-      { kind: 'move' as const, unitId: 'unit-1', toTerritoryId: NEW_YORK.id, stanceOnArrival: 'hold' as const },
-      { kind: 'move' as const, unitId: 'unit-2', toTerritoryId: PARIS.id, stanceOnArrival: 'hold' as const },
+      holdMove(world, 'unit-1', NEW_YORK.id),
+      holdMove(world, 'unit-2', PARIS.id),
     ];
     const ordersB = [ordersA[1], ordersA[0]];
 
@@ -80,11 +76,7 @@ describe('clock', () => {
 
   it('unitPosition interpolates along route while in transit', () => {
     const world = makeWorld();
-    const { world: moving } = tick(
-      world,
-      [{ kind: 'move', unitId: 'unit-1', toTerritoryId: NEW_YORK.id, stanceOnArrival: 'hold' }],
-      0,
-    );
+    const { world: moving } = tick(world, [holdMove(world, 'unit-1', NEW_YORK.id)], 0);
     const transit = moving.units['unit-1'].transit!;
     const midMs = moving.nowMs + (transit.arriveMs - transit.departMs) / 2;
 

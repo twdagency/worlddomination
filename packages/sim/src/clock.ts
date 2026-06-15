@@ -63,7 +63,7 @@ export function advanceTo(
     const elapsed = stepTarget - current.nowMs;
     if (elapsed <= 0) break;
 
-    const orders = isAiDecisionMs(current, stepTarget) ? collectAiOrders(current) : [];
+    const orders = isAiDecisionMs(current, stepTarget) ? collectAiOrders(current, stepTarget) : [];
     const result = tick(current, orders, elapsed);
     current = result.world;
     allEvents.push(...result.events);
@@ -98,7 +98,18 @@ export function previewMoveEtaMs(
   if (!unit || unit.transit || !unit.locationId) return null;
   if (unit.locationId === toTerritoryId) return null;
 
-  const transit = buildTransit(world, unit, toTerritoryId, 'hold', world.nowMs);
+  const transit = buildTransit(
+    world,
+    unit,
+    toTerritoryId,
+    {
+      stanceOnArrival: 'hold',
+      intent: 'defend',
+      beatId: 'preview',
+      decisionTickMs: world.nowMs,
+    },
+    world.nowMs,
+  );
   if (!transit) return null;
 
   return {

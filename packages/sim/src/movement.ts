@@ -1,7 +1,14 @@
 import { resolveHostileArrival } from './arrivalCombat';
 import { DEFAULT_TRAIT, MS_PER_HOUR } from './constants';
 import { haversineKm } from './geo';
-import type { Id, Millis, Order, SimEvent, TraitKey, TransitOrder, Unit, WorldState } from './types';
+import type { Id, Millis, Order, OrderIntent, SimEvent, TraitKey, TransitOrder, Unit, WorldState } from './types';
+
+type TransitOrderFields = {
+  stanceOnArrival: TransitOrder['stanceOnArrival'];
+  intent: OrderIntent;
+  beatId: string;
+  decisionTickMs: Millis;
+};
 
 function speedTraitKey(unitTypeDomain: string): TraitKey {
   if (unitTypeDomain === 'sea') return 'seaSpeedMult';
@@ -31,7 +38,7 @@ export function buildTransit(
   world: WorldState,
   unit: Unit,
   toTerritoryId: Id,
-  stanceOnArrival: TransitOrder['stanceOnArrival'],
+  order: TransitOrderFields,
   departMs: Millis,
 ): TransitOrder | null {
   const fromTerritoryId = unit.locationId;
@@ -57,7 +64,10 @@ export function buildTransit(
     departMs,
     arriveMs,
     distanceKm,
-    stanceOnArrival,
+    stanceOnArrival: order.stanceOnArrival,
+    intent: order.intent,
+    beatId: order.beatId,
+    decisionTickMs: order.decisionTickMs,
   };
 }
 
@@ -80,7 +90,7 @@ export function applyMoveOrders(
       world,
       unit,
       order.toTerritoryId,
-      order.stanceOnArrival,
+      order,
       world.nowMs,
     );
     if (!transit || !unit.locationId) continue;
@@ -102,6 +112,9 @@ export function applyMoveOrders(
       unitTypeId: unit.typeId,
       count: unit.count,
       stanceOnArrival: order.stanceOnArrival,
+      intent: order.intent,
+      beatId: order.beatId,
+      decisionTickMs: order.decisionTickMs,
     });
   }
 
@@ -164,6 +177,9 @@ export function resolveArrivals(
         count: unit.count,
         stanceOnArrival,
         fromTerritoryId: unit.transit.fromId,
+        intent: unit.transit.intent,
+        beatId: unit.transit.beatId,
+        decisionTickMs: unit.transit.decisionTickMs,
       },
       ...resolution.events,
     );

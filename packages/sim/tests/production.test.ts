@@ -7,7 +7,7 @@ import {
   maxBuildableTier,
   resolveProductionCompletions,
 } from '../src/production';
-import { LONDON, makeWorld } from './fixtures';
+import { LONDON, makeWorld, tagOrder } from './fixtures';
 
 describe('production', () => {
   it('infra level gates buildable tiers', () => {
@@ -78,7 +78,7 @@ describe('production', () => {
     });
 
     const { factions, territories } = applyBuildOrders(world, [
-      { kind: 'build', territoryId: LONDON.id, unitTypeId: 'infantry-t2', count: 1 },
+      tagOrder(world, { kind: 'build', territoryId: LONDON.id, unitTypeId: 'infantry-t2', count: 1 }),
     ]);
 
     expect(factions['faction-player'].funding).toBe(10_000 - 800);
@@ -157,7 +157,7 @@ describe('production', () => {
     });
 
     const { factions } = applyBuildOrders(world, [
-      { kind: 'build', territoryId: LONDON.id, unitTypeId: 'levy-t1', count: 1 },
+      tagOrder(world, { kind: 'build', territoryId: LONDON.id, unitTypeId: 'levy-t1', count: 1 }),
     ]);
     expect(factions['faction-player'].manpower).toBe(5_000 - 300);
 
@@ -196,7 +196,7 @@ describe('production', () => {
     });
 
     const { factions, territories, events } = applyBuildOrders(world, [
-      { kind: 'build', territoryId: LONDON.id, unitTypeId: 'infantry-t2', count: 1 },
+      tagOrder(world, { kind: 'build', territoryId: LONDON.id, unitTypeId: 'infantry-t2', count: 1 }),
     ]);
 
     expect(factions['faction-player'].funding).toBe(10_000);
