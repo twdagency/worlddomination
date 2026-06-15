@@ -25,12 +25,15 @@ export interface RngState {
 
 export type ScoutingPriority = 'aggressive' | 'defensive' | 'broad';
 
+export type DiplomaticPosture = 'opportunist' | 'isolationist' | 'loyal';
+
 export interface LeaderWeights {
   aggression: number;
   risk: number;
   economy: number;
   expansion: number;
   scoutingPriority: ScoutingPriority;
+  diplomaticPosture: DiplomaticPosture;
 }
 
 export type TraitKey =
@@ -122,6 +125,20 @@ export interface Territory {
 }
 
 export type DiplomacyState = 'neutral' | 'allied' | 'at-war';
+
+export type PendingProposalType = 'alliance' | 'treaty';
+
+/** In-flight diplomatic offer awaiting accept/decline (typically AI → player). */
+export interface PendingProposal {
+  id: Id;
+  from: Id;
+  to: Id;
+  type: PendingProposalType;
+  scope?: { territoryIds: Id[] };
+  durationMs?: Millis;
+  proposedAt: Millis;
+  expiresAt: Millis;
+}
 
 export interface Policies {
   taxation: number;
@@ -293,11 +310,100 @@ export type SimEvent =
       kind: 'intelReport';
       at: Millis;
       observerFaction: Id;
+      /** Faction whose feed receives this line; defaults to observerFaction when omitted. */
+      receiverFaction?: Id;
       territoryId: Id;
       source: IntelSource;
       variant: IntelReportVariant;
       subjectFactionId?: Id;
+      garrisonDescriptor?: string;
       intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allianceFormed';
+      at: Millis;
+      parties: [Id, Id];
+      initiatingFaction: Id;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allianceBroken';
+      at: Millis;
+      breaker: Id;
+      betrayed: Id;
+      parties: [Id, Id];
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'treatyFormed';
+      at: Millis;
+      treatyId: Id;
+      parties: [Id, Id];
+      territoryIds: Id[];
+      expiresAt: Millis;
+      initiatingFaction: Id;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'treatyExpired';
+      at: Millis;
+      treatyId: Id;
+      parties: [Id, Id];
+      territoryIds: Id[];
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allianceProposed';
+      at: Millis;
+      proposalId: Id;
+      from: Id;
+      to: Id;
+      expiresAt: Millis;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allianceDeclined';
+      at: Millis;
+      from: Id;
+      to: Id;
+      declinedBy: Id;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'treatyProposed';
+      at: Millis;
+      proposalId: Id;
+      from: Id;
+      to: Id;
+      territoryIds: Id[];
+      expiresAt: Millis;
+      durationMs: Millis;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'treatyDeclined';
+      at: Millis;
+      from: Id;
+      to: Id;
+      declinedBy: Id;
+      territoryIds?: Id[];
       beatId: string;
       decisionTickMs: Millis;
       importance?: DispatchImportance;
@@ -337,6 +443,25 @@ export interface IntelRecord {
 
 export type IntelStore = Record<Id, IntelRecord[]>;
 
+/** Symmetric alliance between two factions. Stored with lexicographically ordered pair. */
+export interface AlliancePair {
+  factionA: Id;
+  factionB: Id;
+  formedAt: Millis;
+}
+
+/** Time-bounded information-sharing agreement scoped to specific territories. */
+export interface Treaty {
+  id: Id;
+  parties: [Id, Id];
+  scope: { territoryIds: Id[] };
+  formedAt: Millis;
+  expiresAt: Millis;
+}
+
+/** reputation[observer][subject] — how observer views subject. Materialized at world creation. */
+export type Reputation = Record<Id, Record<Id, number>>;
+
 export type TerritoryVisibilityState =
   | { state: 'live'; snapshot: TerritorySnapshot; sources: IntelSource[] }
   | {
@@ -358,6 +483,10 @@ export interface WorldState {
   leaders: Record<Id, Leader>;
   unitTypes: Record<Id, UnitType>;
   intel: IntelStore;
+  alliances: AlliancePair[];
+  treaties: Treaty[];
+  reputation: Reputation;
+  pendingProposals: PendingProposal[];
   scenarioId: Id;
   victoryThreshold?: number;
 }

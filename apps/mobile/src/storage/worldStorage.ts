@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SimEvent, WorldState } from 'sim';
+import { ensureWorldDiplomacy } from 'sim';
 import { STORAGE_KEYS } from '../theme/terminal';
 
 export async function loadWorld(): Promise<WorldState | null> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.world);
   if (!raw) return null;
-  return JSON.parse(raw) as WorldState;
+  return ensureWorldDiplomacy(JSON.parse(raw) as WorldState);
 }
 
 export async function saveWorld(world: WorldState): Promise<void> {

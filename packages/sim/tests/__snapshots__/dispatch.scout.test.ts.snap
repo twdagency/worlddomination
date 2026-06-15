@@ -3,18 +3,31 @@
 exports[`scout dispatch integration > cold-read: build scout, move toward Berlin, skip 12h digest > cold-read-scout-digest 1`] = `
 "Elizabeth — tick 1700400000000
 PRODUCTION — Construction begun at London (Your)
+Genghis — tick 1700421600000
+DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700421600000
 INTEL — Caesar forces advancing from Paris toward London
-Genghis — tick 1700421600000
 INTEL — Infrastructure upgraded at Berlin (Genghis)
 Elizabeth — tick 1700421600000
 INTEL — Construction begun at Madrid (Elizabeth)
+Elizabeth — tick 1700421600000
+INTEL — Genghis's forces report Genghis activity at Berlin
+Elizabeth — tick 1700443200000
+DIPLOMACY — Elizabeth declined alliance with Genghis.
+Genghis — tick 1700443200000
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700443200000
 INTEL — Caesar forces advancing from Paris toward London
-Genghis — tick 1700443200000
 INTEL — Infrastructure upgraded at Berlin (Genghis)
 Elizabeth — tick 1700443200000
 INTEL — Construction begun at Madrid (Elizabeth)
+Elizabeth — tick 1700443200000
+INTEL — Genghis's forces report Genghis activity at Berlin
+Elizabeth — tick 1700464800000
+DIPLOMACY — Elizabeth declined alliance with Genghis.
+Genghis — tick 1700464800000
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700464800000
 INTEL — Caesar forces advancing from Paris toward London
 Elizabeth — tick 1700464800000
@@ -23,24 +36,40 @@ PRODUCTION — Your 1× Scout ready at London
 INTEL — Elizabeth — 1× Scout ready at Madrid
 Elizabeth — tick 1700464800000
 INTEL — Scouts report Genghis forces massing at Berlin
+Genghis — tick 1700464800000
+INTEL — Elizabeth's forces report construction at Madrid
+INTEL — Elizabeth's forces report Caesar forces massing at Paris
 Elizabeth — tick 1700464800000
 INTEL — Scouts report Caesar forces massing at Paris
 INCOME — funding 10825.5
-Elizabeth — tick 1700464800000
 DEPARTURE — Your forces advancing from London toward Berlin
+Elizabeth — tick 1700486400000
+DIPLOMACY — Elizabeth declined alliance with Genghis.
+Genghis — tick 1700486400000
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700486400000
 INTEL — Caesar forces advancing from Paris toward London
 Elizabeth — tick 1700486400000
 INTEL — Construction begun at Madrid (Elizabeth)
 INTEL — Elizabeth — 3× Scout ready at Madrid
+Genghis — tick 1700486400000
+INTEL — Elizabeth's forces report construction at Madrid
+INTEL — Elizabeth's forces report Caesar forces massing at Paris
 Elizabeth — tick 1700486400000
 INTEL — Scouts report Caesar forces massing at Paris
+Elizabeth — tick 1700508000000
+DIPLOMACY — Elizabeth declined alliance with Genghis.
+Genghis — tick 1700508000000
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700508000000
 INTEL — Caesar forces advancing from Paris toward London
 Elizabeth — tick 1700508000000
 INTEL — Construction begun at Madrid (Elizabeth)
 INTEL — Elizabeth — 3× Scout ready at Madrid
 INTEL — Elizabeth — 3× Levy ready at Madrid
+Genghis — tick 1700508000000
+INTEL — Elizabeth's forces report construction at Madrid
+INTEL — Elizabeth's forces report Caesar forces massing at Paris
 Elizabeth — tick 1700508000000
 INTEL — Scouts report Caesar forces massing at Paris
 INCOME — funding 7302"

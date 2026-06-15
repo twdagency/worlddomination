@@ -1,4 +1,5 @@
 import type { WorldState } from 'sim';
+import { diplomacyDefaults } from 'sim';
 import { LEADERS_BY_ID } from './leaders';
 import { UNIT_TYPES_BY_ID } from './units';
 
@@ -43,6 +44,25 @@ export const SPRINT2_TERRITORIES = {
 
 /** Sprint 2 demo: assault Paris garrisoned by 200 levies with 10 MG+Armor. */
 export function createSprint2World(nowMs: number = Date.now()): WorldState {
+  const factions = {
+    'faction-player': {
+      id: 'faction-player',
+      leaderId: 'leader-genghis',
+      isPlayer: true,
+      funding: 25_000,
+      manpower: 8_000,
+      manpowerCap: 15_000,
+    },
+    'faction-enemy': {
+      id: 'faction-enemy',
+      leaderId: 'leader-caesar',
+      isPlayer: false,
+      funding: 20_000,
+      manpower: 10_000,
+      manpowerCap: 20_000,
+    },
+  };
+
   return {
     nowMs,
     day: 1,
@@ -83,27 +103,11 @@ export function createSprint2World(nowMs: number = Date.now()): WorldState {
         stance: 'defend',
       },
     },
-    factions: {
-      'faction-player': {
-        id: 'faction-player',
-        leaderId: 'leader-genghis',
-        isPlayer: true,
-        funding: 25_000,
-        manpower: 8_000,
-        manpowerCap: 15_000,
-      },
-      'faction-enemy': {
-        id: 'faction-enemy',
-        leaderId: 'leader-caesar',
-        isPlayer: false,
-        funding: 20_000,
-        manpower: 10_000,
-        manpowerCap: 20_000,
-      },
-    },
+    factions,
     leaders: { ...LEADERS_BY_ID },
     unitTypes: { ...UNIT_TYPES_BY_ID },
     intel: {},
+    ...diplomacyDefaults(factions),
     scenarioId: 'sprint-2-combat-demo',
   };
 }

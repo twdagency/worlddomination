@@ -1,0 +1,25 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`transit-aware scout scoring > 72h cold-play #2 records post-transit observation for attribution > sprint6-4c-cold-play-72h-observation 1`] = `
+{
+  "alliances": [
+    {
+      "factionA": "faction-britain",
+      "factionB": "faction-steppe",
+      "formedAt": 1700921600000,
+    },
+  ],
+  "genghisOrdersAtEnd": [],
+  "scoutBuilds": 0,
+  "scoutMoves": 0,
+}
+`;
+
+exports[`transit-aware scout scoring > 72h cold-play #2 records post-transit observation for attribution > sprint6-cold-play-attribution 1`] = `
+{
+  "alliancesFormed": true,
+  "britainGenghisAllied": true,
+  "scoutBuildDelta": 0,
+  "scoutMoveDelta": 0,
+}
+`;

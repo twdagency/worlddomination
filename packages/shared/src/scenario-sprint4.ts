@@ -1,7 +1,10 @@
 import { createSprint3World, SPRINT3_TERRITORY_OVERRIDES } from './scenario-sprint3';
 import type { WorldState } from 'sim';
+import { diplomacyDefaults } from 'sim';
 import { LEADERS_BY_ID } from './leaders';
 import { UNIT_TYPES_BY_ID } from './units';
+
+// SPRINT-6+: scenarios may declare starting alliances. Sprint 6 ships with no pre-formed alliances.
 
 const SPRINT4_TERRITORIES = {
   'territory-london': {
@@ -31,6 +34,41 @@ const SPRINT4_TERRITORIES = {
 /** Sprint 4: player + Caesar / Genghis / Elizabeth AI with distinct personalities. */
 export function createSprint4World(nowMs: number = Date.now()): WorldState {
   const base = createSprint3World(nowMs);
+  const factions = {
+    'faction-player': {
+      id: 'faction-player',
+      leaderId: 'leader-elizabeth',
+      isPlayer: true,
+      funding: 25_000,
+      manpower: 8_000,
+      manpowerCap: 15_000,
+    },
+    'faction-rome': {
+      id: 'faction-rome',
+      leaderId: 'leader-caesar',
+      isPlayer: false,
+      funding: 22_000,
+      manpower: 9_000,
+      manpowerCap: 18_000,
+    },
+    'faction-steppe': {
+      id: 'faction-steppe',
+      leaderId: 'leader-genghis',
+      isPlayer: false,
+      funding: 20_000,
+      manpower: 7_000,
+      manpowerCap: 16_000,
+    },
+    'faction-britain': {
+      id: 'faction-britain',
+      leaderId: 'leader-elizabeth',
+      isPlayer: false,
+      funding: 24_000,
+      manpower: 8_500,
+      manpowerCap: 17_000,
+    },
+  };
+
   return {
     ...base,
     territories: { ...SPRINT4_TERRITORIES },
@@ -68,43 +106,11 @@ export function createSprint4World(nowMs: number = Date.now()): WorldState {
         stance: 'defend',
       },
     },
-    factions: {
-      'faction-player': {
-        id: 'faction-player',
-        leaderId: 'leader-elizabeth',
-        isPlayer: true,
-        funding: 25_000,
-        manpower: 8_000,
-        manpowerCap: 15_000,
-      },
-      'faction-rome': {
-        id: 'faction-rome',
-        leaderId: 'leader-caesar',
-        isPlayer: false,
-        funding: 22_000,
-        manpower: 9_000,
-        manpowerCap: 18_000,
-      },
-      'faction-steppe': {
-        id: 'faction-steppe',
-        leaderId: 'leader-genghis',
-        isPlayer: false,
-        funding: 20_000,
-        manpower: 7_000,
-        manpowerCap: 16_000,
-      },
-      'faction-britain': {
-        id: 'faction-britain',
-        leaderId: 'leader-elizabeth',
-        isPlayer: false,
-        funding: 24_000,
-        manpower: 8_500,
-        manpowerCap: 17_000,
-      },
-    },
+    factions,
     leaders: { ...LEADERS_BY_ID },
     unitTypes: { ...UNIT_TYPES_BY_ID },
     intel: {},
+    ...diplomacyDefaults(factions),
     scenarioId: 'sprint-4-ai-world',
   };
 }

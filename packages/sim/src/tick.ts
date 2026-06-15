@@ -2,7 +2,14 @@ import type { AccruedIncome } from './economy';
 import type { Order, SimEvent, WorldState } from './types';
 import { MS_PER_DAY } from './constants';
 import { accrueEconomy } from './economy';
-import { ensureIntelStore, recordIntelObservations } from './intel';
+import { pruneExpiredTreaties } from './diplomacy';
+import { expiredTreatyEvents } from './diplomaticDispatch';
+import {
+  ensureIntelStore,
+  recordAlliedObservations,
+  recordIntelObservations,
+  recordTreatyObservations,
+} from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
@@ -91,12 +98,26 @@ export function tick(
     intel: intelAfterArrivals ?? ensureIntelStore(world),
   };
 
-  const priorIntel = ensureIntelStore(resolved);
-  const nextIntel = recordIntelObservations(resolved);
-  events.push(...emitIntelReportEvents(resolved, priorIntel, nextIntel));
+  const afterDiplomacy = pruneExpiredTreaties(resolved, nowMs);
+  events.push(...expiredTreatyEvents(resolved.treaties, afterDiplomacy.treaties, nowMs));
+
+  const priorIntel = ensureIntelStore(afterDiplomacy);
+  const afterDirectIntel = recordIntelObservations(afterDiplomacy);
+  const afterAlliedIntel = recordAlliedObservations({
+    ...afterDiplomacy,
+    intel: afterDirectIntel,
+  });
+  const nextIntel = recordTreatyObservations({
+    ...afterDiplomacy,
+    intel: afterAlliedIntel,
+  });
+  events.push(...emitIntelReportEvents(afterDiplomacy, priorIntel, nextIntel));
 
   const next: WorldState = {
-    ...resolved,
+    ...afterDiplomacy,
+    units: unitsAfterArrivals,
+    territories,
+    rng,
     intel: nextIntel,
   };
 

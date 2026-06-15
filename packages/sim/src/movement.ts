@@ -73,6 +73,24 @@ export function buildTransit(
   };
 }
 
+/** Preview travel duration for a unit without mutating state. */
+export function estimateTravelMs(world: WorldState, unit: Unit, toTerritoryId: Id): number | null {
+  const fromTerritoryId = unit.locationId;
+  if (!fromTerritoryId) return null;
+
+  const from = world.territories[fromTerritoryId];
+  const to = world.territories[toTerritoryId];
+  if (!from || !to || fromTerritoryId === toTerritoryId) return null;
+
+  const distanceKm = haversineKm(from.coord, to.coord);
+  if (distanceKm <= 0) return null;
+
+  const speed = effectiveSpeedKmh(world, unit);
+  if (speed <= 0) return null;
+
+  return (distanceKm / speed) * MS_PER_HOUR;
+}
+
 /** Apply move orders at the start of a tick step. Pure — returns new units + departure events. */
 export function applyMoveOrders(
   world: WorldState,

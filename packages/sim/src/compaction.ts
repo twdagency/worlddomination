@@ -239,7 +239,11 @@ export function renderDigestText(
     factionId !== undefined ? filterDispatchesForFaction(world, events, factionId) : events;
   const feed =
     windowMs !== undefined && windowMs > COMPACTION_THRESHOLD_MS
-      ? compactDispatchFeed(world, visibleEvents, windowMs)
-      : buildDispatchFeed(world, visibleEvents);
+      ? compactDispatchFeed(world, visibleEvents, windowMs, (event, w) =>
+          dispatchLineForEvent(w, event, factionId),
+        )
+      : buildDispatchFeed(world, visibleEvents, (event, w) =>
+          dispatchLineForEvent(w, event, factionId),
+        );
   return feed.flatMap((item) => (item.header ? [item.header, item.line] : [item.line])).join('\n');
 }

@@ -21,6 +21,7 @@ export {
   applyMoveOrders,
   resolveArrivals,
   effectiveSpeedKmh,
+  estimateTravelMs,
   transitFraction,
   buildTransit,
   pendingArrivalMs,
@@ -38,6 +39,7 @@ export {
   nextAiDecisionMs,
   tempoCommitFraction,
   TEMPO_COMMIT_FRACTION,
+  transitAwareIntelMultiplier,
 } from './ai';
 export {
   computeVisibility,
@@ -70,9 +72,13 @@ export {
   mergeAllTerritoryVisibility,
   mergeTerritoryVisibility,
   pruneExpiredRecords,
+  pruneAlliedIntelOnBreak,
+  pruneRecordsByObserver,
   recordDestroyedScoutIntel,
   recordDirectObservations,
+  recordAlliedObservations,
   recordIntelObservations,
+  recordTreatyObservations,
   recordScoutFinalObservations,
 } from './intel';
 export {
@@ -116,6 +122,76 @@ export {
 } from './dispatch';
 export { formatIntelSourceLabel } from './intelDisplay';
 export {
+  REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED,
+  REPUTATION_PENALTY_ALLIANCE_BREAK_OBSERVER,
+  applyAllianceBreakReputationPenalty,
+  createInitialReputation,
+} from './reputation';
+export {
+  ALLIANCE_ACCEPT_THRESHOLD,
+  ALLIANCE_BREAK_THRESHOLD,
+  ALLIANCE_PROPOSE_THRESHOLD,
+  RELATIVE_POWER_PEER_RATIO_MAX,
+  RELATIVE_POWER_PEER_RATIO_MIN,
+  TREATY_ACCEPT_THRESHOLD,
+  applyAiDiplomaticDecisions,
+  factionMilitaryPower,
+  isEnemyOf,
+  scoreAllianceAcceptance,
+  scoreAllianceBreak,
+  scoreAllianceProposal,
+  scoreTreatyAcceptance,
+  sharedEnemies,
+} from './diplomaticAi';
+export {
+  allianceBrokenEvent,
+  allianceDeclinedEvent,
+  allianceFormedEvent,
+  allianceProposedEvent,
+  DEFAULT_TREATY_DURATION_MS,
+  expiredTreatyEvents,
+  garrisonDescriptor,
+  treatyDeclinedEvent,
+  treatyExpiredEvent,
+  treatyFormedEvent,
+  treatyProposedEvent,
+} from './diplomaticDispatch';
+export {
+  diplomaticRelationshipStatus,
+} from './diplomacyDisplay';
+export type { DiplomaticRelationshipStatus } from './diplomacyDisplay';
+export {
+  expirePendingProposals,
+  playerAcceptProposal,
+  playerBreakAlliance,
+  playerDeclineProposal,
+  playerProposeAlliance,
+  playerProposeTreaty,
+  queueAllianceProposal,
+} from './playerDiplomacy';
+export {
+  deterministicProposalId,
+  hasPendingProposalBetween,
+  pendingProposalsForFaction,
+  proposalExpiresAt,
+} from './pendingProposals';
+export { reputationCategory } from './reputationDisplay';
+export type { ReputationCategory } from './reputationDisplay';
+export {
+  areAllied,
+  breakAlliance,
+  diplomacyDefaults,
+  ensureWorldDiplomacy,
+  formAlliance,
+  formTreaty,
+  getActiveTreaties,
+  getAlliancesFor,
+  getTreatiesBetween,
+  normalizeFactionPair,
+  pruneExpiredTreaties,
+} from './diplomacy';
+export type { FormTreatyParams } from './diplomacy';
+export {
   emitIntelReportEvents,
   inferIntelReportIntent,
   intelReportFromRecord,
@@ -123,7 +199,7 @@ export {
 } from './intelDispatch';
 export type { IntelReportVariant } from './intelDispatch';
 export type { DispatchBeatGroup, DispatchFeedItem } from './dispatch';
-export type { ScoutingPriority } from './types';
+export type { ScoutingPriority, DiplomaticPosture } from './types';
 export {
   compactDispatchFeed,
   renderCompactDigestText,

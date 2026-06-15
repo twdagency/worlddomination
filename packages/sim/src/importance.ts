@@ -23,13 +23,26 @@ export function arrivalImportance(
   return 'low';
 }
 
-const HIGH_KINDS = new Set<SimEvent['kind']>(['battle', 'withdrawal', 'secured']);
+const HIGH_KINDS = new Set<SimEvent['kind']>([
+  'battle',
+  'withdrawal',
+  'secured',
+  'allianceFormed',
+  'allianceBroken',
+  'allianceProposed',
+  'treatyProposed',
+]);
 
 const MEDIUM_KINDS = new Set<SimEvent['kind']>([
   'buildStarted',
   'infraUpgraded',
   'production',
   'buildBlocked',
+  'treatyFormed',
+  'treatyExpired',
+  'allianceDeclined',
+  'treatyDeclined',
+  'intelReport',
 ]);
 
 export function resolveEventImportance(world: WorldState, event: SimEvent): DispatchImportance {
@@ -52,7 +65,7 @@ export function resolveEventImportance(world: WorldState, event: SimEvent): Disp
 }
 
 export function factionIdFromEvent(event: SimEvent): Id | undefined {
-  if (event.kind === 'intelReport') return event.observerFaction;
+  if (event.kind === 'intelReport') return event.receiverFaction ?? event.observerFaction;
   if ('ownerId' in event) return event.ownerId;
   if ('factionId' in event) return event.factionId;
   if (event.kind === 'battle') return event.report.attackerId;

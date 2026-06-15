@@ -1,5 +1,6 @@
 import { LEADERS_BY_ID } from '../../shared/src/leaders';
 import { UNIT_TYPES_BY_ID } from '../../shared/src/units';
+import { diplomacyDefaults } from '../src/diplomacy';
 import type { Faction, Id, Territory, Unit, WorldState } from '../src/types';
 
 const LEADER_IDS = ['leader-caesar', 'leader-genghis', 'leader-elizabeth', 'leader-alexander'] as const;
@@ -89,6 +90,7 @@ export function buildBenchWorld(aiFactionCount: number, nowMs: number): WorldSta
     leaders: { ...LEADERS_BY_ID },
     unitTypes: { ...UNIT_TYPES_BY_ID },
     intel: {},
+    ...diplomacyDefaults(factions),
     scenarioId: `bench-ai-${aiFactionCount}`,
   };
 }

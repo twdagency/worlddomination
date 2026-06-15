@@ -199,6 +199,195 @@ export function recordIntelObservations(world: WorldState): IntelStore {
   return store;
 }
 
+const SHAREABLE_SOURCES: ReadonlySet<IntelSource> = new Set(['direct', 'scout']);
+
+function shareableAllyRecords(
+  records: IntelRecord[],
+  sharingFaction: Id,
+  nowMs: Millis,
+): IntelRecord[] {
+  return pruneExpiredRecords(records, nowMs).filter(
+    (record) =>
+      SHAREABLE_SOURCES.has(record.source) && record.observerFaction === sharingFaction,
+  );
+}
+
+function toAlliedRecord(record: IntelRecord): IntelRecord {
+  return {
+    observerFaction: record.observerFaction,
+    territoryId: record.territoryId,
+    observationTime: record.observationTime,
+    snapshot: record.snapshot,
+    source: 'allied',
+    expiresAt: null,
+    confidence: record.confidence,
+  };
+}
+
+function hasAlliedCopy(records: IntelRecord[], candidate: IntelRecord): boolean {
+  return records.some(
+    (record) =>
+      record.source === 'allied' &&
+      record.observerFaction === candidate.observerFaction &&
+      record.territoryId === candidate.territoryId &&
+      record.observationTime === candidate.observationTime,
+  );
+}
+
+function appendAlliedShares(
+  receiverRecords: IntelRecord[],
+  shares: IntelRecord[],
+): IntelRecord[] {
+  let next = receiverRecords;
+  for (const share of shares) {
+    const allied = toAlliedRecord(share);
+    if (!hasAlliedCopy(next, allied)) {
+      next = appendRecord(next, allied);
+    }
+  }
+  return next;
+}
+
+/**
+ * Copies each ally's own direct/scout records into the other's intel store as 'allied'.
+ * Non-transitive: allied/treaty records are never re-shared.
+ *
+ * Dedup at emission: skip if an identical allied copy already exists (same
+ * observer, territory, observationTime). Near-duplicates from successive ticks
+ * with newer observationTime are retained; merge picks the freshest at read time.
+ */
+export function recordAlliedObservations(world: WorldState, gameTime: Millis = world.nowMs): IntelStore {
+  const store: IntelStore = { ...ensureIntelStore(world) };
+
+  for (const pair of world.alliances) {
+    const { factionA, factionB } = pair;
+    const aRecords = store[factionA] ?? [];
+    const bRecords = store[factionB] ?? [];
+
+    const aShares = shareableAllyRecords(aRecords, factionA, gameTime);
+    const bShares = shareableAllyRecords(bRecords, factionB, gameTime);
+
+    const nextA = appendAlliedShares(aRecords, bShares);
+    const nextB = appendAlliedShares(bRecords, aShares);
+
+    if (nextA !== aRecords) store[factionA] = nextA;
+    if (nextB !== bRecords) store[factionB] = nextB;
+  }
+
+  return store;
+}
+
+/** Removes allied records attributed to `observerFactionId` from a faction's record list. */
+export function pruneRecordsByObserver(
+  records: IntelRecord[],
+  observerFactionId: Id,
+): IntelRecord[] {
+  return records.filter(
+    (record) => !(record.source === 'allied' && record.observerFaction === observerFactionId),
+  );
+}
+
+/** Immediately drops allied intel from a former ally on both sides of a break. */
+export function pruneAlliedIntelOnBreak(
+  world: WorldState,
+  factionA: Id,
+  factionB: Id,
+): WorldState {
+  const store: IntelStore = { ...ensureIntelStore(world) };
+  let changed = false;
+
+  for (const [factionId, otherId] of [
+    [factionA, factionB],
+    [factionB, factionA],
+  ] as const) {
+    const records = store[factionId] ?? [];
+    const pruned = pruneRecordsByObserver(records, otherId);
+    if (pruned.length !== records.length) {
+      store[factionId] = pruned;
+      changed = true;
+    }
+  }
+
+  if (!changed) return world;
+  return { ...world, intel: store };
+}
+
+function shareableInScope(
+  records: IntelRecord[],
+  sharingFaction: Id,
+  scopedTerritoryIds: Set<Id>,
+  gameTime: Millis,
+): IntelRecord[] {
+  return shareableAllyRecords(records, sharingFaction, gameTime).filter((record) =>
+    scopedTerritoryIds.has(record.territoryId),
+  );
+}
+
+function toTreatyRecord(record: IntelRecord, treatyExpiresAt: Millis): IntelRecord {
+  return {
+    observerFaction: record.observerFaction,
+    territoryId: record.territoryId,
+    observationTime: record.observationTime,
+    snapshot: record.snapshot,
+    source: 'treaty',
+    expiresAt: treatyExpiresAt,
+    confidence: record.confidence,
+  };
+}
+
+function hasTreatyCopy(records: IntelRecord[], candidate: IntelRecord): boolean {
+  return records.some(
+    (record) =>
+      record.source === 'treaty' &&
+      record.observerFaction === candidate.observerFaction &&
+      record.territoryId === candidate.territoryId &&
+      record.observationTime === candidate.observationTime &&
+      record.expiresAt === candidate.expiresAt,
+  );
+}
+
+function appendTreatyShares(
+  receiverRecords: IntelRecord[],
+  shares: IntelRecord[],
+  treatyExpiresAt: Millis,
+): IntelRecord[] {
+  let next = receiverRecords;
+  for (const share of shares) {
+    const treatyRecord = toTreatyRecord(share, treatyExpiresAt);
+    if (!hasTreatyCopy(next, treatyRecord)) {
+      next = appendRecord(next, treatyRecord);
+    }
+  }
+  return next;
+}
+
+/**
+ * Copies scoped direct/scout records between treaty parties as 'treaty'-sourced intel.
+ * Record expiresAt is the treaty's expiry (decay window may prune sooner).
+ */
+export function recordTreatyObservations(world: WorldState, gameTime: Millis = world.nowMs): IntelStore {
+  const store: IntelStore = { ...ensureIntelStore(world) };
+  const activeTreaties = world.treaties.filter((treaty) => gameTime < treaty.expiresAt);
+
+  for (const treaty of activeTreaties) {
+    const [partyA, partyB] = treaty.parties;
+    const scope = new Set(treaty.scope.territoryIds);
+    const pairs: ReadonlyArray<readonly [Id, Id]> = [
+      [partyA, partyB],
+      [partyB, partyA],
+    ];
+
+    for (const [sharer, receiver] of pairs) {
+      const receiverRecords = store[receiver] ?? [];
+      const shares = shareableInScope(store[sharer] ?? [], sharer, scope, gameTime);
+      const next = appendTreatyShares(receiverRecords, shares, treaty.expiresAt);
+      if (next !== receiverRecords) store[receiver] = next;
+    }
+  }
+
+  return store;
+}
+
 /** @deprecated Use `recordIntelObservations`. */
 export function recordDirectObservations(world: WorldState): IntelStore {
   return recordIntelObservations(world);

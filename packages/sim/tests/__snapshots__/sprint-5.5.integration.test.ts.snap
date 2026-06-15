@@ -10,17 +10,8 @@ exports[`sprint 5.5 integration > 72h sprint4: records Genghis scout activity an
 }
 `;
 
-exports[`sprint 5.5 integration > Genghis scout fixture: chosen target transit exceeds intel decay window > genghis-scout-transit-vs-decay 1`] = `
+exports[`sprint 5.5 integration > Genghis scout fixture: transit-aware scoring disqualifies stale-on-arrival scout holds > genghis-scout-transit-vs-decay 1`] = `
 {
-  "actualTransit": {
-    "distanceKm": 1869,
-    "exceedsDecayWindow": true,
-    "fromTerritoryId": "territory-berlin",
-    "toTerritoryId": "territory-madrid",
-    "transitHours": 249.2194419164361,
-    "transitMs": 897189990.8991699,
-    "unitId": "unit-steppe-scout",
-  },
   "capitalEtas": [
     {
       "distanceKm": 932,
@@ -44,18 +35,33 @@ exports[`sprint 5.5 integration > Genghis scout fixture: chosen target transit e
       "travelMs": 897189990.8991699,
     },
   ],
-  "chosenTarget": "territory-madrid",
+  "chosenHoldScoutTarget": null,
   "decayWindowHours": 24,
 }
 `;
 
 exports[`sprint 5.5 integration > sprint4: 24h cold-play player digest > sprint4-cold-play-24h-digest 1`] = `
-"Caesar — tick 1700921600000
+"Genghis — tick 1700921600000
+DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
+Caesar — tick 1700921600000
 INTEL — Caesar forces advancing from Paris toward London
+Elizabeth — tick 1700943200000
+DIPLOMACY — You declined alliance with Genghis.
+Genghis — tick 1700943200000
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700943200000
 INTEL — Caesar forces advancing from Paris toward London
+Elizabeth — tick 1700964800000
+DIPLOMACY — You declined alliance with Genghis.
+Genghis — tick 1700964800000
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700964800000
 INTEL — Caesar forces advancing from Paris toward London
+Elizabeth — tick 1700986400000
+DIPLOMACY — You declined alliance with Genghis.
+Genghis — tick 1700986400000
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700986400000
 INTEL — Caesar forces advancing from Paris toward London
 INCOME — funding 14476.5"
@@ -72,15 +78,20 @@ INTEL — Scouts report Genghis forces massing at Berlin"
 `;
 
 exports[`sprint 5.5 integration > sprint5: 24h cold-play player digest > sprint5-cold-play-24h-digest 1`] = `
-"Caesar — tick 1700971600000
+"Genghis — tick 1700971600000
+DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
+Caesar — tick 1700971600000
 INTEL — Caesar forces advancing from Bucharest toward Belgrade
-Genghis — tick 1700971600000
 INTEL — Genghis forces advancing from Sofia toward Belgrade
 INTEL — Genghis forces arrived at Belgrade — contact expected
 Bloody clash at Belgrade: Elizabeth prevailed over Genghis (3 casualties, enemy 6 fallen).
+Elizabeth — tick 1700993200000
+DIPLOMACY — You declined alliance with Genghis.
+Genghis — tick 1700993200000
+DIPLOMACY — Genghis has broken alliance with Elizabeth.
 Caesar — tick 1700993200000
 INTEL — Caesar forces advancing from Bucharest toward Belgrade
-Genghis — tick 1700993200000
 INTEL — Genghis forces advancing from Sofia toward Belgrade
 INTEL — Genghis forces arrived at Belgrade — contact expected
 Elizabeth at Belgrade — Genghis annihilated, no casualties.

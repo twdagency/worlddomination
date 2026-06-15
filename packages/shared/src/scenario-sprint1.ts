@@ -1,4 +1,5 @@
 import type { WorldState } from 'sim';
+import { diplomacyDefaults } from 'sim';
 import { LEADERS_BY_ID } from './leaders';
 import { UNIT_TYPES_BY_ID } from './units';
 
@@ -42,6 +43,18 @@ export const SPRINT1_TERRITORIES = {
 } as const;
 
 export function createSprint1World(nowMs: number = Date.now()): WorldState {
+  const factions = {
+    'faction-player': {
+      id: 'faction-player',
+      leaderId: 'leader-genghis',
+      isPlayer: true,
+      funding: 25_000,
+      manpower: 8_000,
+      manpowerCap: 15_000,
+      resources: { fuel: 200, steel: 150 },
+    },
+  };
+
   return {
     nowMs,
     day: 1,
@@ -66,20 +79,11 @@ export function createSprint1World(nowMs: number = Date.now()): WorldState {
         stance: 'hold',
       },
     },
-    factions: {
-      'faction-player': {
-        id: 'faction-player',
-        leaderId: 'leader-genghis',
-        isPlayer: true,
-        funding: 25_000,
-        manpower: 8_000,
-        manpowerCap: 15_000,
-        resources: { fuel: 200, steel: 150 },
-      },
-    },
+    factions,
     leaders: { ...LEADERS_BY_ID },
     unitTypes: { ...UNIT_TYPES_BY_ID },
     intel: {},
+    ...diplomacyDefaults(factions),
     scenarioId: 'sprint-1-demo',
   };
 }

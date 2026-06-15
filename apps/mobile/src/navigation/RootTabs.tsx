@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { useGame } from '../game/GameContext';
 import { FactionsScreen } from '../screens/FactionsScreen';
+import { DiplomacyScreen } from '../screens/DiplomacyScreen';
 import { DispatchesScreen } from '../screens/DispatchesScreen';
 import { ForcesScreen } from '../screens/ForcesScreen';
 import { OrderScreen } from '../screens/OrderScreen';
@@ -53,6 +54,7 @@ export function RootTabs() {
         }}
       >
         <Tab.Screen name="Dispatches" component={DispatchesScreen} />
+        <Tab.Screen name="Diplomacy" component={DiplomacyScreen} />
         <Tab.Screen name="Factions" component={FactionsScreen} />
         <Tab.Screen name="World" component={WorldScreen} />
         <Tab.Screen name="Territory" component={TerritoryScreen} />

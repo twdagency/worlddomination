@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Faction, Id, Leader, Order, OrderIntent, Territory, Unit, UnitType, WorldState } from '../src/types';
+import { diplomacyDefaults } from '../src/diplomacy';
 import { intentFromMoveStance, taggedOrderFields } from '../src/dispatch';
 import { LEADERS_BY_ID } from '../../shared/src/leaders';
 import { UNIT_TYPES_BY_ID } from '../../shared/src/units';
@@ -39,7 +40,14 @@ const BASELINE_LEADER: Leader = {
   name: 'Baseline',
   region: 'Test',
   era: 'Modern',
-  weights: { aggression: 5, risk: 5, economy: 5, expansion: 5, scoutingPriority: 'broad' },
+  weights: {
+    aggression: 5,
+    risk: 5,
+    economy: 5,
+    expansion: 5,
+    scoutingPriority: 'broad',
+    diplomaticPosture: 'opportunist',
+  },
   traits: {},
   tempo: 'steady',
 };
@@ -73,6 +81,11 @@ export function makeWorld(overrides: Partial<WorldState> = {}): WorldState {
     stance: 'defend',
   };
 
+  const factions: Record<string, Faction> = {
+    'faction-player': makeFaction('leader-baseline'),
+    ...(overrides.factions ?? {}),
+  };
+
   return {
     nowMs: startMs,
     day: 1,
@@ -84,10 +97,11 @@ export function makeWorld(overrides: Partial<WorldState> = {}): WorldState {
       [PARIS.id]: PARIS,
     },
     units: { [defaultUnit.id]: defaultUnit },
-    factions: { 'faction-player': makeFaction('leader-baseline') },
+    factions,
     leaders,
     unitTypes,
     intel: {},
+    ...diplomacyDefaults(factions),
     scenarioId: 'test-sprint1',
     ...overrides,
   };
