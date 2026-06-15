@@ -1,7 +1,7 @@
 # Sim performance baseline
 
 Recorded: 2026-06-15  
-Commit: `1cd7352`  
+Commit: `ceb9d87`  
 Runners: `packages/sim/perf/aiDecision.bench.ts`, `packages/sim/perf/intelStore.bench.ts`, `packages/sim/perf/diplomacy.bench.ts`
 
 ## Methodology
@@ -23,9 +23,9 @@ One 6h decision tick, all AI factions.
 
 | AI factions | Territories | Median | p95 |
 |-------------|-------------|--------|-----|
-| 2 | 3 | 83.7 µs | 221.1 µs |
-| 4 | 5 | 223.7 µs | 428.3 µs |
-| 8 | 9 | 1.52 ms | 2.46 ms |
+| 2 | 3 | 90.2 µs | 291.9 µs |
+| 4 | 5 | 236.3 µs | 460.0 µs |
+| 8 | 9 | 1.39 ms | 1.69 ms |
 
 **Scaling read:** cost should grow roughly linearly with AI faction count (each faction runs the same scorer pipeline once).
 
@@ -35,9 +35,9 @@ Full catch-up simulation including AI ticks, movement, combat, economy.
 
 | Skip | Events emitted | Median | p95 |
 |------|----------------|--------|-----|
-| 6h skip | 8 | 153.4 µs | 319.0 µs |
-| 24h skip | 30 | 1.18 ms | 1.40 ms |
-| 72h skip | 96 | 3.70 ms | 4.12 ms |
+| 6h skip | 8 | 204.4 µs | 377.6 µs |
+| 24h skip | 30 | 859.2 µs | 1.00 ms |
+| 72h skip | 96 | 3.66 ms | 4.07 ms |
 
 **Cadence note:** mobile foreground catch-up runs this path when the app resumes; sub-100ms at 24h is comfortable on dev hardware; 72h is the stress case.
 
@@ -47,14 +47,14 @@ Pure read/render work on the emitted event list — not on the hot simulation pa
 
 | Operation | Median | p95 |
 |-----------|--------|-----|
-| renderDigestText (uncompacted) | 23.3 µs | 45.3 µs |
-| renderDigestText (player-filtered) | 70.2 µs | 120.4 µs |
-| renderCompactDigestText (24h) | 14.5 µs | 29.2 µs |
-| compactDispatchFeed (24h) | 11.6 µs | 20.3 µs |
-| computeStance ×3 factions | 6.9 µs | 10.1 µs |
+| renderDigestText (uncompacted) | 23.0 µs | 33.8 µs |
+| renderDigestText (player-filtered) | 70.9 µs | 167.0 µs |
+| renderCompactDigestText (24h) | 14.3 µs | 52.2 µs |
+| compactDispatchFeed (24h) | 11.6 µs | 21.3 µs |
+| computeStance ×3 factions | 6.8 µs | 10.3 µs |
 
-**Stack total (median):** 126.5 µs  
-**Share of 24h `advanceTo` median:** 10.74%
+**Stack total (median):** 126.6 µs  
+**Share of 24h `advanceTo` median:** 14.73%
 
 At current sprint4 scale both sim and observers are sub-millisecond. The share ratio is useful for regression drift; absolute microseconds matter more for mobile UX until skips grow much larger.
 
@@ -66,12 +66,12 @@ Merge, observation recording, and prune cost after 24h/72h simulation skips.
 
 | Operation | Median | p95 |
 |-----------|--------|-----|
-| mergeAllTerritoryVisibility ×4 (24h world) | 12.6 µs | 22.9 µs |
-| recordIntelObservations (24h world) | 9.9 µs | 10.6 µs |
-| pruneExpiredRecords all factions (24h world) | 0.4 µs | 0.5 µs |
-| mergeAllTerritoryVisibility ×4 (72h world) | 17.3 µs | 22.6 µs |
-| recordIntelObservations (72h world) | 13.6 µs | 63.7 µs |
-| pruneExpiredRecords all factions (72h world) | 0.9 µs | 2.2 µs |
+| mergeAllTerritoryVisibility ×4 (24h world) | 12.0 µs | 18.9 µs |
+| recordIntelObservations (24h world) | 9.9 µs | 14.9 µs |
+| pruneExpiredRecords all factions (24h world) | 0.4 µs | 0.8 µs |
+| mergeAllTerritoryVisibility ×4 (72h world) | 15.6 µs | 21.5 µs |
+| recordIntelObservations (72h world) | 13.6 µs | 36.8 µs |
+| pruneExpiredRecords all factions (72h world) | 0.5 µs | 0.7 µs |
 
 **Record counts (all factions, post-skip):**
 
@@ -88,12 +88,12 @@ Alliance formation, breaking, AI diplomatic pass, and allied/treaty emission on 
 
 | Operation | Median | p95 |
 |-----------|--------|-----|
-| applyAiDiplomaticDecisions (sprint4) | 13.7 µs | 44.9 µs |
-| formAlliance | 0.2 µs | 0.3 µs |
-| breakAlliance | 1.1 µs | 1.2 µs |
-| recordAlliedObservations (24h allied world) | 0.4 µs | 0.5 µs |
-| recordTreatyObservations (24h allied world) | 0.1 µs | 0.2 µs |
-| diplomacy intel pipeline per tick | 22.2 µs | 39.2 µs |
+| applyAiDiplomaticDecisions (sprint4) | 12.3 µs | 26.6 µs |
+| formAlliance | 0.3 µs | 0.5 µs |
+| breakAlliance | 1.3 µs | 1.7 µs |
+| recordAlliedObservations (24h allied world) | 0.6 µs | 1.2 µs |
+| recordTreatyObservations (24h allied world) | 0.2 µs | 0.3 µs |
+| diplomacy intel pipeline per tick | 10.8 µs | 14.8 µs |
 
 **Allied/treaty record counts (24h skip, steppe–britain alliance):** 7 allied, 0 treaty.
 
