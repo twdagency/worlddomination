@@ -8,7 +8,7 @@ import { DevTimeSkip } from '../components/DevTimeSkip';
 import { DevScenarioSelector } from '../components/DevScenarioSelector';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
-import { formatAwayDuration, formatDateTime, formatFunding } from '../utils/format';
+import { formatDateTime } from '../utils/format';
 
 function dispatchAccent(kind: string): string {
   if (kind === 'battle') return terminal.danger;
@@ -23,21 +23,11 @@ function dispatchAccent(kind: string): string {
 export function DispatchesScreen() {
   const { world, dispatches, awayMs } = useGame();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-  const faction = world.factions['faction-player'];
   const recent = [...dispatches].filter(isTimestampedDispatch);
   const feed = buildDisplayDispatchFeed(world, recent, awayMs).reverse();
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        {awayMs > 0 && (
-          <Text style={styles.away}>Away {formatAwayDuration(awayMs)}</Text>
-        )}
-        <Text style={styles.meta}>
-          Day {world.day} · Funding {formatFunding(faction?.funding ?? 0)}
-        </Text>
-      </View>
-
       {__DEV__ && <DevScenarioSelector />}
       {__DEV__ && <DevTimeSkip />}
 
@@ -90,21 +80,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: terminal.bg,
     padding: 16,
-  },
-  header: {
-    marginBottom: 8,
-  },
-  away: {
-    color: terminal.accent,
-    fontFamily: terminal.mono,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  meta: {
-    color: terminal.muted,
-    fontFamily: terminal.mono,
-    fontSize: 13,
   },
   list: {
     paddingTop: 12,

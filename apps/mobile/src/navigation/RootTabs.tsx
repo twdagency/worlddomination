@@ -1,19 +1,19 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useGame } from '../game/GameContext';
-import { FactionsScreen } from '../screens/FactionsScreen';
-import { DiplomacyScreen } from '../screens/DiplomacyScreen';
+import { PersistentHeader } from '../components/PersistentHeader';
+import { ActionStackNavigator } from './ActionStackNavigator';
 import { DispatchesScreen } from '../screens/DispatchesScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
-import { ForcesScreen } from '../screens/ForcesScreen';
-import { OrderScreen } from '../screens/OrderScreen';
-import { TerritoryScreen } from '../screens/TerritoryScreen';
 import { WorldScreen } from '../screens/WorldScreen';
+import { PRIMARY_TAB_ICONS } from './tabConfig';
 import { terminal } from '../theme/terminal';
+import type { RootTabParamList } from './types';
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<RootTabParamList>();
 
 const navTheme = {
   ...DefaultTheme,
@@ -26,6 +26,16 @@ const navTheme = {
     primary: terminal.accent,
   },
 };
+
+function tabBarIcon(iconName: string, activeIconName: string) {
+  return ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
+    <Ionicons
+      name={(focused ? activeIconName : iconName) as keyof typeof Ionicons.glyphMap}
+      size={size}
+      color={color}
+    />
+  );
+}
 
 export function RootTabs() {
   const { ready } = useGame();
@@ -41,34 +51,68 @@ export function RootTabs() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      <Tab.Navigator
-        initialRouteName="Dashboard"
-        screenOptions={{
-          headerStyle: { backgroundColor: terminal.card },
-          headerTintColor: terminal.accent,
-          headerTitleStyle: { fontFamily: terminal.mono, fontSize: 16 },
-          tabBarStyle: { backgroundColor: terminal.card, borderTopColor: terminal.border },
-          tabBarActiveTintColor: terminal.accent,
-          tabBarInactiveTintColor: terminal.muted,
-          tabBarLabelStyle: { fontFamily: terminal.mono, fontSize: 11 },
-          tabBarIcon: () => null,
-          tabBarIconStyle: { display: 'none', width: 0, height: 0 },
-        }}
-      >
-        <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Home' }} />
-        <Tab.Screen name="Dispatches" component={DispatchesScreen} />
-        <Tab.Screen name="Diplomacy" component={DiplomacyScreen} />
-        <Tab.Screen name="Factions" component={FactionsScreen} />
-        <Tab.Screen name="World" component={WorldScreen} />
-        <Tab.Screen name="Territory" component={TerritoryScreen} />
-        <Tab.Screen name="Forces" component={ForcesScreen} />
-        <Tab.Screen name="Order" component={OrderScreen} />
-      </Tab.Navigator>
+      <View style={styles.appShell}>
+        <PersistentHeader />
+        <Tab.Navigator
+          initialRouteName="Dashboard"
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: styles.tabBar,
+            tabBarActiveTintColor: terminal.accent,
+            tabBarInactiveTintColor: terminal.muted,
+            tabBarLabelStyle: styles.tabLabel,
+            tabBarShowLabel: true,
+          }}
+        >
+          {PRIMARY_TAB_ICONS.map((tab) => (
+            <Tab.Screen
+              key={tab.screen}
+              name={tab.screen}
+              component={
+                tab.screen === 'Actions' ? ActionStackNavigator : screenForTab(tab.screen)
+              }
+              options={{
+                title: tab.label,
+                tabBarIcon: tabBarIcon(tab.iconName, tab.activeIconName),
+                tabBarLabel: tab.label,
+              }}
+            />
+          ))}
+        </Tab.Navigator>
+      </View>
     </NavigationContainer>
   );
 }
 
+function screenForTab(tab: Exclude<keyof RootTabParamList, 'Actions'>) {
+  switch (tab) {
+    case 'Dashboard':
+      return DashboardScreen;
+    case 'Dispatches':
+      return DispatchesScreen;
+    case 'World':
+      return WorldScreen;
+    default:
+      return DashboardScreen;
+  }
+}
+
 const styles = StyleSheet.create({
+  appShell: {
+    flex: 1,
+    backgroundColor: terminal.bg,
+  },
+  tabBar: {
+    backgroundColor: terminal.card,
+    borderTopColor: terminal.border,
+    height: Platform.OS === 'ios' ? 84 : 64,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+    paddingTop: 6,
+  },
+  tabLabel: {
+    fontFamily: terminal.mono,
+    fontSize: 10,
+  },
   loading: {
     flex: 1,
     backgroundColor: terminal.bg,

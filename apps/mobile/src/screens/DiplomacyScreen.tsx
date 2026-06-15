@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -6,16 +6,22 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useRoute, type RouteProp } from '@react-navigation/native';
 import {
   areAllied,
+  computeStance,
   diplomaticRelationshipStatus,
   getActiveTreaties,
   pendingProposalsForFaction,
   playerFactionId,
   reputationCategory,
+  STANCE_WINDOW_MS,
 } from 'sim';
 import { useGame } from '../game/GameContext';
+import { isTimestampedDispatch } from '../game/actions';
+import { formatStanceDetail, stanceColor } from '../game/diplomacyStanceDisplay';
 import { PLAYER_FACTION_ID } from '../game/playerView';
+import type { ActionStackParamList } from '../navigation/types';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 
@@ -32,9 +38,13 @@ function statusLabel(status: ReturnType<typeof diplomaticRelationshipStatus>): s
   }
 }
 
+type DiplomacyRoute = RouteProp<ActionStackParamList, 'Diplomacy'>;
+
 export function DiplomacyScreen() {
+  const route = useRoute<DiplomacyRoute>();
   const {
     world,
+    dispatches,
     proposeAlliance,
     breakAlliance,
     proposeTreaty,
@@ -42,9 +52,17 @@ export function DiplomacyScreen() {
     declineProposal,
   } = useGame();
   const [treatyTarget, setTreatyTarget] = useState<string | null>(null);
+  const [expandedFactionId, setExpandedFactionId] = useState<string | null>(null);
 
   const playerId = playerFactionId(world) ?? PLAYER_FACTION_ID;
   const incoming = pendingProposalsForFaction(world, playerId);
+  const timestampedDispatches = dispatches.filter(isTimestampedDispatch);
+
+  useEffect(() => {
+    if (route.params?.expandFactionId) {
+      setExpandedFactionId(route.params.expandFactionId);
+    }
+  }, [route.params?.expandFactionId]);
 
   const factions = useMemo(
     () =>
@@ -53,16 +71,24 @@ export function DiplomacyScreen() {
         .map((faction) => {
           const leader = world.leaders[faction.leaderId];
           const reputation = world.reputation[playerId]?.[faction.id] ?? 0;
+          const stance = computeStance(
+            world,
+            faction.id,
+            timestampedDispatches,
+            world.nowMs,
+            STANCE_WINDOW_MS,
+          );
           return {
             id: faction.id,
             name: leader?.name ?? faction.id,
             status: diplomaticRelationshipStatus(world, playerId, faction.id),
             reputationLabel: reputationCategory(reputation),
             reputation,
+            stance,
           };
         })
         .sort((a, b) => a.name.localeCompare(b.name)),
-    [world, playerId],
+    [world, playerId, timestampedDispatches],
   );
 
   const activeTreaties = getActiveTreaties(world, playerId, world.nowMs);
@@ -143,57 +169,80 @@ export function DiplomacyScreen() {
           )}
         </TerminalCard>
       }
-      renderItem={({ item }) => (
-        <TerminalCard>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.meta}>
-            {statusLabel(item.status)} · {item.reputationLabel}
-          </Text>
-          <View style={styles.row}>
-            {!areAllied(world, playerId, item.id) && item.status !== 'proposal-incoming' && (
-              <Pressable
-                style={styles.actionButton}
-                onPress={() => void proposeAlliance(item.id)}
-              >
-                <Text style={styles.buttonText}>Propose alliance</Text>
-              </Pressable>
+      renderItem={({ item }) => {
+        const expanded = expandedFactionId === item.id;
+        return (
+          <TerminalCard style={expanded ? styles.expandedCard : undefined}>
+            <Pressable
+              onPress={() => setExpandedFactionId(expanded ? null : item.id)}
+              style={styles.factionHeader}
+            >
+              <View style={styles.factionTitleRow}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.chevron}>{expanded ? '▾' : '▸'}</Text>
+              </View>
+              <Text style={styles.meta}>
+                {statusLabel(item.status)} · {item.reputationLabel}
+              </Text>
+            </Pressable>
+
+            {expanded && (
+              <View style={styles.secondary}>
+                <Text style={[styles.stance, { color: stanceColor(item.stance) }]}>
+                  {formatStanceDetail(item.stance)}
+                </Text>
+                <Text style={styles.secondaryHint}>
+                  Derived from observed orders in the last 24 game-hours.
+                </Text>
+              </View>
             )}
-            {areAllied(world, playerId, item.id) && (
-              <Pressable
-                style={styles.dangerButton}
-                onPress={() => void breakAlliance(item.id)}
-              >
-                <Text style={styles.buttonText}>Break alliance</Text>
-              </Pressable>
-            )}
-            {!areAllied(world, playerId, item.id) && (
-              <Pressable
-                style={styles.actionButton}
-                onPress={() => setTreatyTarget(treatyTarget === item.id ? null : item.id)}
-              >
-                <Text style={styles.buttonText}>Propose treaty</Text>
-              </Pressable>
-            )}
-          </View>
-          {treatyTarget === item.id && (
-            <View style={styles.territoryPicker}>
-              <Text style={styles.pickerHint}>Select territory (48h default)</Text>
-              {treatyTerritories.map((territory) => (
+
+            <View style={styles.row}>
+              {!areAllied(world, playerId, item.id) && item.status !== 'proposal-incoming' && (
                 <Pressable
-                  key={territory.id}
-                  style={styles.territoryRow}
-                  onPress={() => {
-                    setTreatyTarget(null);
-                    void proposeTreaty(item.id, territory.id);
-                  }}
+                  style={styles.actionButton}
+                  onPress={() => void proposeAlliance(item.id)}
                 >
-                  <Text style={styles.territoryName}>{territory.name}</Text>
+                  <Text style={styles.buttonText}>Propose alliance</Text>
                 </Pressable>
-              ))}
+              )}
+              {areAllied(world, playerId, item.id) && (
+                <Pressable
+                  style={styles.dangerButton}
+                  onPress={() => void breakAlliance(item.id)}
+                >
+                  <Text style={styles.buttonText}>Break alliance</Text>
+                </Pressable>
+              )}
+              {!areAllied(world, playerId, item.id) && (
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={() => setTreatyTarget(treatyTarget === item.id ? null : item.id)}
+                >
+                  <Text style={styles.buttonText}>Propose treaty</Text>
+                </Pressable>
+              )}
             </View>
-          )}
-        </TerminalCard>
-      )}
+            {treatyTarget === item.id && (
+              <View style={styles.territoryPicker}>
+                <Text style={styles.pickerHint}>Select territory (48h default)</Text>
+                {treatyTerritories.map((territory) => (
+                  <Pressable
+                    key={territory.id}
+                    style={styles.territoryRow}
+                    onPress={() => {
+                      setTreatyTarget(null);
+                      void proposeTreaty(item.id, territory.id);
+                    }}
+                  >
+                    <Text style={styles.territoryName}>{territory.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </TerminalCard>
+        );
+      }}
     />
   );
 }
@@ -241,6 +290,16 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 13,
   },
+  factionHeader: {
+    marginBottom: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  factionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   name: {
     color: terminal.accent,
     fontFamily: terminal.mono,
@@ -248,12 +307,38 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 4,
   },
+  chevron: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 14,
+  },
   meta: {
     color: terminal.muted,
     fontFamily: terminal.mono,
     fontSize: 12,
-    marginBottom: 10,
     textTransform: 'uppercase',
+  },
+  expandedCard: {
+    borderColor: terminal.accent,
+  },
+  secondary: {
+    borderTopWidth: 1,
+    borderTopColor: terminal.border,
+    paddingTop: 8,
+    marginBottom: 10,
+    gap: 4,
+  },
+  stance: {
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  secondaryHint: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 11,
+    lineHeight: 16,
   },
   row: {
     flexDirection: 'row',

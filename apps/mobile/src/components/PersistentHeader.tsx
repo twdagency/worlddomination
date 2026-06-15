@@ -1,0 +1,158 @@
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+import { useGame } from '../game/GameContext';
+import { getDashboardUrgentCount, PLAYER_FACTION_ID } from '../game/playerView';
+import { terminal } from '../theme/terminal';
+import { formatAwayDuration, formatDateTime, formatFunding } from '../utils/format';
+import {
+  buildPersistentHeaderModel,
+  formatUrgentBadgeCount,
+} from '../navigation/persistentHeaderModel';
+import type { RootTabParamList } from '../navigation/types';
+
+export function PersistentHeader() {
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
+  const { world, dispatches, awayMs } = useGame();
+
+  const faction = world.factions[PLAYER_FACTION_ID];
+  const urgentCount = getDashboardUrgentCount(world, dispatches, PLAYER_FACTION_ID);
+  const model = buildPersistentHeaderModel({
+    gameDay: world.day,
+    gameDateLabel: formatDateTime(world.nowMs),
+    fundingLabel: formatFunding(faction?.funding ?? 0),
+    awayMs,
+    urgentCount,
+    formatAwayDuration,
+  });
+
+  const badgeLabel = formatUrgentBadgeCount(model.urgentCount);
+
+  return (
+    <View style={[styles.shell, { paddingTop: insets.top }]}>
+      <View style={styles.row}>
+        <View style={styles.left}>
+          <Text style={styles.date} numberOfLines={1}>
+            Day {model.gameDay} · {model.gameDateLabel}
+          </Text>
+          {model.showAwayIndicator && model.awayLabel && (
+            <Text style={styles.away} numberOfLines={1}>
+              Away {model.awayLabel}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.right}>
+          <Pressable
+            style={styles.urgentTap}
+            onPress={() => navigation.navigate('Dashboard')}
+            accessibilityLabel="Open dashboard urgent queue"
+          >
+            {badgeLabel.length > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{badgeLabel}</Text>
+              </View>
+            )}
+            <Ionicons name="notifications-outline" size={18} color={terminal.muted} />
+          </Pressable>
+
+          <Text style={styles.funding} numberOfLines={1}>
+            {model.fundingLabel}
+          </Text>
+
+          <Pressable
+            style={styles.settings}
+            accessibilityLabel="Settings"
+            onPress={() => {
+              // SPRINT-7c: settings screen
+            }}
+          >
+            <Ionicons name="settings-outline" size={18} color={terminal.muted} />
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  shell: {
+    backgroundColor: terminal.card,
+    borderBottomWidth: 1,
+    borderBottomColor: terminal.border,
+    minHeight: 40,
+    justifyContent: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 8,
+  },
+  left: {
+    flex: 1,
+    minWidth: 0,
+  },
+  right: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexShrink: 0,
+  },
+  date: {
+    color: terminal.text,
+    fontFamily: terminal.mono,
+    fontSize: 11,
+  },
+  away: {
+    color: terminal.warning,
+    fontFamily: terminal.mono,
+    fontSize: 10,
+    marginTop: 2,
+  },
+  funding: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 11,
+    fontWeight: '700',
+    maxWidth: 96,
+  },
+  urgentTap: {
+    minWidth: 44,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 4,
+    backgroundColor: terminal.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    zIndex: 1,
+  },
+  badgeText: {
+    color: terminal.bg,
+    fontFamily: terminal.mono,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  settings: {
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

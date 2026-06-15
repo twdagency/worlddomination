@@ -11,22 +11,16 @@ import {
   type DashboardNavTarget,
   type DashboardScreenName,
 } from '../game/playerView';
+import {
+  resolveDashboardNavigation,
+  resolveDashboardTarget,
+} from '../navigation/dashboardNavigation';
+import type { RootTabParamList } from '../navigation/types';
 import { CatchUpSummary } from '../components/dashboard/CatchUpSummary';
 import { EmpireSummary } from '../components/dashboard/EmpireSummary';
 import { NavigationGrid } from '../components/dashboard/NavigationGrid';
 import { UrgentQueue } from '../components/dashboard/UrgentQueue';
 import { terminal } from '../theme/terminal';
-
-type RootTabParamList = {
-  Dashboard: undefined;
-  Dispatches: undefined;
-  Diplomacy: undefined;
-  Factions: undefined;
-  World: undefined;
-  Territory: undefined;
-  Forces: undefined;
-  Order: undefined;
-};
 
 export function DashboardScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
@@ -47,11 +41,17 @@ export function DashboardScreen() {
   );
 
   const navigateTo = (target: DashboardNavTarget | DashboardScreenName) => {
-    if (typeof target === 'string') {
-      navigation.navigate(target);
+    const resolved =
+      typeof target === 'string'
+        ? resolveDashboardNavigation(target)
+        : resolveDashboardTarget(target);
+
+    if (resolved.tab === 'Actions') {
+      navigation.navigate('Actions', resolved.stack);
       return;
     }
-    navigation.navigate(target.screen);
+
+    navigation.navigate(resolved.tab);
   };
 
   if (!empire) {

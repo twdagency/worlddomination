@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRoute, type RouteProp } from '@react-navigation/native';
 import {
   canBuild,
   extractionPerHour,
@@ -11,6 +12,7 @@ import type { ResourceId, UnitType } from 'sim';
 import { UNIT_TYPES } from 'shared';
 import { useGame } from '../game/GameContext';
 import { playerOwnedTerritories, PLAYER_FACTION_ID } from '../game/playerView';
+import type { ActionStackParamList } from '../navigation/types';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -34,7 +36,10 @@ function resourceLabel(id: ResourceId): string {
   return labels[id];
 }
 
+type TerritoryRoute = RouteProp<ActionStackParamList, 'Territory'>;
+
 export function TerritoryScreen() {
+  const route = useRoute<TerritoryRoute>();
   const { world, issueBuild, issueUpgradeInfra } = useGame();
   const faction = world.factions[PLAYER_FACTION];
 
@@ -50,10 +55,15 @@ export function TerritoryScreen() {
       setTerritoryId('');
       return;
     }
+    const routeTerritoryId = route.params?.territoryId;
+    if (routeTerritoryId && playerTerritories.some((t) => t.id === routeTerritoryId)) {
+      setTerritoryId(routeTerritoryId);
+      return;
+    }
     setTerritoryId((prev) =>
       playerTerritories.some((t) => t.id === prev) ? prev : playerTerritories[0].id,
     );
-  }, [playerTerritories]);
+  }, [playerTerritories, route.params?.territoryId]);
 
   const territory = playerTerritories.find((t) => t.id === territoryId);
   const maxTier = territory ? maxBuildableTier(territory.infraLevel) : 0;
