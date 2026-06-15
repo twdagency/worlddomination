@@ -226,3 +226,15 @@ export function renderCompactDigestText(
   const feed = compactDispatchFeed(world, events, windowMs, formatLine);
   return feed.flatMap((item) => (item.header ? [item.header, item.line] : [item.line])).join('\n');
 }
+
+export function renderDigestText(
+  world: WorldState,
+  events: SimEvent[],
+  windowMs?: number,
+): string {
+  const feed =
+    windowMs !== undefined && windowMs > COMPACTION_THRESHOLD_MS
+      ? compactDispatchFeed(world, events, windowMs)
+      : buildDispatchFeed(world, events);
+  return feed.flatMap((item) => (item.header ? [item.header, item.line] : [item.line])).join('\n');
+}

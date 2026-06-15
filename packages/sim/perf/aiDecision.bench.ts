@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import { advanceTo } from '../src/clock';
-import { renderDigestText } from '../src/dispatch';
+import { renderDigestText } from '../src/compaction';
 import { compactDispatchFeed, renderCompactDigestText } from '../src/compaction';
 import { collectAiOrders } from '../src/ai';
 import { AI_DECISION_INTERVAL_MS } from '../src/constants';

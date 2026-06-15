@@ -1,6 +1,4 @@
 import type { Id, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
-import { COMPACTION_THRESHOLD_MS } from './importance';
-import { compactDispatchFeed } from './compaction';
 import {
   formatBattleNarrative,
   formatProductionNarrative,
@@ -248,18 +246,6 @@ export function groupEventsByBeat(world: WorldState, events: SimEvent[]): Dispat
   }
 
   return [...groups.values()];
-}
-
-export function renderDigestText(
-  world: WorldState,
-  events: SimEvent[],
-  windowMs?: number,
-): string {
-  const feed =
-    windowMs !== undefined && windowMs > COMPACTION_THRESHOLD_MS
-      ? compactDispatchFeed(world, events, windowMs)
-      : buildDispatchFeed(world, events);
-  return feed.flatMap((item) => (item.header ? [item.header, item.line] : [item.line])).join('\n');
 }
 
 export function taggedOrderFields(
