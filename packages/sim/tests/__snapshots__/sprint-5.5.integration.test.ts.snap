@@ -1,10 +1,51 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`sprint 5.5 integration > 72h sprint4: records Genghis scout activity observation (log if absent) > genghis-72h-scout-observation 1`] = `
+exports[`sprint 5.5 integration > 72h sprint4: records Genghis scout activity and transit-time risk > genghis-72h-scout-observation 1`] = `
 {
+  "anyStaleOnArrival": false,
   "intelReports": 0,
   "scoutBuilds": 0,
   "scoutMoves": 0,
+  "transits": [],
+}
+`;
+
+exports[`sprint 5.5 integration > Genghis scout fixture: chosen target transit exceeds intel decay window > genghis-scout-transit-vs-decay 1`] = `
+{
+  "actualTransit": {
+    "distanceKm": 1869,
+    "exceedsDecayWindow": true,
+    "fromTerritoryId": "territory-berlin",
+    "toTerritoryId": "territory-madrid",
+    "transitHours": 249.2194419164361,
+    "transitMs": 897189990.8991699,
+    "unitId": "unit-steppe-scout",
+  },
+  "capitalEtas": [
+    {
+      "distanceKm": 932,
+      "exceedsDecayWindow": true,
+      "territoryId": "territory-london",
+      "travelHours": 124.20925606248643,
+      "travelMs": 447153321.8249512,
+    },
+    {
+      "distanceKm": 877,
+      "exceedsDecayWindow": true,
+      "territoryId": "territory-paris",
+      "travelHours": 116.99511012234159,
+      "travelMs": 421182396.4404297,
+    },
+    {
+      "distanceKm": 1869,
+      "exceedsDecayWindow": true,
+      "territoryId": "territory-madrid",
+      "travelHours": 249.2194419164361,
+      "travelMs": 897189990.8991699,
+    },
+  ],
+  "chosenTarget": "territory-madrid",
+  "decayWindowHours": 24,
 }
 `;
 

@@ -2,16 +2,20 @@ import { describe, it, expect } from 'vitest';
 import {
   advanceTo,
   computeVisibility,
+  decideOrders,
   dispatchLineForEvent,
   filterDispatchesForFaction,
   INTEL_DECAY_WINDOW_MS,
+  previewMoveEtaMs,
   renderDigestText,
   SCOUT_UNIT_TYPE_ID,
   tick,
 } from '../src';
+import { haversineKm } from '../src/geo';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import { createSprint5World } from '../../shared/src/scenario-sprint5';
 import { tagOrder } from './fixtures';
+import { analyzeFactionScoutTransits, type ScoutTransitReport } from './scoutTransitAnalysis';
 import type { DispatchEvent, Order, WorldState } from '../src/types';
 
 const PLAYER = 'faction-player';
@@ -22,8 +26,64 @@ const SEVENTY_TWO_HOURS_MS = 72 * 3_600_000;
 
 const S4_BERLIN = 'territory-berlin';
 const S4_LONDON = 'territory-london';
+const S4_PARIS = 'territory-paris';
+const S4_MADRID = 'territory-madrid';
+const STEPPE = 'faction-steppe';
 const S5_ISTANBUL = 'territory-istanbul';
 const S5_BELGRADE = 'territory-belgrade';
+
+function genghisScoutFixture(): WorldState {
+  const base = createSprint4World(START_S4);
+  return {
+    ...base,
+    units: {
+      ...Object.fromEntries(
+        Object.entries(base.units).filter(([, unit]) => unit.ownerId !== STEPPE),
+      ),
+      'unit-steppe-scout': {
+        id: 'unit-steppe-scout',
+        typeId: SCOUT_UNIT_TYPE_ID,
+        ownerId: STEPPE,
+        count: 1,
+        locationId: S4_BERLIN,
+        stance: 'hold',
+      },
+    },
+    intel: {},
+  };
+}
+
+function etaReport(world: WorldState, scoutId: string, territoryId: string) {
+  const preview = previewMoveEtaMs(world, scoutId, territoryId);
+  const travelMs = preview?.travelMs ?? null;
+  return {
+    territoryId,
+    distanceKm: preview ? Math.round(preview.distanceKm) : null,
+    travelMs,
+    travelHours: travelMs !== null ? travelMs / 3_600_000 : null,
+    exceedsDecayWindow: travelMs !== null ? travelMs > INTEL_DECAY_WINDOW_MS : null,
+  };
+}
+
+function transitFromOrder(world: WorldState, order: Order): ScoutTransitReport | null {
+  if (order.kind !== 'move') return null;
+
+  const preview = previewMoveEtaMs(world, order.unitId, order.toTerritoryId);
+  const from = world.territories[world.units[order.unitId]?.locationId ?? ''];
+  const to = world.territories[order.toTerritoryId];
+  const distanceKm = from && to ? Math.round(haversineKm(from.coord, to.coord)) : 0;
+  const travelMs = preview?.travelMs ?? 0;
+
+  return {
+    unitId: order.unitId,
+    fromTerritoryId: from?.id ?? '',
+    toTerritoryId: order.toTerritoryId,
+    distanceKm,
+    transitMs: travelMs,
+    transitHours: travelMs / 3_600_000,
+    exceedsDecayWindow: travelMs > INTEL_DECAY_WINDOW_MS,
+  };
+}
 
 function territoryState(world: WorldState, territoryId: string) {
   return computeVisibility(world, PLAYER).territoryStates[territoryId]?.state;
@@ -136,31 +196,61 @@ describe('sprint 5.5 integration', () => {
     expect(digest).not.toContain('Scouts report');
   });
 
-  it('72h sprint4: records Genghis scout activity observation (log if absent)', () => {
-    const { events } = advanceTo(createSprint4World(START_S4), START_S4 + SEVENTY_TWO_HOURS_MS);
+  it('72h sprint4: records Genghis scout activity and transit-time risk', () => {
+    const { events, world } = advanceTo(createSprint4World(START_S4), START_S4 + SEVENTY_TWO_HOURS_MS);
     const steppeScoutBuilds = events.filter(
       (event) =>
         event.kind === 'buildStarted' &&
-        event.factionId === 'faction-steppe' &&
+        event.factionId === STEPPE &&
         event.unitTypeId === SCOUT_UNIT_TYPE_ID,
     );
     const steppeScoutMoves = events.filter(
       (event) =>
         event.kind === 'departure' &&
-        event.ownerId === 'faction-steppe' &&
+        event.ownerId === STEPPE &&
         event.unitTypeId === SCOUT_UNIT_TYPE_ID,
     );
     const steppeIntel = events.filter(
-      (event) => event.kind === 'intelReport' && event.observerFaction === 'faction-steppe',
+      (event) => event.kind === 'intelReport' && event.observerFaction === STEPPE,
     );
+    const transits = analyzeFactionScoutTransits(world, events, STEPPE);
 
     const observation = {
       scoutBuilds: steppeScoutBuilds.length,
       scoutMoves: steppeScoutMoves.length,
       intelReports: steppeIntel.length,
+      transits,
+      anyStaleOnArrival: transits.some((row) => row.exceedsDecayWindow),
     };
     expect(observation).toMatchSnapshot('genghis-72h-scout-observation');
-    // Sprint 5.5 Phase 7: aggressive scoring did not emit scout orders in 72h cold-play.
-    // Logged in docs/deferred-backlog.md — tuning deferred to Sprint 6+.
+    // 72h cold-play: no steppe scout orders — attack/build outcompete scouting.
+    // Transit-time stale-on-arrival analysis applies when a scout exists (see next test).
+  });
+
+  it('Genghis scout fixture: chosen target transit exceeds intel decay window', () => {
+    const world = genghisScoutFixture();
+    const orders = decideOrders(world, STEPPE, world.nowMs);
+    const move = orders.find((order) => order.kind === 'move');
+    expect(move?.kind).toBe('move');
+
+    const capitalEtas = [S4_LONDON, S4_PARIS, S4_MADRID].map((territoryId) =>
+      etaReport(world, 'unit-steppe-scout', territoryId),
+    );
+
+    let actualTransit: ScoutTransitReport | null = null;
+    if (move?.kind === 'move') {
+      actualTransit = transitFromOrder(world, move);
+      expect(actualTransit?.toTerritoryId).toBe(move.toTerritoryId);
+    }
+
+    const report = {
+      chosenTarget: move?.kind === 'move' ? move.toTerritoryId : null,
+      capitalEtas,
+      actualTransit,
+      decayWindowHours: INTEL_DECAY_WINDOW_MS / 3_600_000,
+    };
+    expect(report).toMatchSnapshot('genghis-scout-transit-vs-decay');
+    expect(capitalEtas.every((row) => row.exceedsDecayWindow)).toBe(true);
+    expect(actualTransit?.exceedsDecayWindow).toBe(true);
   });
 });

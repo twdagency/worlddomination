@@ -140,7 +140,9 @@ presses multiple fronts and the player must ALLOCATE forces, not just relocate t
 - **Stale destination order round-trip** (non-blocking test): build scout → observe Berlin → scout dies → Berlin stale →
   player orders attack on Berlin → confirm order executes and state stays consistent.
 
-- **Genghis aggressive scouting visibility**: Phase 7 cold-play on `createSprint4World` (72h, no player orders) recorded **zero** steppe scout builds, moves, or intel reports (`genghis-72h-scout-observation` snapshot). Revisit aggressive scoring weights during Sprint 6 play-testing — not a Sprint 5.5 blocker.
+- **Genghis aggressive scouting visibility**: Phase 7 cold-play on `createSprint4World` (72h, no player orders) recorded **zero** steppe scout builds, moves, or intel reports. Revisit aggressive scoring weights during Sprint 6 play-testing — not a Sprint 5.5 blocker.
+
+- **Scout transit vs intel decay (Sprint 4 geography)**: When Genghis *does* issue a scout move (fixture: combat stack removed, scout at Berlin), aggressive scoring picks **Madrid** (~1,869 km, **~249h** transit). London (~124h) and Paris (~117h) also exceed the **24h** decay window. Distant-capital scout dispatches are **stale-on-arrival by transit time** — the strategic gap AI scoring does not yet penalize. Sprint 6 candidates: prefer nearer unknowns, score transit into `scoreScoutMove`, or forward-deploy before deep targets.
 
 
 Sprint 6 candidate: Scout intel richness
