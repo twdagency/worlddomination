@@ -1,4 +1,13 @@
 import {
+  areAllied,
+  dispatchLineForEvent,
+  filterDispatchesForFaction,
+  pendingProposalsForFaction,
+  resolveEventImportance,
+  type Id,
+  type SimEvent,
+} from 'sim';
+import {
   computeVisibility,
   type FactionVisibility,
   type IntelSource,
@@ -8,6 +17,7 @@ import {
   type Unit,
   type WorldState,
 } from 'sim';
+import { formatDateTime } from '../utils/format';
 
 export const PLAYER_FACTION_ID = 'faction-player';
 
@@ -172,4 +182,311 @@ export function playerMoveDestinations(world: WorldState, fromTerritoryId: strin
     .filter((display) => display.state === 'live')
     .map((display) => world.territories[display.territoryId])
     .filter((territory): territory is Territory => territory !== undefined);
+}
+
+// --- Dashboard selectors (Sprint 7a) ---
+
+/** Collapse catch-up when away duration is under one game-hour (1:1 wall clock). */
+export const DASHBOARD_AWAY_COLLAPSE_MS = 3_600_000;
+
+const URGENT_CRISIS_KINDS = new Set<SimEvent['kind']>([
+  'battle',
+  'withdrawal',
+  'buildBlocked',
+  'allianceBroken',
+]);
+
+const CRISIS_WINDOW_MS = 6 * 3_600_000;
+const FOOD_CRITICAL_THRESHOLD = 10;
+const FOOD_LOW_THRESHOLD = 25;
+const FOOD_PRODUCTION_THRESHOLD = 15;
+
+export type DashboardScreenName =
+  | 'Dashboard'
+  | 'Dispatches'
+  | 'World'
+  | 'Order'
+  | 'Diplomacy'
+  | 'Territory'
+  | 'Forces';
+
+export interface DashboardNavTarget {
+  screen: DashboardScreenName;
+  factionId?: string;
+  territoryId?: string;
+}
+
+export interface DashboardCatchUpCriticalItem {
+  id: string;
+  label: string;
+  atMs: number;
+}
+
+export interface DashboardCatchUpSummary {
+  mode: 'current' | 'away';
+  awayMs: number;
+  critical: DashboardCatchUpCriticalItem[];
+  notableCount: number;
+  routineCount: number;
+  totalCount: number;
+}
+
+export type DashboardUrgentKind =
+  | 'alliance-proposal'
+  | 'treaty-proposal'
+  | 'crisis'
+  | 'build-blocker';
+
+export interface DashboardUrgentItem {
+  id: string;
+  kind: DashboardUrgentKind;
+  label: string;
+  urgencyScore: number;
+  deadlineMs: number;
+  navigation: DashboardNavTarget;
+}
+
+export type ResourceStatusLevel = 'ok' | 'low' | 'critical';
+
+export interface DashboardResourceStatus {
+  id: string;
+  label: string;
+  amount: number;
+  status: ResourceStatusLevel;
+}
+
+export interface DashboardEmpireSummary {
+  factionId: string;
+  leaderName: string;
+  regionName: string;
+  territoryNames: string[];
+  funding: number;
+  manpower: number;
+  manpowerCap: number;
+  resources: DashboardResourceStatus[];
+  allianceCount: number;
+  era: string;
+  gameDateLabel: string;
+  gameDay: number;
+}
+
+export interface DashboardNavCard {
+  screen: Exclude<DashboardScreenName, 'Dashboard'>;
+  label: string;
+  badgeCount: number;
+}
+
+function isTimestampedEvent(event: SimEvent): event is SimEvent & { at: number } {
+  return 'at' in event && typeof event.at === 'number';
+}
+
+function foodStatusLevel(amount: number): ResourceStatusLevel {
+  if (amount < FOOD_CRITICAL_THRESHOLD) return 'critical';
+  if (amount < FOOD_LOW_THRESHOLD) return 'low';
+  return 'ok';
+}
+
+/** Events since the away window, visibility-gated, categorized by existing importance metadata. */
+export function getDashboardCatchUpSummary(
+  world: WorldState,
+  events: SimEvent[],
+  awayMs: number,
+  factionId: Id = PLAYER_FACTION_ID,
+): DashboardCatchUpSummary {
+  if (awayMs < DASHBOARD_AWAY_COLLAPSE_MS) {
+    return {
+      mode: 'current',
+      awayMs,
+      critical: [],
+      notableCount: 0,
+      routineCount: 0,
+      totalCount: 0,
+    };
+  }
+
+  const sinceMs = world.nowMs - awayMs;
+  const visible = filterDispatchesForFaction(world, events, factionId).filter(
+    (event): event is SimEvent & { at: number } =>
+      isTimestampedEvent(event) && event.at > sinceMs,
+  );
+
+  let notableCount = 0;
+  let routineCount = 0;
+  const critical: DashboardCatchUpCriticalItem[] = [];
+
+  for (const event of visible) {
+    const importance = resolveEventImportance(world, event);
+    if (importance === 'high') {
+      critical.push({
+        id: `${event.kind}-${event.at}`,
+        label: dispatchLineForEvent(world, event, factionId),
+        atMs: event.at,
+      });
+    } else if (importance === 'medium') {
+      notableCount += 1;
+    } else {
+      routineCount += 1;
+    }
+  }
+
+  return {
+    mode: 'away',
+    awayMs,
+    critical,
+    notableCount,
+    routineCount,
+    totalCount: critical.length + notableCount + routineCount,
+  };
+}
+
+/** Attention queue ranked by urgency then deadline. */
+export function getDashboardUrgentItems(
+  world: WorldState,
+  events: SimEvent[],
+  factionId: Id = PLAYER_FACTION_ID,
+): DashboardUrgentItem[] {
+  const items: DashboardUrgentItem[] = [];
+
+  for (const proposal of pendingProposalsForFaction(world, factionId)) {
+    const fromLeaderId = world.factions[proposal.from]?.leaderId;
+    const fromName = world.leaders[fromLeaderId ?? '']?.name ?? proposal.from;
+    const hoursLeft = Math.max(0, Math.ceil((proposal.expiresAt - world.nowMs) / 3_600_000));
+    const kind: DashboardUrgentKind =
+      proposal.type === 'alliance' ? 'alliance-proposal' : 'treaty-proposal';
+    items.push({
+      id: proposal.id,
+      kind,
+      label: `${fromName} proposes ${proposal.type} — expires in ${hoursLeft}h`,
+      urgencyScore: 1_000 - hoursLeft,
+      deadlineMs: proposal.expiresAt,
+      navigation: { screen: 'Diplomacy', factionId: proposal.from },
+    });
+  }
+
+  const visible = filterDispatchesForFaction(world, events, factionId);
+  const crisisSinceMs = world.nowMs - CRISIS_WINDOW_MS;
+  for (const event of visible) {
+    if (!isTimestampedEvent(event) || event.at < crisisSinceMs) continue;
+    if (!URGENT_CRISIS_KINDS.has(event.kind)) continue;
+    const importance = resolveEventImportance(world, event);
+    if (importance !== 'high' && event.kind !== 'buildBlocked') continue;
+    items.push({
+      id: `crisis-${event.kind}-${event.at}`,
+      kind: 'crisis',
+      label: dispatchLineForEvent(world, event, factionId),
+      urgencyScore: 800 - (world.nowMs - event.at) / 3_600_000,
+      deadlineMs: event.at,
+      navigation: { screen: 'Dispatches' },
+    });
+  }
+
+  for (const territory of playerOwnedTerritories(world)) {
+    const food = territory.resources.food ?? 0;
+    const hasQueue = (territory.buildQueue?.length ?? 0) > 0;
+    if (!hasQueue || food >= FOOD_PRODUCTION_THRESHOLD) continue;
+    items.push({
+      id: `food-blocker-${territory.id}`,
+      kind: 'build-blocker',
+      label: `${territory.name}: food shortage threatens production (${Math.floor(food)} remaining)`,
+      urgencyScore: 600,
+      deadlineMs: world.nowMs,
+      navigation: { screen: 'Territory', territoryId: territory.id },
+    });
+  }
+
+  return items.sort(
+    (left, right) =>
+      right.urgencyScore - left.urgencyScore || left.deadlineMs - right.deadlineMs,
+  );
+}
+
+/** Glance-readable empire snapshot for the dashboard header block. */
+export function getDashboardEmpireSummary(
+  world: WorldState,
+  factionId: Id = PLAYER_FACTION_ID,
+): DashboardEmpireSummary | null {
+  const faction = world.factions[factionId];
+  if (!faction) return null;
+
+  const leader = world.leaders[faction.leaderId];
+  const territories = playerOwnedTerritories(world).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
+  const totalFood = territories.reduce((sum, territory) => sum + (territory.resources.food ?? 0), 0);
+  const totalFuel = territories.reduce((sum, territory) => sum + (territory.resources.fuel ?? 0), 0);
+  const totalSteel = territories.reduce(
+    (sum, territory) => sum + (territory.resources.steel ?? 0),
+    0,
+  );
+
+  let allianceCount = 0;
+  for (const other of Object.values(world.factions)) {
+    if (other.id !== factionId && areAllied(world, factionId, other.id)) {
+      allianceCount += 1;
+    }
+  }
+
+  return {
+    factionId,
+    leaderName: leader?.name ?? factionId,
+    regionName: leader?.region ?? 'Unknown',
+    territoryNames: territories.map((territory) => territory.name),
+    funding: faction.funding,
+    manpower: Math.floor(faction.manpower),
+    manpowerCap: faction.manpowerCap,
+    resources: [
+      { id: 'food', label: 'Food', amount: totalFood, status: foodStatusLevel(totalFood) },
+      {
+        id: 'fuel',
+        label: 'Fuel',
+        amount: totalFuel,
+        status: totalFuel < FOOD_CRITICAL_THRESHOLD ? 'low' : 'ok',
+      },
+      {
+        id: 'steel',
+        label: 'Steel',
+        amount: totalSteel,
+        status: totalSteel < FOOD_CRITICAL_THRESHOLD ? 'low' : 'ok',
+      },
+    ],
+    allianceCount,
+    era: leader?.era ?? 'Unknown',
+    gameDateLabel: formatDateTime(world.nowMs),
+    gameDay: world.day,
+  };
+}
+
+/** Navigation grid cards with actionable badges per task screen. */
+export function getDashboardNavCards(
+  world: WorldState,
+  events: SimEvent[],
+  factionId: Id = PLAYER_FACTION_ID,
+): DashboardNavCard[] {
+  const urgent = getDashboardUrgentItems(world, events, factionId);
+  const diplomacyBadge = urgent.filter(
+    (item) => item.kind === 'alliance-proposal' || item.kind === 'treaty-proposal',
+  ).length;
+  const territoryBadge = urgent.filter((item) => item.kind === 'build-blocker').length;
+  const staleIntel = playerWorldIntel(world).filter((entry) => entry.state === 'stale').length;
+  const forcesInTransit = playerForces(world).filter((unit) => unit.transit).length;
+  const movableForces = playerMovableUnits(world).length;
+
+  return [
+    { screen: 'Dispatches', label: 'Dispatches', badgeCount: 0 },
+    { screen: 'World', label: 'World', badgeCount: staleIntel > 0 ? staleIntel : 0 },
+    { screen: 'Order', label: 'Order', badgeCount: movableForces > 0 ? 1 : 0 },
+    { screen: 'Diplomacy', label: 'Diplomacy', badgeCount: diplomacyBadge },
+    { screen: 'Territory', label: 'Territory', badgeCount: territoryBadge },
+    { screen: 'Forces', label: 'Forces', badgeCount: forcesInTransit },
+  ];
+}
+
+/** Count urgent items for header badge (Phase 2 persistent header). */
+export function getDashboardUrgentCount(
+  world: WorldState,
+  events: SimEvent[],
+  factionId: Id = PLAYER_FACTION_ID,
+): number {
+  return getDashboardUrgentItems(world, events, factionId).length;
 }

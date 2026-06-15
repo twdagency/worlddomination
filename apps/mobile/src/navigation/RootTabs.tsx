@@ -6,6 +6,7 @@ import { useGame } from '../game/GameContext';
 import { FactionsScreen } from '../screens/FactionsScreen';
 import { DiplomacyScreen } from '../screens/DiplomacyScreen';
 import { DispatchesScreen } from '../screens/DispatchesScreen';
+import { DashboardScreen } from '../screens/DashboardScreen';
 import { ForcesScreen } from '../screens/ForcesScreen';
 import { OrderScreen } from '../screens/OrderScreen';
 import { TerritoryScreen } from '../screens/TerritoryScreen';
@@ -41,6 +42,7 @@ export function RootTabs() {
   return (
     <NavigationContainer theme={navTheme}>
       <Tab.Navigator
+        initialRouteName="Dashboard"
         screenOptions={{
           headerStyle: { backgroundColor: terminal.card },
           headerTintColor: terminal.accent,
@@ -53,6 +55,7 @@ export function RootTabs() {
           tabBarIconStyle: { display: 'none', width: 0, height: 0 },
         }}
       >
+        <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Home' }} />
         <Tab.Screen name="Dispatches" component={DispatchesScreen} />
         <Tab.Screen name="Diplomacy" component={DiplomacyScreen} />
         <Tab.Screen name="Factions" component={FactionsScreen} />

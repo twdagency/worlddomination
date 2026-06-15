@@ -2,7 +2,7 @@
   "name": "world-domination",
   "private": true,
   "scripts": {
-    "test": "pnpm --filter sim test",
+    "test": "pnpm --filter sim test && pnpm --filter mobile test",
     "lint": "eslint \"packages/**/*.{ts,tsx}\" \"apps/**/*.{ts,tsx}\"",
     "format": "prettier --write \"packages/**/*.{ts,tsx}\" \"apps/**/*.{ts,tsx}\""
   },
