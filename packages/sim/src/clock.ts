@@ -1,6 +1,7 @@
 import { haversineKm } from './geo';
 import type { AccruedIncome } from './economy';
 import { collectAiOrders, isAiDecisionMs, nextAiDecisionMs } from './ai';
+import { applyAiDiplomaticDecisions } from './diplomaticAi';
 import { buildTransit, effectiveSpeedKmh, pendingArrivalMs } from './movement';
 import { unitPosition } from './position';
 import { pendingProductionMs } from './production';
@@ -63,8 +64,10 @@ export function advanceTo(
     const elapsed = stepTarget - current.nowMs;
     if (elapsed <= 0) break;
 
-    const orders = isAiDecisionMs(current, stepTarget) ? collectAiOrders(current, stepTarget) : [];
-    const result = tick(current, orders, elapsed);
+    const atAiDecision = isAiDecisionMs(current, stepTarget);
+    const stepWorld = atAiDecision ? applyAiDiplomaticDecisions(current, stepTarget) : current;
+    const orders = atAiDecision ? collectAiOrders(stepWorld, stepTarget) : [];
+    const result = tick(stepWorld, orders, elapsed);
     current = result.world;
     allEvents.push(...result.events);
 

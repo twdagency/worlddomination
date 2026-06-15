@@ -126,6 +126,20 @@ export {
   createInitialReputation,
 } from './reputation';
 export {
+  ALLIANCE_ACCEPT_THRESHOLD,
+  ALLIANCE_BREAK_THRESHOLD,
+  ALLIANCE_PROPOSE_THRESHOLD,
+  RELATIVE_POWER_PEER_RATIO_MAX,
+  RELATIVE_POWER_PEER_RATIO_MIN,
+  applyAiDiplomaticDecisions,
+  factionMilitaryPower,
+  isEnemyOf,
+  scoreAllianceAcceptance,
+  scoreAllianceBreak,
+  scoreAllianceProposal,
+  sharedEnemies,
+} from './diplomaticAi';
+export {
   areAllied,
   breakAlliance,
   diplomacyDefaults,

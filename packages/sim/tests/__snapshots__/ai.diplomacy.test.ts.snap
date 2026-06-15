@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AI diplomacy cold-play #1 (72h, pre-transit scoring) > records alliance state, Genghis scout activity, and player digest > sprint6-4b-cold-play-72h-digest 1`] = `
+{
+  "alliances": [
+    {
+      "factionA": "faction-britain",
+      "factionB": "faction-steppe",
+      "formedAt": 1700921600000,
+    },
+  ],
+  "digest": "Caesar — tick 1700921600000
+INTEL — Caesar forces advancing from Paris toward London
+Caesar — tick 1700943200000
+INTEL — Caesar forces advancing from Paris toward London
+Caesar — tick 1700964800000
+INTEL — Caesar forces advancing from Paris toward London
+Caesar — tick 1700986400000
+INTEL — Caesar forces advancing from Paris toward London
+Caesar — tick 1701008000000
+INTEL — Caesar forces advancing from Paris toward London
+Caesar — tick 1701029600000
+INTEL — Caesar forces advancing from Paris toward London
+Caesar — tick 1701051200000
+INTEL — Caesar forces advancing from Paris toward London
+Caesar — tick 1701072800000
+INTEL — Caesar forces advancing from Paris toward London
+Caesar — tick 1701094400000
+INTEL — Infrastructure upgraded at Paris (Caesar)
+Caesar — tick 1701116000000
+INTEL — Infrastructure upgraded at Paris (Caesar)
+INTEL — Caesar forces arrived at London — contact expected
+Elizabeth at London — Caesar annihilated, no casualties.
+Caesar — tick 1701159200000
+INTEL — Infrastructure upgraded at Paris (Caesar)
+INCOME — funding 44875.284244862334",
+  "genghisOrdersAtEnd": [],
+  "reputationSample": {
+    "britainViewOfGenghis": 0,
+    "caesarViewOfGenghis": 0,
+  },
+  "scoutBuilds": 0,
+  "scoutMoves": 0,
+}
+`;
