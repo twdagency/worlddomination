@@ -19,7 +19,8 @@ export function WorldScreen() {
       keyExtractor={(item) => item.territoryId}
       ListHeaderComponent={
         <Text style={styles.hint}>
-          Regional awareness — live, stale, and unknown territories
+          Regional awareness — live, stale, and unknown territories. Summary view; per-territory
+          detail stays on Territory.
         </Text>
       }
       renderItem={({ item }) => {

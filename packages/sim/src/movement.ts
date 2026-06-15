@@ -1,8 +1,9 @@
 import { resolveHostileArrival } from './arrivalCombat';
 import { DEFAULT_TRAIT, MS_PER_HOUR } from './constants';
+import { ensureIntelStore } from './intel';
 import { haversineKm } from './geo';
 import { arrivalImportance, departureImportance } from './importance';
-import type { Id, Millis, Order, OrderIntent, SimEvent, TraitKey, TransitOrder, Unit, WorldState } from './types';
+import type { Id, IntelStore, Millis, Order, OrderIntent, SimEvent, TraitKey, TransitOrder, Unit, WorldState } from './types';
 
 type TransitOrderFields = {
   stanceOnArrival: TransitOrder['stanceOnArrival'];
@@ -149,11 +150,13 @@ export function resolveArrivals(
   units: WorldState['units'];
   territories: WorldState['territories'];
   rng: WorldState['rng'];
+  intel: IntelStore;
   events: SimEvent[];
 } {
   let units = { ...world.units };
   let territories = { ...world.territories };
   let rng = world.rng;
+  let intel = ensureIntelStore(world);
   const events: SimEvent[] = [];
 
   const arriving = Object.entries(units)
@@ -186,7 +189,8 @@ export function resolveArrivals(
     units = resolution.units;
     territories = resolution.territories;
     rng = resolution.rng;
-    const snapshotWorld = { ...world, units, territories, rng };
+    intel = resolution.intel;
+    const snapshotWorld = { ...world, units, territories, rng, intel };
     events.push(
       {
         kind: 'arrival',
@@ -212,7 +216,7 @@ export function resolveArrivals(
     );
   }
 
-  return { units, territories, rng, events };
+  return { units, territories, rng, intel, events };
 }
 
 /** All pending arrival timestamps strictly after `nowMs`. */

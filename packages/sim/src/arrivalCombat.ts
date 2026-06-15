@@ -7,16 +7,18 @@ import {
   resolveBattle,
   sidePower,
 } from './combat';
+import { recordDestroyedScoutIntel, ensureIntelStore } from './intel';
 import {
   formatBattleNarrative,
   formatSecuredNarrative,
 } from './reports';
-import type { Id, Millis, SimEvent, Unit, WorldState } from './types';
+import type { Id, IntelStore, Millis, SimEvent, Unit, WorldState } from './types';
 
 export interface ArrivalResolution {
   units: WorldState['units'];
   territories: WorldState['territories'];
   rng: WorldState['rng'];
+  intel: IntelStore;
   events: SimEvent[];
 }
 
@@ -67,10 +69,11 @@ export function resolveHostileArrival(
   let units = { ...world.units, [arrivingUnit.id]: arrivingUnit };
   let territories = { ...world.territories };
   let rng = world.rng;
+  let intel = ensureIntelStore(world);
 
   const territory = territories[territoryId];
   if (!territory) {
-    return { units, territories, rng, events };
+    return { units, territories, rng, intel, events };
   }
 
   const attackerId = arrivingUnit.ownerId;
@@ -92,7 +95,7 @@ export function resolveHostileArrival(
         importance: 'high',
       });
     }
-    return { units, territories, rng, events };
+    return { units, territories, rng, intel, events };
   }
 
   const willAssault = stanceOnArrival === 'assault';
@@ -116,8 +119,16 @@ export function resolveHostileArrival(
     const originalFleeingCount = fleeing.reduce((sum, u) => sum + u.count, 0);
     const casualties = computeWithdrawalCasualties(fleeing, attackers, underFire);
 
+    const unitsBeforeWithdrawal = { ...units };
     units = applyUnitLosses(units, casualties.defenderLossesByUnit);
     units = applyUnitLosses(units, casualties.attackerLossesByUnit);
+    intel = recordDestroyedScoutIntel(
+      { ...world, units: unitsBeforeWithdrawal, territories, rng },
+      unitsBeforeWithdrawal,
+      units,
+      at,
+      intel,
+    );
 
     const fleeingSurvivors = fleeing
       .map((u) => units[u.id])
@@ -169,13 +180,14 @@ export function resolveHostileArrival(
       enemyWithdrew: fleeing.length > 0,
       importance: 'high',
     });
-    return { units, territories, rng, events };
+    return { units, territories, rng, intel, events };
   }
 
   if (!willAssault) {
-    return { units, territories, rng, events };
+    return { units, territories, rng, intel, events };
   }
 
+  const unitsBeforeBattle = { ...units };
   const battle = resolveBattle({
     world: { ...world, rng },
     attackerUnits: attackers.map((u) => units[u.id] ?? u),
@@ -192,6 +204,13 @@ export function resolveHostileArrival(
 
   units = applyUnitLosses(units, battle.attackerLossesByUnit);
   units = applyUnitLosses(units, battle.defenderLossesByUnit);
+  intel = recordDestroyedScoutIntel(
+    { ...world, units: unitsBeforeBattle, territories, rng },
+    unitsBeforeBattle,
+    units,
+    at,
+    intel,
+  );
 
   if (battle.winnerId === attackerId) {
     territories[territoryId] = { ...territory, ownerId: attackerId };
@@ -223,5 +242,5 @@ export function resolveHostileArrival(
     });
   }
 
-  return { units, territories, rng, events };
+  return { units, territories, rng, intel, events };
 }

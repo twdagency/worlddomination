@@ -2,7 +2,7 @@ import type { AccruedIncome } from './economy';
 import type { Order, SimEvent, WorldState } from './types';
 import { MS_PER_DAY } from './constants';
 import { accrueEconomy } from './economy';
-import { ensureIntelStore, recordDirectObservations } from './intel';
+import { ensureIntelStore, recordIntelObservations } from './intel';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
@@ -75,6 +75,7 @@ export function tick(
     territories,
     rng,
     events: arrivalEvents,
+    intel: intelAfterArrivals,
   } = resolveArrivals(
     { ...afterEconomy, units: unitsAfterProduction, territories: territoriesAfterProduction },
     nowMs,
@@ -86,12 +87,12 @@ export function tick(
     units: unitsAfterArrivals,
     territories,
     rng,
-    intel: ensureIntelStore(world),
+    intel: intelAfterArrivals ?? ensureIntelStore(world),
   };
 
   const next: WorldState = {
     ...resolved,
-    intel: recordDirectObservations(resolved),
+    intel: recordIntelObservations(resolved),
   };
 
   return { world: next, events, accrued: economy.accrued };

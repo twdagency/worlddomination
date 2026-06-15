@@ -10,6 +10,7 @@ import {
 } from './constants';
 import { haversineKm } from './geo';
 import { nextRandom } from './rng';
+import { isScoutUnit, SCOUT_COMBAT_WEIGHT_MULT } from './scout';
 import type { BattleReport, Coord, Id, RngState, Unit, UnitType, WorldState } from './types';
 
 export interface SidePowerBreakdown {
@@ -22,7 +23,11 @@ export interface SidePowerBreakdown {
 export function unitStackPower(world: WorldState, unit: Unit): number {
   const unitType = world.unitTypes[unit.typeId];
   if (!unitType) return 0;
-  return unit.count * unitPowerPerSoldier(unitType);
+  let power = unit.count * unitPowerPerSoldier(unitType);
+  if (isScoutUnit(world, unit)) {
+    power *= SCOUT_COMBAT_WEIGHT_MULT;
+  }
+  return power;
 }
 
 export function unitPowerPerSoldier(unitType: UnitType): number {

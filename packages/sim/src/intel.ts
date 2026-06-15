@@ -1,5 +1,6 @@
 import { MS_PER_DAY } from './constants';
-import { activeDirectSight } from './sight';
+import { isScoutUnit } from './scout';
+import { activeSight, territoriesObservedByScoutUnit, type ActiveSight } from './sight';
 import type {
   Id,
   IntelRecord,
@@ -8,6 +9,7 @@ import type {
   Millis,
   TerritorySnapshot,
   TerritoryVisibilityState,
+  Unit,
   WorldState,
 } from './types';
 
@@ -40,6 +42,18 @@ function recordsForTerritory(records: IntelRecord[], territoryId: Id): IntelReco
   return records.filter((record) => record.territoryId === territoryId);
 }
 
+function latestRecordForSource(
+  records: IntelRecord[],
+  territoryId: Id,
+  source: IntelSource,
+): IntelRecord | undefined {
+  const matching = recordsForTerritory(records, territoryId).filter((record) => record.source === source);
+  if (matching.length === 0) return undefined;
+  return matching.reduce((latest, record) =>
+    record.observationTime > latest.observationTime ? record : latest,
+  );
+}
+
 function latestRecord(records: IntelRecord[]): IntelRecord | undefined {
   if (records.length === 0) return undefined;
   return records.reduce((latest, record) =>
@@ -57,14 +71,15 @@ function snapshotEqual(a: TerritorySnapshot, b: TerritorySnapshot): boolean {
   );
 }
 
-function shouldAppendDirectRecord(
+function shouldAppendRecord(
   latest: IntelRecord | undefined,
   snapshot: TerritorySnapshot,
+  source: IntelSource,
   nowMs: Millis,
 ): boolean {
   if (!latest) return true;
-  if (latest.observationTime === nowMs) return false;
-  if (latest.source !== 'direct') return true;
+  if (latest.observationTime === nowMs && latest.source === source) return false;
+  if (latest.source !== source) return true;
   return !snapshotEqual(latest.snapshot, snapshot);
 }
 
@@ -106,44 +121,121 @@ export function captureTerritorySnapshot(
   };
 }
 
-/**
- * Records direct observations for every faction at `world.nowMs`.
- * Single write path for geometric sight — called once per tick boundary.
- *
- * SPRINT-6: a unit that observes then dies in the same tick (e.g. arrival combat)
- * does not contribute to direct sight on that tick — post-resolution snapshot only.
- * A future "final report on death" would need an explicit pre-combat observation pass.
- */
-export function recordDirectObservations(world: WorldState): IntelStore {
-  const nowMs = world.nowMs;
-  const store: IntelStore = { ...ensureIntelStore(world) };
+function appendRecord(
+  records: IntelRecord[],
+  record: IntelRecord,
+): IntelRecord[] {
+  return [...records, record];
+}
 
-  for (const factionId of Object.keys(world.factions)) {
-    const sight = activeDirectSight(world, factionId);
-    let records = [...(store[factionId] ?? [])];
+function recordSourceObservations(
+  world: WorldState,
+  factionId: Id,
+  records: IntelRecord[],
+  territoryIds: Set<Id>,
+  visibleUnitIds: Set<Id>,
+  source: IntelSource,
+  observationTime: Millis = world.nowMs,
+): IntelRecord[] {
+  let next = records;
 
-    for (const territoryId of sight.territoryIds) {
-      const snapshot = captureTerritorySnapshot(world, factionId, territoryId, sight.unitIds);
-      const territoryRecords = recordsForTerritory(records, territoryId);
-      const latest = latestRecord(territoryRecords);
-
-      if (!shouldAppendDirectRecord(latest, snapshot, nowMs)) continue;
-
-      records.push({
+  for (const territoryId of territoryIds) {
+    const snapshot = captureTerritorySnapshot(world, factionId, territoryId, visibleUnitIds);
+    const latest = latestRecordForSource(next, territoryId, source);
+    if (latest && latest.observationTime === observationTime && latest.source === source) continue;
+    if (shouldAppendRecord(latest, snapshot, source, observationTime)) {
+      next = appendRecord(next, {
         observerFaction: factionId,
         territoryId,
-        observationTime: nowMs,
+        observationTime,
         snapshot,
-        source: 'direct',
+        source,
         expiresAt: null,
         confidence: 1.0,
       });
     }
+  }
+
+  return next;
+}
+
+/**
+ * Records direct and scout observations for every faction at `world.nowMs`.
+ * Single write path for geometric sight — called once per tick boundary.
+ *
+ * SPRINT-6: a unit that observes then dies in the same tick (e.g. arrival combat)
+ * does not contribute to tick-end sight — use `recordScoutFinalObservations` on death.
+ */
+export function recordIntelObservations(world: WorldState): IntelStore {
+  const store: IntelStore = { ...ensureIntelStore(world) };
+
+  for (const factionId of Object.keys(world.factions)) {
+    const sight = activeSight(world, factionId);
+    let records = [...(store[factionId] ?? [])];
+
+    records = recordSourceObservations(
+      world,
+      factionId,
+      records,
+      sight.directTerritoryIds,
+      sight.unitIds,
+      'direct',
+    );
+    records = recordSourceObservations(
+      world,
+      factionId,
+      records,
+      sight.scoutTerritoryIds,
+      sight.unitIds,
+      'scout',
+    );
 
     store[factionId] = records;
   }
 
   return store;
+}
+
+/** @deprecated Use `recordIntelObservations`. */
+export function recordDirectObservations(world: WorldState): IntelStore {
+  return recordIntelObservations(world);
+}
+
+/**
+ * Final scout snapshot at destruction — live scout sight ends immediately and stale
+ * intel is available on the next read without waiting for tick-end recording.
+ */
+export function recordScoutFinalObservations(
+  world: WorldState,
+  scoutUnit: Unit,
+  atMs: Millis,
+  store: IntelStore = ensureIntelStore(world),
+): IntelStore {
+  if (!isScoutUnit(world, scoutUnit)) return store;
+
+  const factionId = scoutUnit.ownerId;
+  const worldAt = { ...world, nowMs: atMs, intel: store };
+  const observed = territoriesObservedByScoutUnit(worldAt, scoutUnit);
+  let records = [...(store[factionId] ?? [])];
+
+  records = recordSourceObservations(
+    worldAt,
+    factionId,
+    records,
+    observed.territoryIds,
+    observed.unitIds,
+    'scout',
+    atMs,
+  );
+
+  return { ...store, [factionId]: records };
+}
+
+function activeSourcesForTerritory(sight: ActiveSight, territoryId: Id): IntelSource[] {
+  const sources: IntelSource[] = [];
+  if (sight.directTerritoryIds.has(territoryId)) sources.push('direct');
+  if (sight.scoutTerritoryIds.has(territoryId)) sources.push('scout');
+  return sources;
 }
 
 function sourcesFromRecords(records: IntelRecord[]): IntelSource[] {
@@ -155,12 +247,12 @@ export function mergeTerritoryVisibility(
   world: WorldState,
   factionId: Id,
   territoryId: Id,
-  activeTerritoryIds: Set<Id>,
-  visibleUnitIds: Set<Id>,
+  sight: ActiveSight,
 ): TerritoryVisibilityState {
-  if (activeTerritoryIds.has(territoryId)) {
-    const snapshot = captureTerritorySnapshot(world, factionId, territoryId, visibleUnitIds);
-    return { state: 'live', snapshot, sources: ['direct'] };
+  const activeSources = activeSourcesForTerritory(sight, territoryId);
+  if (activeSources.length > 0) {
+    const snapshot = captureTerritorySnapshot(world, factionId, territoryId, sight.unitIds);
+    return { state: 'live', snapshot, sources: activeSources };
   }
 
   const records = recordsForTerritory(factionIntelRecords(world, factionId), territoryId);
@@ -179,18 +271,32 @@ export function mergeAllTerritoryVisibility(
   world: WorldState,
   factionId: Id,
 ): Record<Id, TerritoryVisibilityState> {
-  const sight = activeDirectSight(world, factionId);
+  const sight = activeSight(world, factionId);
   const states: Record<Id, TerritoryVisibilityState> = {};
 
   for (const territory of Object.values(world.territories)) {
-    states[territory.id] = mergeTerritoryVisibility(
-      world,
-      factionId,
-      territory.id,
-      sight.territoryIds,
-      sight.unitIds,
-    );
+    states[territory.id] = mergeTerritoryVisibility(world, factionId, territory.id, sight);
   }
 
   return states;
+}
+
+export function recordDestroyedScoutIntel(
+  world: WorldState,
+  unitsBefore: WorldState['units'],
+  unitsAfter: WorldState['units'],
+  atMs: Millis,
+  store: IntelStore,
+): IntelStore {
+  let intel = store;
+  const worldBefore = { ...world, units: unitsBefore };
+
+  for (const unit of Object.values(unitsBefore)) {
+    if (!isScoutUnit(worldBefore, unit)) continue;
+    const after = unitsAfter[unit.id];
+    if (after && after.count > 0) continue;
+    intel = recordScoutFinalObservations(worldBefore, unit, atMs, intel);
+  }
+
+  return intel;
 }

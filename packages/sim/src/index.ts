@@ -49,8 +49,17 @@ export {
   visibleTerritories,
 } from './visibility';
 export type { FactionVisibility } from './visibility';
-export { activeDirectSight } from './sight';
-export type { ActiveDirectSight } from './sight';
+export { activeDirectSight, activeSight, territoriesObservedByScoutUnit } from './sight';
+export type { ActiveDirectSight, ActiveSight } from './sight';
+export {
+  SCOUT_BUILD_COST_MULT,
+  SCOUT_COMBAT_WEIGHT_MULT,
+  SCOUT_UNIT_RANGE_MULT,
+  SCOUT_UNIT_TYPE_ID,
+  isScoutUnit,
+  isScoutUnitType,
+  scoutUnitRangeKm,
+} from './scout';
 export {
   captureTerritorySnapshot,
   emptyIntelStore,
@@ -61,7 +70,10 @@ export {
   mergeAllTerritoryVisibility,
   mergeTerritoryVisibility,
   pruneExpiredRecords,
+  recordDestroyedScoutIntel,
   recordDirectObservations,
+  recordIntelObservations,
+  recordScoutFinalObservations,
 } from './intel';
 export {
   applyUnitLosses,

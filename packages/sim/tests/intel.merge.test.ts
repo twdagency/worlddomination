@@ -1,20 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { mergeTerritoryVisibility } from '../src/intel';
-import { activeDirectSight } from '../src/sight';
+import { activeSight } from '../src/sight';
 import { computeVisibility } from '../src/visibility';
 import { LONDON, NEW_YORK, PARIS, makeWorld } from './fixtures';
 
 describe('intel merge', () => {
   it('returns live for territories in geometric sight', () => {
     const world = makeWorld();
-    const sight = activeDirectSight(world, 'faction-player');
-    const merged = mergeTerritoryVisibility(
-      world,
-      'faction-player',
-      PARIS.id,
-      sight.territoryIds,
-      sight.unitIds,
-    );
+    const sight = activeSight(world, 'faction-player');
+    const merged = mergeTerritoryVisibility(world, 'faction-player', PARIS.id, sight);
 
     expect(merged.state).toBe('live');
     if (merged.state === 'live') {
@@ -65,14 +59,8 @@ describe('intel merge', () => {
         [NEW_YORK.id]: NEW_YORK,
       },
     });
-    const sight = activeDirectSight(world, 'faction-player');
-    const merged = mergeTerritoryVisibility(
-      world,
-      'faction-player',
-      NEW_YORK.id,
-      sight.territoryIds,
-      sight.unitIds,
-    );
+    const sight = activeSight(world, 'faction-player');
+    const merged = mergeTerritoryVisibility(world, 'faction-player', NEW_YORK.id, sight);
 
     expect(merged).toEqual({ state: 'unknown' });
   });

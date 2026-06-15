@@ -54,6 +54,21 @@ export const UNIT_TYPES: UnitType[] = [
     billOfMaterials: { steel: 200, fuel: 100 },
   },
   {
+    id: 'scout-t1',
+    name: 'Scout',
+    tier: 1,
+    domain: 'land',
+    role: 'spy',
+    // Combat weight applied via SCOUT_COMBAT_WEIGHT_MULT in sim/scout.ts
+    combatValue: 5,
+    baseSpeedKmh: 6,
+    // 50% of infantry-t2 (800) — see SCOUT_BUILD_COST_MULT in sim/scout.ts
+    fundingCost: 400,
+    manpowerCost: 200,
+    buildHours: 18,
+    billOfMaterials: { food: 10 },
+  },
+  {
     id: 'destroyer-t2',
     name: 'Destroyer',
     tier: 2,

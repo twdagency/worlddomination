@@ -1,4 +1,4 @@
-import { activeDirectSight, scoutRangeKm } from './sight';
+import { activeSight, scoutRangeKm } from './sight';
 import { mergeAllTerritoryVisibility } from './intel';
 import type { Id, Territory, Unit, WorldState } from './types';
 import type { TerritoryVisibilityState } from './types';
@@ -15,7 +15,7 @@ export interface FactionVisibility {
 
 /** Territories and units visible to `factionId` via intel merge + active direct sight. */
 export function computeVisibility(world: WorldState, factionId: Id): FactionVisibility {
-  const sight = activeDirectSight(world, factionId);
+  const sight = activeSight(world, factionId);
   const territoryStates = mergeAllTerritoryVisibility(world, factionId);
 
   return {
