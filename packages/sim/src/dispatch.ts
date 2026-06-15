@@ -1,4 +1,5 @@
-import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import type { Id, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import { isTerritoryVisible } from './visibility';
 import {
   formatBattleNarrative,
   formatProductionNarrative,
@@ -292,4 +293,64 @@ export function taggedOrderFields(
     beatId: computeBeatId(factionId, decisionTickMs),
     decisionTickMs,
   };
+}
+
+export function playerFactionId(world: WorldState): Id | undefined {
+  return Object.values(world.factions).find((faction) => faction.isPlayer)?.id;
+}
+
+/**
+ * Whether a dispatch line is legible to `factionId`.
+ * Private intel reports stay with the observing faction; enemy activity requires sight.
+ */
+export function isDispatchVisibleToFaction(
+  world: WorldState,
+  event: SimEvent,
+  factionId: Id,
+): boolean {
+  switch (event.kind) {
+    case 'intelReport':
+      return event.observerFaction === factionId;
+
+    case 'income':
+      return true;
+
+    case 'departure':
+      if (event.ownerId === factionId) return true;
+      return (
+        isTerritoryVisible(world, factionId, event.fromTerritoryId) ||
+        isTerritoryVisible(world, factionId, event.toTerritoryId)
+      );
+
+    case 'arrival':
+      if (event.ownerId === factionId) return true;
+      return (
+        isTerritoryVisible(world, factionId, event.territoryId) ||
+        isTerritoryVisible(world, factionId, event.fromTerritoryId)
+      );
+
+    case 'buildStarted':
+    case 'infraUpgraded':
+    case 'production':
+    case 'buildBlocked':
+      if ('factionId' in event && event.factionId === factionId) return true;
+      return isTerritoryVisible(world, factionId, event.territoryId);
+
+    case 'battle':
+    case 'withdrawal':
+    case 'secured':
+      return isTerritoryVisible(world, factionId, event.territoryId);
+
+    default:
+      return true;
+  }
+}
+
+/** Player/AI-facing dispatch feed — not the global sim event log. */
+export function filterDispatchesForFaction(
+  world: WorldState,
+  events: SimEvent[],
+  factionId: Id,
+): SimEvent[] {
+  return events.filter((event) => isDispatchVisibleToFaction(world, event, factionId));
 }

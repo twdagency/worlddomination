@@ -1,4 +1,4 @@
-import { buildDispatchFeed, dispatchLineForEvent } from './dispatch';
+import { buildDispatchFeed, dispatchLineForEvent, filterDispatchesForFaction } from './dispatch';
 import type { DispatchFeedItem } from './dispatch';
 import {
   COMPACTION_THRESHOLD_MS,
@@ -233,10 +233,13 @@ export function renderDigestText(
   world: WorldState,
   events: SimEvent[],
   windowMs?: number,
+  factionId?: Id,
 ): string {
+  const visibleEvents =
+    factionId !== undefined ? filterDispatchesForFaction(world, events, factionId) : events;
   const feed =
     windowMs !== undefined && windowMs > COMPACTION_THRESHOLD_MS
-      ? compactDispatchFeed(world, events, windowMs)
-      : buildDispatchFeed(world, events);
+      ? compactDispatchFeed(world, visibleEvents, windowMs)
+      : buildDispatchFeed(world, visibleEvents);
   return feed.flatMap((item) => (item.header ? [item.header, item.line] : [item.line])).join('\n');
 }

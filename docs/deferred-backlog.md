@@ -139,3 +139,6 @@ presses multiple fronts and the player must ALLOCATE forces, not just relocate t
 
 - **Stale destination order round-trip** (non-blocking test): build scout → observe Berlin → scout dies → Berlin stale →
   player orders attack on Berlin → confirm order executes and state stays consistent.
+
+- **Genghis aggressive scouting visibility**: confirm Genghis produces a scout within a 72h window on
+  `createSprint4World`. If not, revisit aggressive scoring weights during post-5.5 play-testing.

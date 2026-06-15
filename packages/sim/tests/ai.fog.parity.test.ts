@@ -87,6 +87,10 @@ function foreignTerritoryStates(
   return filtered;
 }
 
+/**
+ * FOG PARITY GUARANTEE — do not weaken without an explicit design decision.
+ * Breaking these tests means the AI gained or the player lost asymmetric information.
+ */
 describe('fog parity', () => {
   it('symmetric scout positions yield matching tri-state on foreign territories', () => {
     const world = symmetricScoutWorld();

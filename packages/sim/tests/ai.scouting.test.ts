@@ -7,14 +7,15 @@ import {
   SCOUT_UNIT_TYPE_ID,
 } from '../src';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
+import { LONDON, NEW_YORK, PARIS, makeWorld } from './fixtures';
 import type { Order, WorldState } from '../src/types';
 
 const START_MS = 1_700_600_000_000;
 const TWENTY_FOUR_HOURS_MS = 24 * 3_600_000;
-const LONDON = 'territory-london';
-const BERLIN = 'territory-berlin';
-const MADRID = 'territory-madrid';
-const PARIS = 'territory-paris';
+const LONDON_ID = 'territory-london';
+const BERLIN_ID = 'territory-berlin';
+const MADRID_ID = 'territory-madrid';
+const PARIS_ID = 'territory-paris';
 
 function withoutCombatUnits(world: WorldState, factionId: string): WorldState {
   return {
@@ -54,7 +55,7 @@ describe('AI scouting behavior', () => {
           typeId: SCOUT_UNIT_TYPE_ID,
           ownerId: 'faction-steppe',
           count: 1,
-          locationId: BERLIN,
+          locationId: BERLIN_ID,
           stance: 'hold',
         },
       },
@@ -67,7 +68,7 @@ describe('AI scouting behavior', () => {
     const move = scouting.find((order) => order.kind === 'move');
     expect(move?.kind).toBe('move');
     if (move?.kind === 'move') {
-      expect([LONDON, PARIS, MADRID]).toContain(move.toTerritoryId);
+      expect([LONDON_ID, PARIS_ID, MADRID_ID]).toContain(move.toTerritoryId);
       expect(move.stanceOnArrival).toBe('hold');
     }
   });
@@ -98,10 +99,10 @@ describe('AI scouting behavior', () => {
     const move = scoutingOrders.find((order) => order.kind === 'move');
 
     if (build?.kind === 'build') {
-      expect(build.territoryId).toBe(MADRID);
+      expect(build.territoryId).toBe(MADRID_ID);
       expect(build.unitTypeId).toBe(SCOUT_UNIT_TYPE_ID);
     } else if (move?.kind === 'move') {
-      expect([MADRID, LONDON, PARIS]).toContain(move.toTerritoryId);
+      expect([MADRID_ID, LONDON_ID, PARIS_ID]).toContain(move.toTerritoryId);
       expect(move.stanceOnArrival).toBe('hold');
     }
   });
@@ -112,9 +113,9 @@ describe('AI scouting behavior', () => {
       ...base,
       territories: {
         ...base.territories,
-        [PARIS]: {
-          ...base.territories[PARIS]!,
-          resources: { ...base.territories[PARIS]!.resources, food: 50 },
+        [PARIS_ID]: {
+          ...base.territories[PARIS_ID]!,
+          resources: { ...base.territories[PARIS_ID]!.resources, food: 50 },
         },
       },
       factions: {
@@ -137,7 +138,7 @@ describe('AI scouting behavior', () => {
 
     const build = scouting.find((order) => order.kind === 'build');
     if (build?.kind === 'build') {
-      expect(build.territoryId).toBe(PARIS);
+      expect(build.territoryId).toBe(PARIS_ID);
       expect(build.unitTypeId).toBe(SCOUT_UNIT_TYPE_ID);
       return;
     }
@@ -145,7 +146,7 @@ describe('AI scouting behavior', () => {
     const move = scouting.find((order) => order.kind === 'move');
     expect(move?.kind).toBe('move');
     if (move?.kind === 'move') {
-      expect([LONDON, BERLIN, MADRID]).toContain(move.toTerritoryId);
+      expect([LONDON_ID, BERLIN_ID, MADRID_ID]).toContain(move.toTerritoryId);
       expect(move.stanceOnArrival).toBe('hold');
     }
   });
@@ -164,7 +165,7 @@ describe('AI scouting behavior', () => {
   it('24h cold-play shows AI scout activity and stays within digest cap', () => {
     const world = createSprint4World(START_MS);
     const { events, world: advanced } = advanceTo(world, START_MS + TWENTY_FOUR_HOURS_MS);
-    const digest = renderDigestText(advanced, events);
+    const digest = renderDigestText(advanced, events, undefined, 'faction-player');
     const digestLines = digest.split('\n').filter((line) => line.trim().length > 0);
 
     const aiScoutReports = events.filter(
@@ -184,17 +185,10 @@ describe('AI scouting behavior', () => {
     );
 
     expect(aiScoutReports.length + aiScoutBuilds.length + aiScoutMoves.length).toBeGreaterThan(0);
-    const hasScoutDigest =
-      digest.includes('Scouts report') ||
-      aiScoutBuilds.length > 0 ||
-      aiScoutMoves.length > 0;
-    expect(hasScoutDigest).toBe(true);
     expect(digestLines.length).toBeLessThanOrEqual(40);
 
-    if (aiScoutReports.length > 0) {
-      const genghisScoutLines = digestLines.filter((line) => line.includes('Scouts report'));
-      expect(genghisScoutLines.length).toBeGreaterThan(0);
-    }
+    // Other factions' scout intel stays private — not in the player digest.
+    expect(digest).not.toContain('Scouts report Caesar forces massing at Paris');
 
     expect(digest).toMatchSnapshot('ai-scouting-24h-digest');
   });
@@ -206,6 +200,53 @@ describe('AI scouting behavior', () => {
       if (order.kind === 'build' && order.unitTypeId === SCOUT_UNIT_TYPE_ID) {
         expect(order.intent).toBe('build');
       }
+    }
+  });
+
+  it('attacks directly visible targets despite unknown elsewhere', () => {
+    const world = makeWorld({
+      territories: {
+        [LONDON.id]: { ...LONDON, ownerId: 'faction-ai' },
+        [PARIS.id]: { ...PARIS, ownerId: 'faction-player' },
+        [NEW_YORK.id]: { ...NEW_YORK, ownerId: 'faction-enemy' },
+      },
+      units: {
+        'unit-ai': {
+          id: 'unit-ai',
+          typeId: 'mg-armor-t5',
+          ownerId: 'faction-ai',
+          count: 10,
+          locationId: LONDON.id,
+          stance: 'defend',
+        },
+      },
+      factions: {
+        'faction-ai': {
+          id: 'faction-ai',
+          leaderId: 'leader-genghis',
+          isPlayer: false,
+          funding: 25_000,
+          manpower: 8_000,
+          manpowerCap: 15_000,
+        },
+        'faction-player': makeWorld().factions['faction-player'],
+        'faction-enemy': {
+          id: 'faction-enemy',
+          leaderId: 'leader-caesar',
+          isPlayer: false,
+          funding: 10_000,
+          manpower: 5_000,
+          manpowerCap: 10_000,
+        },
+      },
+      intel: {},
+    });
+
+    const orders = decideOrders(world, 'faction-ai', world.nowMs);
+    expect(orders[0]?.kind).toBe('move');
+    if (orders[0]?.kind === 'move') {
+      expect(orders[0].toTerritoryId).toBe(PARIS.id);
+      expect(orders[0].stanceOnArrival).toBe('assault');
     }
   });
 });

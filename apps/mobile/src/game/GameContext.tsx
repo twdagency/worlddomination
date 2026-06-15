@@ -80,7 +80,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const now = Date.now();
     setAwayMs(lastActive && lastActive < now ? now - lastActive : 0);
     const { world: advanced, events } = catchUp(baseWorld, now);
-    const merged = mergeDispatches(prevDispatches, events);
+    const merged = mergeDispatches(advanced, prevDispatches, events);
     setWorld(advanced);
     setDispatches(merged);
     await persist(advanced, merged);
@@ -141,7 +141,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       if (next === null || next > now) return;
 
       const { world: advanced, events } = catchUp(current, now);
-      const merged = mergeDispatches(dispatchesRef.current, events);
+      const merged = mergeDispatches(advanced, dispatchesRef.current, events);
       setWorld(advanced);
       setDispatches(merged);
       void persist(advanced, merged);
@@ -158,7 +158,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     stanceOnArrival: TransitOrder['stanceOnArrival'] = 'assault',
   ) => {
     const { world: nextWorld, events } = issueMove(world, unitId, toTerritoryId, stanceOnArrival);
-    const merged = mergeDispatches(dispatches, events);
+    const merged = mergeDispatches(nextWorld, dispatches, events);
     setWorld(nextWorld);
     setDispatches(merged);
     await persist(nextWorld, merged);
@@ -170,7 +170,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     count: number = 1,
   ) => {
     const { world: nextWorld, events } = issueBuild(world, territoryId, unitTypeId, count);
-    const merged = mergeDispatches(dispatches, events);
+    const merged = mergeDispatches(nextWorld, dispatches, events);
     setWorld(nextWorld);
     setDispatches(merged);
     await persist(nextWorld, merged);
@@ -178,7 +178,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const issueUpgrade = async (territoryId: string) => {
     const { world: nextWorld, events } = issueUpgradeInfra(world, territoryId);
-    const merged = mergeDispatches(dispatches, events);
+    const merged = mergeDispatches(nextWorld, dispatches, events);
     setWorld(nextWorld);
     setDispatches(merged);
     await persist(nextWorld, merged);
@@ -187,7 +187,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const skipNext = async () => {
     const result = skipToNextEvent(world);
     if (!result) return;
-    const merged = mergeDispatches(dispatches, result.events);
+    const merged = mergeDispatches(result.world, dispatches, result.events);
     setWorld(result.world);
     setDispatches(merged);
     await persist(result.world, merged);

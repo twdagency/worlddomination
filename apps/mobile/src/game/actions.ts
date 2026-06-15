@@ -3,6 +3,7 @@ import {
   buildDispatchFeed,
   compactDispatchFeed,
   COMPACTION_THRESHOLD_MS,
+  filterDispatchesForFaction,
   formatBattleNarrative,
   formatBuildStartedLine,
   formatInfraUpgradedLine,
@@ -19,10 +20,15 @@ import {
 } from 'sim';
 import type { DispatchFeedItem, SimEvent, WorldState } from 'sim';
 import type { TransitOrder } from 'sim';
+import { PLAYER_FACTION_ID } from './playerView';
 
-export function mergeDispatches(existing: SimEvent[], incoming: SimEvent[]): SimEvent[] {
-  const combined = [...existing, ...incoming];
-  return combined.slice(-100);
+export function mergeDispatches(
+  world: WorldState,
+  existing: SimEvent[],
+  incoming: SimEvent[],
+): SimEvent[] {
+  const visible = filterDispatchesForFaction(world, incoming, PLAYER_FACTION_ID);
+  return [...existing, ...visible].slice(-100);
 }
 
 export function catchUp(world: WorldState, targetMs: number = Date.now()): {
@@ -189,10 +195,11 @@ export function buildDisplayDispatchFeed(
   events: SimEvent[],
   awayMs: number,
 ): DispatchFeedItem[] {
+  const visible = filterDispatchesForFaction(world, events, PLAYER_FACTION_ID);
   if (awayMs > COMPACTION_THRESHOLD_MS) {
-    return compactDispatchFeed(world, events, awayMs, formatDispatchLine);
+    return compactDispatchFeed(world, visible, awayMs, formatDispatchLine);
   }
-  return buildDispatchFeed(world, events, formatDispatchLine);
+  return buildDispatchFeed(world, visible, formatDispatchLine);
 }
 
 export function isDispatchDetailEvent(

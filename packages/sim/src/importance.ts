@@ -52,6 +52,7 @@ export function resolveEventImportance(world: WorldState, event: SimEvent): Disp
 }
 
 export function factionIdFromEvent(event: SimEvent): Id | undefined {
+  if (event.kind === 'intelReport') return event.observerFaction;
   if ('ownerId' in event) return event.ownerId;
   if ('factionId' in event) return event.factionId;
   if (event.kind === 'battle') return event.report.attackerId;

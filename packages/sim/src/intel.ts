@@ -245,6 +245,14 @@ function sourcesFromRecords(records: IntelRecord[]): IntelSource[] {
   return [...new Set(records.map((record) => record.source))];
 }
 
+function uniqueSources(sources: IntelSource[]): IntelSource[] {
+  return [...new Set(sources)];
+}
+
+function alliedOrTreatyRecords(records: IntelRecord[]): IntelRecord[] {
+  return records.filter((record) => record.source === 'allied' || record.source === 'treaty');
+}
+
 /** Merge active geometric sight with stored records for one territory. */
 export function mergeTerritoryVisibility(
   world: WorldState,
@@ -252,13 +260,28 @@ export function mergeTerritoryVisibility(
   territoryId: Id,
   sight: ActiveSight,
 ): TerritoryVisibilityState {
-  const activeSources = activeSourcesForTerritory(sight, territoryId);
-  if (activeSources.length > 0) {
+  const geoSources = activeSourcesForTerritory(sight, territoryId);
+  const records = recordsForTerritory(factionIntelRecords(world, factionId), territoryId);
+  const alliedTreaty = alliedOrTreatyRecords(records);
+
+  if (geoSources.length > 0) {
     const snapshot = captureTerritorySnapshot(world, factionId, territoryId, sight.unitIds);
-    return { state: 'live', snapshot, sources: activeSources };
+    const sources = uniqueSources([
+      ...geoSources,
+      ...alliedTreaty.map((record) => record.source),
+    ]);
+    return { state: 'live', snapshot, sources };
   }
 
-  const records = recordsForTerritory(factionIntelRecords(world, factionId), territoryId);
+  if (alliedTreaty.length > 0) {
+    const latest = latestRecord(alliedTreaty)!;
+    return {
+      state: 'live',
+      snapshot: latest.snapshot,
+      sources: sourcesFromRecords(records),
+    };
+  }
+
   if (records.length === 0) return { state: 'unknown' };
 
   const latest = latestRecord(records)!;

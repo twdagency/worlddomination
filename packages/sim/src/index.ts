@@ -102,6 +102,7 @@ export {
   buildDispatchFeed,
   computeBeatId,
   dispatchLineForEvent,
+  filterDispatchesForFaction,
   formatBuildStartedLine,
   formatInfraUpgradedLine,
   formatIntentArrivalLine,
@@ -109,8 +110,11 @@ export {
   formatIntelReportLine,
   groupEventsByBeat,
   intentFromMoveStance,
+  isDispatchVisibleToFaction,
+  playerFactionId,
   taggedOrderFields,
 } from './dispatch';
+export { formatIntelSourceLabel } from './intelDisplay';
 export {
   emitIntelReportEvents,
   inferIntelReportIntent,

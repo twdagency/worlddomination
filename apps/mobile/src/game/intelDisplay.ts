@@ -1,4 +1,5 @@
-import type { IntelSource, TerritorySnapshot } from 'sim';
+import type { TerritorySnapshot } from 'sim';
+export { formatIntelSourceLabel } from 'sim';
 import { formatAwayDuration } from '../utils/format';
 
 /** Human-readable staleness for tri-state territory rows. */
@@ -18,23 +19,4 @@ export function formatSnapshotHint(snapshot: TerritorySnapshot): string {
     parts.push(`in transit ~${snapshot.inTransitCount}`);
   }
   return parts.join(' · ');
-}
-
-/**
- * Source attribution for intel UI. Returns null when only `direct` is present —
- * Phase 2 stale rows are direct-sourced and show no extra label until scouts land.
- */
-export function formatIntelSourceLabel(sources: IntelSource[]): string | null {
-  const attributed = sources.filter((source) => source !== 'direct');
-  if (attributed.length === 0) return null;
-
-  const labels: Record<IntelSource, string> = {
-    direct: '',
-    scout: 'via scouts',
-    allied: 'via ally',
-    treaty: 'per treaty',
-  };
-
-  const text = attributed.map((source) => labels[source]).filter(Boolean).join(' · ');
-  return text.length > 0 ? text : null;
 }
