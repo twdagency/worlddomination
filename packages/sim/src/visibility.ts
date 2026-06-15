@@ -1,78 +1,28 @@
-import { BASE_SCOUT_RANGE_KM, DEFAULT_TRAIT } from './constants';
-import { haversineKm } from './geo';
-import { unitPosition } from './position';
+import { activeDirectSight, scoutRangeKm } from './sight';
+import { mergeAllTerritoryVisibility } from './intel';
 import type { Id, Territory, Unit, WorldState } from './types';
+import type { TerritoryVisibilityState } from './types';
+
+export { scoutRangeKm } from './sight';
 
 export interface FactionVisibility {
+  /** Per-territory live / stale / unknown — full tri-state for Phase 2 UI. */
+  territoryStates: Record<Id, TerritoryVisibilityState>;
+  /** Live geometric sight only — preserves Sprint 5 binary semantics in Phase 1. */
   territoryIds: Set<Id>;
   unitIds: Set<Id>;
 }
 
-export function scoutRangeKm(world: WorldState, factionId: Id): number {
-  const faction = world.factions[factionId];
-  const leader = faction ? world.leaders[faction.leaderId] : undefined;
-  const mult = leader?.traits.scoutRangeMult ?? DEFAULT_TRAIT;
-  return BASE_SCOUT_RANGE_KM * mult;
-}
-
-function observerCoords(world: WorldState, factionId: Id): { lat: number; lon: number }[] {
-  const coords: { lat: number; lon: number }[] = [];
-
-  for (const territory of Object.values(world.territories)) {
-    if (territory.ownerId === factionId) {
-      coords.push(territory.coord);
-    }
-  }
-
-  for (const unit of Object.values(world.units)) {
-    if (unit.ownerId !== factionId) continue;
-    try {
-      coords.push(unitPosition(world, unit.id));
-    } catch {
-      // unit has no position — skip
-    }
-  }
-
-  return coords;
-}
-
-function withinRange(
-  observers: { lat: number; lon: number }[],
-  target: { lat: number; lon: number },
-  rangeKm: number,
-): boolean {
-  return observers.some((observer) => haversineKm(observer, target) <= rangeKm);
-}
-
-/** Territories and units visible to `factionId` from owned ground and scouting range. */
+/** Territories and units visible to `factionId` via intel merge + active direct sight. */
 export function computeVisibility(world: WorldState, factionId: Id): FactionVisibility {
-  const rangeKm = scoutRangeKm(world, factionId);
-  const observers = observerCoords(world, factionId);
-  const territoryIds = new Set<Id>();
-  const unitIds = new Set<Id>();
+  const sight = activeDirectSight(world, factionId);
+  const territoryStates = mergeAllTerritoryVisibility(world, factionId);
 
-  for (const territory of Object.values(world.territories)) {
-    if (territory.ownerId === factionId || withinRange(observers, territory.coord, rangeKm)) {
-      territoryIds.add(territory.id);
-    }
-  }
-
-  for (const unit of Object.values(world.units)) {
-    if (unit.ownerId === factionId) {
-      unitIds.add(unit.id);
-      continue;
-    }
-    try {
-      const coord = unitPosition(world, unit.id);
-      if (withinRange(observers, coord, rangeKm)) {
-        unitIds.add(unit.id);
-      }
-    } catch {
-      // skip unpositioned units
-    }
-  }
-
-  return { territoryIds, unitIds };
+  return {
+    territoryStates,
+    territoryIds: sight.territoryIds,
+    unitIds: sight.unitIds,
+  };
 }
 
 /** @deprecated Use `computeVisibility` — identical behavior, kept for call-site clarity during migration. */

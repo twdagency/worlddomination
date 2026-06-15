@@ -15,6 +15,7 @@ function makeWorld(): WorldState {
     factions: {},
     leaders: {},
     unitTypes: {},
+    intel: {},
     scenarioId: 'test',
   };
 }

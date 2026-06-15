@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { BASE_SCOUT_RANGE_KM } from '../src/constants';
-import { getFactionVisibility, isTerritoryVisible, isUnitVisible, scoutRangeKm } from '../src/visibility';
+import { getFactionVisibility, isTerritoryVisible, isUnitVisible, scoutRangeKm, computeVisibility } from '../src/visibility';
 import { LONDON, NEW_YORK, PARIS, makeWorld } from './fixtures';
 import type { Unit } from '../src/types';
 
@@ -65,5 +65,34 @@ describe('visibility', () => {
     const visibility = getFactionVisibility(world, 'faction-player');
     expect(visibility.unitIds.has('unit-hidden')).toBe(false);
     expect(isUnitVisible(world, 'faction-player', 'unit-hidden')).toBe(false);
+  });
+
+  it('exposes stale tri-state without granting binary visibility in Phase 1', () => {
+    const observedAt = 1_700_000_000_000;
+    const world = makeWorld({
+      nowMs: observedAt,
+      intel: {
+        'faction-player': [
+          {
+            observerFaction: 'faction-player',
+            territoryId: NEW_YORK.id,
+            observationTime: observedAt,
+            snapshot: {
+              infraLevel: NEW_YORK.infraLevel,
+              garrisonCount: 0,
+              visibleEnemyGarrison: 0,
+              inTransitCount: 0,
+            },
+            source: 'direct',
+            expiresAt: null,
+            confidence: 1.0,
+          },
+        ],
+      },
+    });
+
+    const visibility = computeVisibility(world, 'faction-player');
+    expect(isTerritoryVisible(world, 'faction-player', NEW_YORK.id)).toBe(false);
+    expect(visibility.territoryStates[NEW_YORK.id]?.state).toBe('stale');
   });
 });

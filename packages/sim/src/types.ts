@@ -293,6 +293,38 @@ export type SimEvent =
   | { kind: 'victory'; at: Millis; factionId: Id }
   | { kind: 'espionage'; at: Millis; report: string; exposed: boolean };
 
+export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty';
+
+export interface TerritorySnapshot {
+  ownerId?: Id;
+  infraLevel: number;
+  garrisonCount: number;
+  visibleEnemyGarrison: number;
+  inTransitCount: number;
+}
+
+export interface IntelRecord {
+  observerFaction: Id;
+  territoryId: Id;
+  observationTime: Millis;
+  snapshot: TerritorySnapshot;
+  source: IntelSource;
+  expiresAt: Millis | null;
+  confidence: number;
+}
+
+export type IntelStore = Record<Id, IntelRecord[]>;
+
+export type TerritoryVisibilityState =
+  | { state: 'live'; snapshot: TerritorySnapshot; sources: IntelSource[] }
+  | {
+      state: 'stale';
+      snapshot: TerritorySnapshot;
+      sources: IntelSource[];
+      lastObservedAt: Millis;
+    }
+  | { state: 'unknown' };
+
 export interface WorldState {
   nowMs: Millis;
   day: number;
@@ -303,6 +335,7 @@ export interface WorldState {
   factions: Record<Id, Faction>;
   leaders: Record<Id, Leader>;
   unitTypes: Record<Id, UnitType>;
+  intel: IntelStore;
   scenarioId: Id;
   victoryThreshold?: number;
 }

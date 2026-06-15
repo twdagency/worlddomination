@@ -130,6 +130,7 @@ export function makeCombatWorld(overrides: Partial<WorldState> = {}): WorldState
     },
     leaders: { [BASELINE.id]: BASELINE },
     unitTypes: COMBAT_UNIT_TYPES,
+    intel: {},
     scenarioId: 'combat-test',
     ...overrides,
   };

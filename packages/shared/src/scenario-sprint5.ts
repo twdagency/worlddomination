@@ -127,6 +127,7 @@ export function createSprint5World(nowMs: number = Date.now()): WorldState {
     },
     leaders: { ...LEADERS_BY_ID },
     unitTypes: { ...UNIT_TYPES_BY_ID },
+    intel: {},
     scenarioId: 'sprint-5-legibility-demo',
   };
 }

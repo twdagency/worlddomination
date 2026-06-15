@@ -87,6 +87,7 @@ export function makeWorld(overrides: Partial<WorldState> = {}): WorldState {
     factions: { 'faction-player': makeFaction('leader-baseline') },
     leaders,
     unitTypes,
+    intel: {},
     scenarioId: 'test-sprint1',
     ...overrides,
   };

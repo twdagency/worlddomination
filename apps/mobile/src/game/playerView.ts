@@ -2,6 +2,7 @@ import {
   computeVisibility,
   type FactionVisibility,
   type Territory,
+  type TerritoryVisibilityState,
   type Unit,
   type WorldState,
 } from 'sim';
@@ -15,7 +16,22 @@ export const PLAYER_FACTION_ID = 'faction-player';
 export const DEV_REVEAL = false;
 
 function revealAll(world: WorldState): FactionVisibility {
+  const territoryStates: Record<string, TerritoryVisibilityState> = {};
+  for (const territory of Object.values(world.territories)) {
+    territoryStates[territory.id] = {
+      state: 'live',
+      snapshot: {
+        ownerId: territory.ownerId,
+        infraLevel: territory.infraLevel,
+        garrisonCount: 0,
+        visibleEnemyGarrison: 0,
+        inTransitCount: 0,
+      },
+      sources: ['direct'],
+    };
+  }
   return {
+    territoryStates,
     territoryIds: new Set(Object.keys(world.territories)),
     unitIds: new Set(Object.keys(world.units)),
   };

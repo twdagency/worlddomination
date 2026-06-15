@@ -88,6 +88,7 @@ export function buildBenchWorld(aiFactionCount: number, nowMs: number): WorldSta
     factions,
     leaders: { ...LEADERS_BY_ID },
     unitTypes: { ...UNIT_TYPES_BY_ID },
+    intel: {},
     scenarioId: `bench-ai-${aiFactionCount}`,
   };
 }

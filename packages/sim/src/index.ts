@@ -49,6 +49,20 @@ export {
   visibleTerritories,
 } from './visibility';
 export type { FactionVisibility } from './visibility';
+export { activeDirectSight } from './sight';
+export type { ActiveDirectSight } from './sight';
+export {
+  captureTerritorySnapshot,
+  emptyIntelStore,
+  ensureIntelStore,
+  factionIntelRecords,
+  INTEL_DECAY_WINDOW_MS,
+  isRecordExpired,
+  mergeAllTerritoryVisibility,
+  mergeTerritoryVisibility,
+  pruneExpiredRecords,
+  recordDirectObservations,
+} from './intel';
 export {
   applyUnitLosses,
   computeWithdrawalCasualties,
