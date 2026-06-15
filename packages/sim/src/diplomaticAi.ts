@@ -4,11 +4,12 @@ import {
   formAlliance,
   getAlliancesFor,
 } from './diplomacy';
+import { allianceBrokenEvent, allianceFormedEvent } from './diplomaticDispatch';
 import {
   REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED,
   REPUTATION_PENALTY_ALLIANCE_BREAK_OBSERVER,
 } from './reputation';
-import type { DiplomaticPosture, Id, LeaderWeights, Millis, WorldState } from './types';
+import type { DiplomaticPosture, Id, LeaderWeights, Millis, SimEvent, WorldState } from './types';
 
 export const RELATIVE_POWER_PEER_RATIO_MIN = 0.5;
 export const RELATIVE_POWER_PEER_RATIO_MAX = 2.0;
@@ -206,10 +207,13 @@ export function scoreAllianceBreak(world: WorldState, breaker: Id, ally: Id): nu
   return score;
 }
 
+function allFactionIds(world: WorldState): Id[] {
+  return Object.keys(world.factions).sort();
+}
+
+/** AI factions may initiate diplomacy; player factions may accept proposals (Phase 6 adds player-initiated). */
 function aiFactionIds(world: WorldState): Id[] {
-  return Object.keys(world.factions)
-    .filter((factionId) => !world.factions[factionId]?.isPlayer)
-    .sort();
+  return allFactionIds(world).filter((factionId) => !world.factions[factionId]?.isPlayer);
 }
 
 // SPRINT-6 PHASE-4b: diplomatic decisions are not orders.
@@ -217,17 +221,23 @@ function aiFactionIds(world: WorldState): Id[] {
 // This matches Phase 1's design: form/break/propose are world-state mutations
 // applied at decision time. Do not route diplomacy through the order pipeline.
 /**
- * Applies AI diplomatic decisions at an AI decision boundary. Pure — returns new world.
- * Proposals resolve instantly when both propose and accept scores clear thresholds.
+ * Applies AI diplomatic decisions at an AI decision boundary. Pure — returns new world
+ * and diplomatic dispatch events. Proposals resolve instantly when both scores clear thresholds.
+ * Sprint 6: alliances only — AI does not propose treaties (player-initiated in Phase 6).
  */
-export function applyAiDiplomaticDecisions(world: WorldState, atMs: Millis): WorldState {
+export function applyAiDiplomaticDecisions(
+  world: WorldState,
+  atMs: Millis,
+): { world: WorldState; events: SimEvent[] } {
   let current = world;
+  const events: SimEvent[] = [];
 
   for (const breaker of aiFactionIds(current)) {
     for (const ally of getAlliancesFor(current, breaker)) {
       const breakScore = scoreAllianceBreak(current, breaker, ally);
       if (breakScore >= ALLIANCE_BREAK_THRESHOLD) {
         current = breakAlliance(current, breaker, ally);
+        events.push(allianceBrokenEvent(breaker, ally, atMs));
       }
     }
   }
@@ -236,7 +246,7 @@ export function applyAiDiplomaticDecisions(world: WorldState, atMs: Millis): Wor
     let bestTarget: Id | null = null;
     let bestProposalScore = 0;
 
-    for (const target of aiFactionIds(current)) {
+    for (const target of allFactionIds(current)) {
       if (target === proposer) continue;
       const proposalScore = scoreAllianceProposal(current, proposer, target);
       if (proposalScore > bestProposalScore) {
@@ -250,8 +260,9 @@ export function applyAiDiplomaticDecisions(world: WorldState, atMs: Millis): Wor
     const acceptanceScore = scoreAllianceAcceptance(current, bestTarget, proposer);
     if (acceptanceScore >= ALLIANCE_ACCEPT_THRESHOLD) {
       current = formAlliance(current, proposer, bestTarget, atMs);
+      events.push(allianceFormedEvent(proposer, bestTarget, atMs, proposer));
     }
   }
 
-  return current;
+  return { world: current, events };
 }

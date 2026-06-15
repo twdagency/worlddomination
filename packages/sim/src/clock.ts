@@ -65,11 +65,14 @@ export function advanceTo(
     if (elapsed <= 0) break;
 
     const atAiDecision = isAiDecisionMs(current, stepTarget);
-    const stepWorld = atAiDecision ? applyAiDiplomaticDecisions(current, stepTarget) : current;
+    const diplomatic = atAiDecision
+      ? applyAiDiplomaticDecisions(current, stepTarget)
+      : { world: current, events: [] as SimEvent[] };
+    const stepWorld = diplomatic.world;
     const orders = atAiDecision ? collectAiOrders(stepWorld, stepTarget) : [];
     const result = tick(stepWorld, orders, elapsed);
     current = result.world;
-    allEvents.push(...result.events);
+    allEvents.push(...diplomatic.events, ...result.events);
 
     incomeAccrued = mergeAccruedIncome(incomeAccrued, result.accrued);
   }

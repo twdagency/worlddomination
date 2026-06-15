@@ -296,11 +296,55 @@ export type SimEvent =
       kind: 'intelReport';
       at: Millis;
       observerFaction: Id;
+      /** Faction whose feed receives this line; defaults to observerFaction when omitted. */
+      receiverFaction?: Id;
       territoryId: Id;
       source: IntelSource;
       variant: IntelReportVariant;
       subjectFactionId?: Id;
+      garrisonDescriptor?: string;
       intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allianceFormed';
+      at: Millis;
+      parties: [Id, Id];
+      initiatingFaction: Id;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allianceBroken';
+      at: Millis;
+      breaker: Id;
+      betrayed: Id;
+      parties: [Id, Id];
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'treatyFormed';
+      at: Millis;
+      treatyId: Id;
+      parties: [Id, Id];
+      territoryIds: Id[];
+      expiresAt: Millis;
+      initiatingFaction: Id;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'treatyExpired';
+      at: Millis;
+      treatyId: Id;
+      parties: [Id, Id];
+      territoryIds: Id[];
       beatId: string;
       decisionTickMs: Millis;
       importance?: DispatchImportance;

@@ -3,6 +3,7 @@ import type { Order, SimEvent, WorldState } from './types';
 import { MS_PER_DAY } from './constants';
 import { accrueEconomy } from './economy';
 import { pruneExpiredTreaties } from './diplomacy';
+import { expiredTreatyEvents } from './diplomaticDispatch';
 import {
   ensureIntelStore,
   recordAlliedObservations,
@@ -98,6 +99,7 @@ export function tick(
   };
 
   const afterDiplomacy = pruneExpiredTreaties(resolved, nowMs);
+  events.push(...expiredTreatyEvents(resolved.treaties, afterDiplomacy.treaties, nowMs));
 
   const priorIntel = ensureIntelStore(afterDiplomacy);
   const afterDirectIntel = recordIntelObservations(afterDiplomacy);

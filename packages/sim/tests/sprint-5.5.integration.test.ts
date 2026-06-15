@@ -211,7 +211,10 @@ describe('sprint 5.5 integration', () => {
         event.unitTypeId === SCOUT_UNIT_TYPE_ID,
     );
     const steppeIntel = events.filter(
-      (event) => event.kind === 'intelReport' && event.observerFaction === STEPPE,
+      (event) =>
+        event.kind === 'intelReport' &&
+        event.observerFaction === STEPPE &&
+        event.source === 'scout',
     );
     const transits = analyzeFactionScoutTransits(world, events, STEPPE);
 

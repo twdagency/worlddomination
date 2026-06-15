@@ -142,6 +142,14 @@ export {
   sharedEnemies,
 } from './diplomaticAi';
 export {
+  allianceBrokenEvent,
+  allianceFormedEvent,
+  expiredTreatyEvents,
+  garrisonDescriptor,
+  treatyExpiredEvent,
+  treatyFormedEvent,
+} from './diplomaticDispatch';
+export {
   areAllied,
   breakAlliance,
   diplomacyDefaults,

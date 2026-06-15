@@ -1,25 +1,12 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`AI diplomacy cold-play #1 (72h, pre-transit scoring) > records alliance state, Genghis scout activity, and player digest > sprint6-4b-cold-play-72h-digest 1`] = `
-{
-  "alliances": [
-    {
-      "factionA": "faction-britain",
-      "factionB": "faction-steppe",
-      "formedAt": 1700921600000,
-    },
-    {
-      "factionA": "faction-player",
-      "factionB": "faction-steppe",
-      "formedAt": 1700943200000,
-    },
-  ],
-  "digest": "Genghis — tick 1700921600000
-DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+exports[`dispatch diplomacy cold-read snapshot > britain-player 72h digest includes diplomatic layer > sprint6-phase5-britain-72h-digest 1`] = `
+"Genghis — tick 1700921600000
+DIPLOMACY — Alliance formed with Genghis.
 Caesar — tick 1700921600000
 INTEL — Caesar forces advancing from Paris toward London
-Genghis — tick 1700943200000
-DIPLOMACY — Alliance formed with Genghis.
+Elizabeth — tick 1700921600000
+INTEL — Genghis's forces report Genghis activity at Berlin
 Caesar — tick 1700943200000
 INTEL — Caesar forces advancing from Paris toward London
 Elizabeth — tick 1700943200000
@@ -46,13 +33,5 @@ Caesar — tick 1701159200000
 INTEL — Infrastructure upgraded at Paris (Caesar)
 Elizabeth — tick 1701159200000
 INTEL — Genghis's forces report Genghis activity at Berlin
-INCOME — funding 44875.284244862334",
-  "genghisOrdersAtEnd": [],
-  "reputationSample": {
-    "britainViewOfGenghis": 0,
-    "caesarViewOfGenghis": 0,
-  },
-  "scoutBuilds": 0,
-  "scoutMoves": 0,
-}
+INCOME — funding 44875.284244862334"
 `;

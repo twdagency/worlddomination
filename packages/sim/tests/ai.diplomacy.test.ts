@@ -216,8 +216,8 @@ describe('AI diplomatic scoring', () => {
 
   it('applyAiDiplomaticDecisions is deterministic', () => {
     const world = sharedEnemyAgainstCaesarWorld();
-    const first = applyAiDiplomaticDecisions(world, START_MS);
-    const second = applyAiDiplomaticDecisions(world, START_MS);
+    const first = applyAiDiplomaticDecisions(world, START_MS).world;
+    const second = applyAiDiplomaticDecisions(world, START_MS).world;
 
     expect(first.alliances).toEqual(second.alliances);
     expect(first.reputation).toEqual(second.reputation);
@@ -245,7 +245,7 @@ describe('AI diplomatic scoring', () => {
       ALLIANCE_BREAK_THRESHOLD,
     );
 
-    const broken = applyAiDiplomaticDecisions(opportunistWorld, START_MS);
+    const broken = applyAiDiplomaticDecisions(opportunistWorld, START_MS).world;
     expect(areAllied(broken, GENGHIS, BRITAIN)).toBe(false);
     expect(broken.reputation[BRITAIN][GENGHIS]).toBe(REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED);
   });
@@ -259,7 +259,7 @@ describe('AI diplomatic scoring', () => {
       ALLIANCE_ACCEPT_THRESHOLD,
     );
 
-    const allied = applyAiDiplomaticDecisions(world, START_MS);
+    const allied = applyAiDiplomaticDecisions(world, START_MS).world;
     expect(areAllied(allied, GENGHIS, BRITAIN)).toBe(true);
 
     const observedAt = START_MS + 1_000;

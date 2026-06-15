@@ -1,5 +1,6 @@
 import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
 import { isTerritoryVisible } from './visibility';
+import { isTreatyParty, otherParty } from './diplomaticDispatch';
 import {
   formatBattleNarrative,
   formatProductionNarrative,
@@ -130,13 +131,39 @@ export function formatInfraUpgradedLine(
   return `${prefix} — Infrastructure upgraded at ${place} (${who})`;
 }
 
-/** Mechanical scout phrasing — predictable forms for cold-read tests. */
+/** Mechanical scout / allied / treaty phrasing — predictable forms for cold-read tests. */
 export function formatIntelReportLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'intelReport' }>,
 ): string {
   const place = territoryName(world, event.territoryId);
   const prefix = 'INTEL';
+
+  if (event.source === 'allied') {
+    const ally = factionName(world, event.observerFaction);
+    const who = event.subjectFactionId
+      ? factionName(world, event.subjectFactionId)
+      : 'enemy';
+    switch (event.variant) {
+      case 'construction':
+        return `${prefix} — ${ally}'s forces report construction at ${place}`;
+      case 'massing':
+        return `${prefix} — ${ally}'s forces report ${who} forces massing at ${place}`;
+      case 'activity':
+        return `${prefix} — ${ally}'s forces report ${who} activity at ${place}`;
+    }
+  }
+
+  if (event.source === 'treaty') {
+    const who = event.subjectFactionId
+      ? factionName(world, event.subjectFactionId)
+      : 'enemy';
+    const descriptor = event.garrisonDescriptor ?? 'activity';
+    if (event.variant === 'massing' || event.variant === 'construction') {
+      return `${prefix} — Per treaty, ${who} activity at ${place}: ${descriptor}`;
+    }
+    return `${prefix} — Per treaty, ${who} garrison at ${place}: ${descriptor}`;
+  }
 
   switch (event.variant) {
     case 'construction':
@@ -156,6 +183,58 @@ export function formatIntelReportLine(
   }
 }
 
+export function formatAllianceFormedLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'allianceFormed' }>,
+  viewingFaction?: Id,
+): string {
+  const [a, b] = event.parties;
+  if (viewingFaction && (viewingFaction === a || viewingFaction === b)) {
+    const other = otherParty(event.parties, viewingFaction);
+    return `DIPLOMACY — Alliance formed with ${factionName(world, other)}.`;
+  }
+  return `DIPLOMACY — ${factionName(world, a)} and ${factionName(world, b)} have formed an alliance.`;
+}
+
+export function formatAllianceBrokenLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'allianceBroken' }>,
+  viewingFaction?: Id,
+): string {
+  const breaker = factionName(world, event.breaker);
+  const betrayed = factionName(world, event.betrayed);
+  if (viewingFaction === event.betrayed) {
+    return `DIPLOMACY — ${breaker} has broken our alliance.`;
+  }
+  return `DIPLOMACY — ${breaker} has broken alliance with ${betrayed}.`;
+}
+
+export function formatTreatyFormedLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'treatyFormed' }>,
+  viewingFaction?: Id,
+): string {
+  const scopeCount = event.territoryIds.length;
+  const hours = Math.round((event.expiresAt - event.at) / 3_600_000);
+  if (viewingFaction && (viewingFaction === event.parties[0] || viewingFaction === event.parties[1])) {
+    const other = otherParty(event.parties, viewingFaction);
+    return `DIPLOMACY — Treaty formed with ${factionName(world, other)} covering ${scopeCount} ${scopeCount === 1 ? 'territory' : 'territories'} until +${hours}h.`;
+  }
+  return `DIPLOMACY — Treaty formed (${scopeCount} territories, +${hours}h).`;
+}
+
+export function formatTreatyExpiredLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'treatyExpired' }>,
+  viewingFaction?: Id,
+): string {
+  if (viewingFaction && (viewingFaction === event.parties[0] || viewingFaction === event.parties[1])) {
+    const other = otherParty(event.parties, viewingFaction);
+    return `DIPLOMACY — Treaty with ${factionName(world, other)} has expired.`;
+  }
+  return `DIPLOMACY — Treaty has expired.`;
+}
+
 export interface DispatchFeedItem {
   key: string;
   header?: string;
@@ -163,7 +242,11 @@ export interface DispatchFeedItem {
   line: string;
 }
 
-export function dispatchLineForEvent(world: WorldState, event: SimEvent): string {
+export function dispatchLineForEvent(
+  world: WorldState,
+  event: SimEvent,
+  viewingFaction?: Id,
+): string {
   switch (event.kind) {
     case 'departure':
       return formatIntentDepartureLine(world, event);
@@ -175,6 +258,14 @@ export function dispatchLineForEvent(world: WorldState, event: SimEvent): string
       return formatInfraUpgradedLine(world, event);
     case 'intelReport':
       return formatIntelReportLine(world, event);
+    case 'allianceFormed':
+      return formatAllianceFormedLine(world, event, viewingFaction);
+    case 'allianceBroken':
+      return formatAllianceBrokenLine(world, event, viewingFaction);
+    case 'treatyFormed':
+      return formatTreatyFormedLine(world, event, viewingFaction);
+    case 'treatyExpired':
+      return formatTreatyExpiredLine(world, event, viewingFaction);
     case 'battle':
       return event.report.narrative || formatBattleNarrative(event.report, world, event.territoryId);
     case 'withdrawal':
@@ -207,15 +298,20 @@ export function buildDispatchFeed(
   events: SimEvent[],
   formatLine: (event: SimEvent, world: WorldState) => string = (event, w) =>
     dispatchLineForEvent(w, event),
+  viewingFaction?: Id,
 ): DispatchFeedItem[] {
   const beats = groupEventsByBeat(world, events);
   const beatById = new Map(beats.map((beat) => [beat.beatId, beat]));
   const beatHeaderShown = new Set<string>();
   const items: DispatchFeedItem[] = [];
+  const lineFor = formatLine;
 
   for (let i = 0; i < events.length; i++) {
     const event = events[i];
-    const line = formatLine(event, world);
+    const line =
+      viewingFaction !== undefined
+        ? dispatchLineForEvent(world, event, viewingFaction)
+        : lineFor(event, world);
     const beatId = 'beatId' in event ? event.beatId : undefined;
     const beat = beatId ? beatById.get(beatId) : undefined;
     let header: string | undefined;
@@ -256,13 +352,23 @@ export function groupEventsByBeat(world: WorldState, events: SimEvent[]): Dispat
     if (!('beatId' in event) || !event.beatId) continue;
     const beatId = event.beatId;
     const factionId =
-      'observerFaction' in event
-        ? event.observerFaction
-        : 'ownerId' in event
-          ? event.ownerId
-          : 'factionId' in event
-            ? event.factionId
-            : undefined;
+      event.kind === 'intelReport'
+        ? (event.receiverFaction ?? event.observerFaction)
+        : event.kind === 'allianceFormed'
+          ? event.initiatingFaction
+          : event.kind === 'allianceBroken'
+            ? event.breaker
+            : event.kind === 'treatyFormed'
+              ? event.initiatingFaction
+              : event.kind === 'treatyExpired'
+                ? event.parties[0]
+                : 'observerFaction' in event
+                  ? event.observerFaction
+                  : 'ownerId' in event
+                    ? event.ownerId
+                    : 'factionId' in event
+                      ? event.factionId
+                      : undefined;
     const decisionTickMs = 'decisionTickMs' in event ? event.decisionTickMs : undefined;
     if (!factionId || decisionTickMs === undefined) continue;
 
@@ -310,7 +416,15 @@ export function isDispatchVisibleToFaction(
 ): boolean {
   switch (event.kind) {
     case 'intelReport':
-      return event.observerFaction === factionId;
+      return (event.receiverFaction ?? event.observerFaction) === factionId;
+
+    case 'allianceFormed':
+    case 'allianceBroken':
+      return true;
+
+    case 'treatyFormed':
+    case 'treatyExpired':
+      return isTreatyParty(event, factionId);
 
     case 'income':
       return true;
