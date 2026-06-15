@@ -4,7 +4,9 @@ import type { TransitOrder } from 'sim';
 import { moveDistanceKm, previewMoveEtaMs } from 'sim';
 import { useGame } from '../game/GameContext';
 import { formatIntelAge } from '../game/intelDisplay';
+import { toggleExpandedRow } from '../game/expandableRowState';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
+import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import {
   getPlayerVisibleTerritory,
   ownerIdForIntelDisplay,
@@ -35,6 +37,7 @@ export function OrderScreen() {
   const [unitId, setUnitId] = useState(movableUnits[0]?.id ?? '');
   const [destinationId, setDestinationId] = useState<string>('');
   const [stance, setStance] = useState<TransitOrder['stanceOnArrival']>('assault');
+  const [expandedSection, setExpandedSection] = useState<string | null>('confirm');
 
   const unit = movableUnits.find((u) => u.id === unitId);
   const availableDestinations = useMemo(
@@ -84,6 +87,12 @@ export function OrderScreen() {
       distance !== null &&
       distance > 0,
   );
+
+  const unitLabel = unit ? world.unitTypes[unit.typeId]?.name ?? unit.id : 'Force';
+  const confirmSubtitle =
+    fromName && toName && preview
+      ? `${fromName} → ${toName} · ETA ${formatDuration(preview.travelMs)}`
+      : 'Select force and destination';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -158,40 +167,49 @@ export function OrderScreen() {
         </Pressable>
       ))}
 
-      {preview && distance !== null && fromName && toName && (
-        <TerminalCard>
-          <Text style={styles.route}>
-            Route: {fromName} → {toName}
-          </Text>
-          <Text style={styles.route}>Distance: {formatDistance(distance)}</Text>
-          <Text style={styles.route}>Speed: {formatSpeed(preview.speedKmh)}</Text>
-          <Text style={styles.eta}>ETA: {formatDuration(preview.travelMs)}</Text>
-          <Text style={styles.arrival}>Arrival: {formatDateTime(preview.etaMs)}</Text>
-          {selectedDestination?.state === 'stale' && selectedDestination.lastObservedAt !== undefined && (
-            <Text style={styles.staleWarning}>
-              Acting on stale intelligence ({formatIntelAge(world.nowMs, selectedDestination.lastObservedAt)}).
-            </Text>
-          )}
-          {isHostile && stance === 'assault' && (
-            <Text style={styles.combatHint}>⚔ Assault will engage hostile garrison on arrival.</Text>
-          )}
-        </TerminalCard>
-      )}
-
-      <View style={styles.warning}>
-        <Text style={styles.warningText}>
-          ⚠ Forces cannot be recalled instantly once deployed. Outpowered assaults take
-          heavy casualties — there is no automatic retreat.
-        </Text>
-      </View>
-
-      <Pressable
-        style={[styles.confirm, !canConfirm && styles.confirmDisabled]}
-        disabled={!canConfirm}
-        onPress={() => void confirmMove(unitId, destinationId, stance)}
-      >
-        <Text style={styles.confirmText}>Confirm Departure</Text>
-      </Pressable>
+      <Text style={styles.section}>Confirm order</Text>
+      <ExpandableRow
+        rowId="confirm"
+        title={`Deploy ${unitLabel}`}
+        subtitle={confirmSubtitle}
+        expanded={expandedSection === 'confirm'}
+        highlighted={canConfirm}
+        onToggle={(id) => setExpandedSection((prev) => toggleExpandedRow(prev, id))}
+        secondary={
+          preview && distance !== null && fromName && toName ? (
+            <View style={styles.confirmBody}>
+              <Text style={styles.route}>Route: {fromName} → {toName}</Text>
+              <Text style={styles.route}>Distance: {formatDistance(distance)}</Text>
+              <Text style={styles.route}>Speed: {formatSpeed(preview.speedKmh)}</Text>
+              <Text style={styles.eta}>ETA: {formatDuration(preview.travelMs)}</Text>
+              <Text style={styles.arrival}>Arrival: {formatDateTime(preview.etaMs)}</Text>
+              <Text style={styles.noCost}>No resource cost for movement.</Text>
+              {selectedDestination?.state === 'stale' && selectedDestination.lastObservedAt !== undefined && (
+                <Text style={styles.staleWarning}>
+                  Acting on stale intelligence ({formatIntelAge(world.nowMs, selectedDestination.lastObservedAt)}).
+                </Text>
+              )}
+              {isHostile && stance === 'assault' && (
+                <Text style={styles.combatHint}>Assault will engage hostile garrison on arrival.</Text>
+              )}
+              <View style={styles.warning}>
+                <Text style={styles.warningText}>
+                  Forces cannot be recalled instantly once deployed. Outpowered assaults take heavy casualties.
+                </Text>
+              </View>
+              <Pressable
+                style={[styles.confirm, !canConfirm && styles.confirmDisabled]}
+                disabled={!canConfirm}
+                onPress={() => void confirmMove(unitId, destinationId, stance)}
+              >
+                <Text style={styles.confirmText}>Confirm Departure</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={styles.muted}>Choose a valid force and destination to preview the order.</Text>
+          )
+        }
+      />
     </ScrollView>
   );
 }
@@ -252,6 +270,9 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 13,
   },
+  confirmBody: {
+    gap: 4,
+  },
   route: {
     color: terminal.text,
     fontFamily: terminal.mono,
@@ -270,6 +291,13 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 12,
     marginTop: 4,
+  },
+  noCost: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   staleWarning: {
     color: terminal.stale,
@@ -290,7 +318,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     padding: 12,
     marginTop: 12,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   warningText: {
     color: terminal.warning,
@@ -303,6 +331,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 4,
   },
   confirmDisabled: {
     opacity: 0.4,

@@ -20,7 +20,11 @@ import {
 import { useGame } from '../game/GameContext';
 import { isTimestampedDispatch } from '../game/actions';
 import { formatStanceDetail, stanceColor } from '../game/diplomacyStanceDisplay';
+import { toggleExpandedRow } from '../game/expandableRowState';
+import { evaluateCostLines, treatyOfferLine } from '../game/costPreview';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
+import { CostBlock } from '../components/disclosure/CostBlock';
+import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { PLAYER_FACTION_ID } from '../game/playerView';
 import type { ActionStackParamList } from '../navigation/types';
 import { TerminalCard } from '../components/TerminalCard';
@@ -37,6 +41,12 @@ function statusLabel(status: ReturnType<typeof diplomaticRelationshipStatus>): s
     default:
       return 'Neutral';
   }
+}
+
+function diplomacySortPriority(status: ReturnType<typeof diplomaticRelationshipStatus>): number {
+  if (status === 'proposal-incoming') return 0;
+  if (status === 'treaty-active') return 1;
+  return 2;
 }
 
 type DiplomacyRoute = RouteProp<ActionStackParamList, 'Diplomacy'>;
@@ -89,7 +99,10 @@ export function DiplomacyScreen() {
             stance,
           };
         })
-        .sort((a, b) => a.name.localeCompare(b.name)),
+        .sort((a, b) => {
+          const priority = diplomacySortPriority(a.status) - diplomacySortPriority(b.status);
+          return priority !== 0 ? priority : a.name.localeCompare(b.name);
+        }),
     [world, playerId, timestampedDispatches],
   );
 
@@ -177,22 +190,17 @@ export function DiplomacyScreen() {
       }
       renderItem={({ item }) => {
         const expanded = expandedFactionId === item.id;
-        return (
-          <TerminalCard style={expanded ? styles.expandedCard : undefined}>
-            <Pressable
-              onPress={() => setExpandedFactionId(expanded ? null : item.id)}
-              style={styles.factionHeader}
-            >
-              <View style={styles.factionTitleRow}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.chevron}>{expanded ? '▾' : '▸'}</Text>
-              </View>
-              <Text style={styles.meta}>
-                {statusLabel(item.status)} · {item.reputationLabel}
-              </Text>
-            </Pressable>
+        const pending = item.status === 'proposal-incoming';
 
-            {expanded && (
+        return (
+          <ExpandableRow
+            rowId={item.id}
+            title={item.name}
+            subtitle={`${statusLabel(item.status)} · ${item.reputationLabel}`}
+            expanded={expanded}
+            highlighted={pending}
+            onToggle={(id) => setExpandedFactionId((prev) => toggleExpandedRow(prev, id))}
+            secondary={
               <View style={styles.secondary}>
                 <Text style={[styles.stance, { color: stanceColor(item.stance) }]}>
                   {formatStanceDetail(item.stance)}
@@ -200,53 +208,62 @@ export function DiplomacyScreen() {
                 <Text style={styles.secondaryHint}>
                   Derived from observed orders in the last 24 game-hours.
                 </Text>
+                <View style={styles.row}>
+                  {!areAllied(world, playerId, item.id) && item.status !== 'proposal-incoming' && (
+                    <Pressable
+                      style={styles.actionButton}
+                      onPress={() => void proposeAlliance(item.id)}
+                    >
+                      <Text style={styles.buttonText}>Propose alliance</Text>
+                    </Pressable>
+                  )}
+                  {areAllied(world, playerId, item.id) && (
+                    <Pressable
+                      style={styles.dangerButton}
+                      onPress={() => void breakAlliance(item.id)}
+                    >
+                      <Text style={styles.buttonText}>Break alliance</Text>
+                    </Pressable>
+                  )}
+                  {!areAllied(world, playerId, item.id) && (
+                    <Pressable
+                      style={styles.actionButton}
+                      onPress={() => setTreatyTarget(treatyTarget === item.id ? null : item.id)}
+                    >
+                      <Text style={styles.buttonText}>Propose treaty</Text>
+                    </Pressable>
+                  )}
+                </View>
+                {treatyTarget === item.id && (
+                  <View style={styles.territoryPicker}>
+                    <Text style={styles.pickerHint}>
+                      Select territory to offer access (48h default)
+                    </Text>
+                    {treatyTerritories.map((territory) => (
+                      <Pressable
+                        key={territory.id}
+                        style={styles.territoryRow}
+                        onPress={() => {
+                          setTreatyTarget(null);
+                          void proposeTreaty(item.id, territory.id);
+                        }}
+                      >
+                        <CostBlock
+                          preview={evaluateCostLines([treatyOfferLine(territory.name)])}
+                          title="Treaty offer"
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
               </View>
-            )}
-
-            <View style={styles.row}>
-              {!areAllied(world, playerId, item.id) && item.status !== 'proposal-incoming' && (
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={() => void proposeAlliance(item.id)}
-                >
-                  <Text style={styles.buttonText}>Propose alliance</Text>
-                </Pressable>
-              )}
-              {areAllied(world, playerId, item.id) && (
-                <Pressable
-                  style={styles.dangerButton}
-                  onPress={() => void breakAlliance(item.id)}
-                >
-                  <Text style={styles.buttonText}>Break alliance</Text>
-                </Pressable>
-              )}
-              {!areAllied(world, playerId, item.id) && (
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={() => setTreatyTarget(treatyTarget === item.id ? null : item.id)}
-                >
-                  <Text style={styles.buttonText}>Propose treaty</Text>
-                </Pressable>
-              )}
-            </View>
-            {treatyTarget === item.id && (
-              <View style={styles.territoryPicker}>
-                <Text style={styles.pickerHint}>Select territory (48h default)</Text>
-                {treatyTerritories.map((territory) => (
-                  <Pressable
-                    key={territory.id}
-                    style={styles.territoryRow}
-                    onPress={() => {
-                      setTreatyTarget(null);
-                      void proposeTreaty(item.id, territory.id);
-                    }}
-                  >
-                    <Text style={styles.territoryName}>{territory.name}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </TerminalCard>
+            }
+            tertiary={
+              <Text style={styles.tertiaryText}>
+                Reputation score: {item.reputation} ({item.reputationLabel})
+              </Text>
+            }
+          />
         );
       }}
     />
@@ -278,6 +295,7 @@ const styles = StyleSheet.create({
   },
   incomingCard: {
     marginBottom: 12,
+    borderColor: terminal.warning,
   },
   sectionLabel: {
     color: terminal.accent,
@@ -296,43 +314,8 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 13,
   },
-  factionHeader: {
-    marginBottom: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  factionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  name: {
-    color: terminal.accent,
-    fontFamily: terminal.mono,
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  chevron: {
-    color: terminal.muted,
-    fontFamily: terminal.mono,
-    fontSize: 14,
-  },
-  meta: {
-    color: terminal.muted,
-    fontFamily: terminal.mono,
-    fontSize: 12,
-    textTransform: 'uppercase',
-  },
-  expandedCard: {
-    borderColor: terminal.accent,
-  },
   secondary: {
-    borderTopWidth: 1,
-    borderTopColor: terminal.border,
-    paddingTop: 8,
-    marginBottom: 10,
-    gap: 4,
+    gap: 8,
   },
   stance: {
     fontFamily: terminal.mono,
@@ -341,6 +324,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   secondaryHint: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  tertiaryText: {
     color: terminal.muted,
     fontFamily: terminal.mono,
     fontSize: 11,
@@ -381,11 +370,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   territoryPicker: {
-    marginTop: 10,
+    marginTop: 4,
     borderTopWidth: 1,
     borderTopColor: terminal.border,
     paddingTop: 8,
-    gap: 4,
+    gap: 8,
   },
   pickerHint: {
     color: terminal.muted,
@@ -395,11 +384,6 @@ const styles = StyleSheet.create({
   },
   territoryRow: {
     paddingVertical: 4,
-  },
-  territoryName: {
-    color: terminal.text,
-    fontFamily: terminal.mono,
-    fontSize: 13,
   },
   footer: {
     marginTop: 8,

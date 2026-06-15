@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text } from 'react-native';
 import { useGame } from '../game/GameContext';
+import { toggleExpandedRow } from '../game/expandableRowState';
 import {
   getPlayerKnownTerritoryName,
   playerForces,
 } from '../game/playerView';
-import { TerminalCard } from '../components/TerminalCard';
+import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { terminal } from '../theme/terminal';
 import { formatDuration } from '../utils/format';
 
 export function ForcesScreen() {
   const { world, wallNowMs } = useGame();
   const units = playerForces(world);
+  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
 
   return (
     <FlatList
@@ -20,21 +22,34 @@ export function ForcesScreen() {
       data={units}
       keyExtractor={(u) => u.id}
       extraData={wallNowMs}
+      ListHeaderComponent={<Text style={styles.heading}>Forces</Text>}
       renderItem={({ item }) => {
         const unitType = world.unitTypes[item.typeId];
         const inTransit = item.transit;
+        const label = unitType?.name ?? item.id;
 
         if (inTransit) {
           const destId = inTransit.toTerritoryId ?? '';
           const dest = getPlayerKnownTerritoryName(world, destId);
           const remaining = Math.max(0, inTransit.arriveMs - wallNowMs);
           return (
-            <TerminalCard>
-              <Text style={styles.title}>{unitType?.name ?? item.id}</Text>
-              <Text style={styles.detail}>×{item.count} · IN TRANSIT</Text>
-              <Text style={styles.dest}>→ {dest}</Text>
-              <Text style={styles.eta}>ETA {formatDuration(remaining)}</Text>
-            </TerminalCard>
+            <ExpandableRow
+              rowId={item.id}
+              title={label}
+              subtitle={`×${item.count} · IN TRANSIT → ${dest}`}
+              expanded={expandedUnitId === item.id}
+              highlighted
+              onToggle={(id) => setExpandedUnitId((prev) => toggleExpandedRow(prev, id))}
+              secondary={
+                <>
+                  <Text style={styles.detail}>Destination: {dest}</Text>
+                  <Text style={styles.eta}>ETA {formatDuration(remaining)}</Text>
+                  <Text style={styles.detail}>
+                    Stance: {inTransit.stanceOnArrival ?? 'hold'}
+                  </Text>
+                </>
+              }
+            />
           );
         }
 
@@ -43,13 +58,20 @@ export function ForcesScreen() {
           : 'Unknown';
 
         return (
-          <TerminalCard>
-            <Text style={styles.title}>{unitType?.name ?? item.id}</Text>
-            <Text style={styles.detail}>
-              ×{item.count} · {location}
-            </Text>
-            <Text style={styles.stationed}>Stationed</Text>
-          </TerminalCard>
+          <ExpandableRow
+            rowId={item.id}
+            title={label}
+            subtitle={`×${item.count} · ${location}`}
+            expanded={expandedUnitId === item.id}
+            onToggle={(id) => setExpandedUnitId((prev) => toggleExpandedRow(prev, id))}
+            secondary={
+              <>
+                <Text style={styles.detail}>Tier {unitType?.tier ?? '?'}</Text>
+                <Text style={styles.detail}>Domain: {unitType?.domain ?? 'unknown'}</Text>
+                <Text style={styles.stationed}>Stationed at {location}</Text>
+              </>
+            }
+          />
         );
       }}
     />
@@ -64,24 +86,19 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 24,
+    gap: 12,
   },
-  title: {
+  heading: {
     color: terminal.accent,
     fontFamily: terminal.mono,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   detail: {
     color: terminal.text,
     fontFamily: terminal.mono,
     fontSize: 13,
-  },
-  dest: {
-    color: terminal.text,
-    fontFamily: terminal.mono,
-    fontSize: 14,
-    marginTop: 8,
   },
   eta: {
     color: terminal.warning,

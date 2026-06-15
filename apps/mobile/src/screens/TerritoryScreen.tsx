@@ -4,16 +4,30 @@ import { useRoute, type RouteProp } from '@react-navigation/native';
 import {
   canBuild,
   extractionPerHour,
-  formatBuildBlockedMessage,
   maxBuildableTier,
   territoryIncomePerHour,
 } from 'sim';
-import type { ResourceId, UnitType } from 'sim';
+import type { ResourceId, UnitType, WorldState } from 'sim';
 import { UNIT_TYPES } from 'shared';
 import { useGame } from '../game/GameContext';
 import { playerOwnedTerritories, PLAYER_FACTION_ID } from '../game/playerView';
+import {
+  collectActiveBuilds,
+  sortTerritoriesForDisplay,
+  territoryGlanceSubtitle,
+  territoryHasFoodShortage,
+} from '../game/territoryDisclosure';
+import { toggleExpandedRow } from '../game/expandableRowState';
+import {
+  infraUpgradeCostPreview,
+  unitBuildCostPreview,
+} from '../game/costPreview';
+import { buildWhyExplanation, infraWhyExplanation } from '../game/whyBlockText';
 import type { ActionStackParamList } from '../navigation/types';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
+import { CostBlock } from '../components/disclosure/CostBlock';
+import { ExpandableRow } from '../components/disclosure/ExpandableRow';
+import { WhyBlock } from '../components/disclosure/WhyBlock';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -45,11 +59,17 @@ export function TerritoryScreen() {
   const faction = world.factions[PLAYER_FACTION];
 
   const playerTerritories = useMemo(
-    () => playerOwnedTerritories(world),
+    () => sortTerritoriesForDisplay(playerOwnedTerritories(world)),
     [world],
   );
 
+  const activeBuilds = useMemo(
+    () => collectActiveBuilds(world, playerTerritories),
+    [world, playerTerritories],
+  );
+
   const [territoryId, setTerritoryId] = useState('');
+  const [expandedTerritoryId, setExpandedTerritoryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (playerTerritories.length === 0) {
@@ -59,6 +79,7 @@ export function TerritoryScreen() {
     const routeTerritoryId = route.params?.territoryId;
     if (routeTerritoryId && playerTerritories.some((t) => t.id === routeTerritoryId)) {
       setTerritoryId(routeTerritoryId);
+      setExpandedTerritoryId(routeTerritoryId);
       return;
     }
     setTerritoryId((prev) =>
@@ -67,8 +88,6 @@ export function TerritoryScreen() {
   }, [playerTerritories, route.params?.territoryId]);
 
   const territory = playerTerritories.find((t) => t.id === territoryId);
-  const maxTier = territory ? maxBuildableTier(territory.infraLevel) : 0;
-  const facilityLabel = territory && territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
 
   const buildChecks = useMemo(() => {
     if (!territory) return {};
@@ -89,6 +108,9 @@ export function TerritoryScreen() {
   }
 
   const incomeHr = territoryIncomePerHour(world, territoryId);
+  const maxTier = maxBuildableTier(territory.infraLevel);
+  const facilityLabel = territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
+  const infraCost = infraUpgradeCostPreview(world, territoryId, PLAYER_FACTION);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -96,83 +118,60 @@ export function TerritoryScreen() {
 
       <ActionFeedbackBanner action={['build', 'upgradeInfra']} feedback={actionFeedback} />
 
-      <Text style={styles.section}>Location</Text>
+      {activeBuilds.length > 0 ? (
+        <>
+          <Text style={styles.section}>Active build queue</Text>
+          {activeBuilds.map((entry, index) => {
+            const unitName = world.unitTypes[entry.unitTypeId]?.name ?? entry.unitTypeId;
+            return (
+              <TerminalCard key={`${entry.territoryId}-${entry.unitTypeId}-${index}`}>
+                <Text style={styles.optionTitle}>
+                  {entry.territoryName}: {unitName} ×{entry.count}
+                </Text>
+                <Text style={styles.optionSub}>
+                  {entry.remainingMs > 0
+                    ? `${formatDuration(entry.remainingMs)} remaining`
+                    : 'Completing…'}
+                </Text>
+              </TerminalCard>
+            );
+          })}
+        </>
+      ) : null}
+
+      <Text style={styles.section}>Locations</Text>
       {playerTerritories.map((t) => (
-        <Pressable key={t.id} onPress={() => setTerritoryId(t.id)}>
-          <TerminalCard style={t.id === territoryId ? styles.selected : undefined}>
-            <Text style={styles.optionTitle}>{t.name}</Text>
-            <Text style={styles.optionSub}>
-              Infra {t.infraLevel} · {t.infraLevel < 3 ? 'Depot' : 'Arsenal'}
-            </Text>
-          </TerminalCard>
-        </Pressable>
-      ))}
-
-      <TerminalCard>
-        <Text style={styles.stat}>Income: {formatRate(incomeHr, '/hr')}</Text>
-        <Text style={styles.stat}>
-          Funding: {formatFunding(faction.funding)} · Manpower:{' '}
-          {Math.floor(faction.manpower).toLocaleString()} /{' '}
-          {faction.manpowerCap.toLocaleString()}
-        </Text>
-        <Text style={styles.stat}>
-          Facility: {facilityLabel} (builds tier 1–{maxTier})
-        </Text>
-      </TerminalCard>
-
-      <Text style={styles.section}>Resources (local stock)</Text>
-      <TerminalCard>
-        {(['fuel', 'steel', 'rareMetals', 'food'] as const).map((id) => (
-          <Text key={id} style={styles.stat}>
-            {resourceLabel(id)}: {formatResource(territory.resources[id] ?? 0)}
-            {extractionPerHour(territory, id) > 0
-              ? ` (+${formatRate(extractionPerHour(territory, id), '/hr')})`
-              : ''}
-          </Text>
-        ))}
-      </TerminalCard>
-
-      <Text style={styles.section}>Build queue</Text>
-      {(territory.buildQueue ?? []).length === 0 ? (
-        <TerminalCard>
-          <Text style={styles.muted}>No units in production.</Text>
-        </TerminalCard>
-      ) : (
-        (territory.buildQueue ?? []).map((item, i) => {
-          const unitType = world.unitTypes[item.unitTypeId];
-          const completeAt = item.startMs + item.durationMs;
-          const remaining = Math.max(0, completeAt - world.nowMs);
-          return (
-            <TerminalCard key={`${item.unitTypeId}-${item.startMs}-${i}`}>
-              <Text style={styles.optionTitle}>
-                {unitType?.name ?? item.unitTypeId} ×{item.count}
-              </Text>
-              <Text style={styles.optionSub}>
-                {remaining > 0 ? `${formatDuration(remaining)} remaining` : 'Completing…'}
-              </Text>
-            </TerminalCard>
-          );
-        })
-      )}
-
-      <Text style={styles.section}>Infrastructure</Text>
-      <Pressable onPress={() => void issueUpgradeInfra(territoryId)}>
-        <TerminalCard>
-          <Text style={styles.optionTitle}>Upgrade infrastructure</Text>
-          <Text style={styles.optionSub}>
-            Level {territory.infraLevel} → {territory.infraLevel + 1} · boosts income &
-            extraction
-          </Text>
-        </TerminalCard>
-      </Pressable>
-
-      <Text style={styles.section}>Build units</Text>
-      {BUILDABLE_UNITS.map((unitType) => (
-        <BuildUnitRow
-          key={unitType.id}
-          unitType={unitType}
-          check={buildChecks[unitType.id]}
-          onBuild={() => void issueBuild(territoryId, unitType.id, 1)}
+        <ExpandableRow
+          key={t.id}
+          rowId={t.id}
+          title={t.name}
+          subtitle={territoryGlanceSubtitle(t)}
+          expanded={expandedTerritoryId === t.id}
+          highlighted={
+            territoryHasFoodShortage(t) || (t.buildQueue?.length ?? 0) > 0
+          }
+          onToggle={(id) => {
+            setTerritoryId(id);
+            setExpandedTerritoryId((prev) => toggleExpandedRow(prev, id));
+          }}
+          secondary={
+            t.id === territoryId ? (
+              <TerritoryDetail
+                world={world}
+                territoryId={t.id}
+                faction={faction}
+                incomeHr={incomeHr}
+                maxTier={maxTier}
+                facilityLabel={facilityLabel}
+                buildChecks={buildChecks}
+                infraCost={infraCost}
+                onUpgrade={() => void issueUpgradeInfra(t.id)}
+                onBuild={(unitTypeId) => void issueBuild(t.id, unitTypeId, 1)}
+              />
+            ) : (
+              <Text style={styles.muted}>Tap to manage this territory.</Text>
+            )
+          }
         />
       ))}
 
@@ -181,33 +180,134 @@ export function TerritoryScreen() {
   );
 }
 
+function TerritoryDetail({
+  world,
+  territoryId,
+  faction,
+  incomeHr,
+  maxTier,
+  facilityLabel,
+  buildChecks,
+  infraCost,
+  onUpgrade,
+  onBuild,
+}: {
+  world: WorldState;
+  territoryId: string;
+  faction: NonNullable<WorldState['factions'][string]>;
+  incomeHr: number;
+  maxTier: number;
+  facilityLabel: string;
+  buildChecks: Record<string, ReturnType<typeof canBuild> | undefined>;
+  infraCost: ReturnType<typeof infraUpgradeCostPreview>;
+  onUpgrade: () => void;
+  onBuild: (unitTypeId: string) => void;
+}) {
+  const territory = world.territories[territoryId];
+  if (!territory) return null;
+
+  return (
+    <>
+      <Text style={styles.stat}>Income: {formatRate(incomeHr, '/hr')}</Text>
+      <Text style={styles.stat}>
+        Funding: {formatFunding(faction.funding)} · Manpower:{' '}
+        {Math.floor(faction.manpower).toLocaleString()} /{' '}
+        {faction.manpowerCap.toLocaleString()}
+      </Text>
+      <Text style={styles.stat}>
+        Facility: {facilityLabel} (builds tier 1–{maxTier})
+      </Text>
+
+      <Text style={styles.subsection}>Resources (local stock)</Text>
+      {(['fuel', 'steel', 'rareMetals', 'food'] as const).map((id) => (
+        <Text key={id} style={styles.stat}>
+          {resourceLabel(id)}: {formatResource(territory.resources[id] ?? 0)}
+          {extractionPerHour(territory, id) > 0
+            ? ` (+${formatRate(extractionPerHour(territory, id), '/hr')})`
+            : ''}
+        </Text>
+      ))}
+
+      {(territory.buildQueue ?? []).length > 0 ? (
+        <>
+          <Text style={styles.subsection}>Build queue (this territory)</Text>
+          {(territory.buildQueue ?? []).map((item, i) => {
+            const unitType = world.unitTypes[item.unitTypeId];
+            const completeAt = item.startMs + item.durationMs;
+            const remaining = Math.max(0, completeAt - world.nowMs);
+            return (
+              <Text key={`${item.unitTypeId}-${item.startMs}-${i}`} style={styles.stat}>
+                {unitType?.name ?? item.unitTypeId} ×{item.count} —{' '}
+                {remaining > 0 ? `${formatDuration(remaining)} left` : 'Completing…'}
+              </Text>
+            );
+          })}
+        </>
+      ) : null}
+
+      <Text style={styles.subsection}>Infrastructure</Text>
+      <Pressable onPress={onUpgrade}>
+        <View style={styles.actionBlock}>
+          <Text style={styles.optionTitle}>Upgrade infrastructure</Text>
+          <Text style={styles.optionSub}>
+            Level {territory.infraLevel} → {territory.infraLevel + 1}
+          </Text>
+          <CostBlock preview={infraCost} title="Upgrade cost" />
+          <WhyBlock explanation={infraWhyExplanation(infraCost.shortfallLabel)} />
+        </View>
+      </Pressable>
+
+      <Text style={styles.subsection}>Build units</Text>
+      {BUILDABLE_UNITS.map((unitType) => (
+        <BuildUnitRow
+          key={unitType.id}
+          world={world}
+          territoryId={territoryId}
+          unitType={unitType}
+          check={buildChecks[unitType.id]}
+          onBuild={() => onBuild(unitType.id)}
+        />
+      ))}
+    </>
+  );
+}
+
 function BuildUnitRow({
+  world,
+  territoryId,
   unitType,
   check,
   onBuild,
 }: {
+  world: WorldState;
+  territoryId: string;
   unitType: UnitType;
   check: ReturnType<typeof canBuild> | undefined;
   onBuild: () => void;
 }) {
+  const preview = unitBuildCostPreview(world, territoryId, unitType, PLAYER_FACTION);
   const blocked = check && !check.ok;
-  const blockerText =
+  const whyText =
     blocked && check
-      ? formatBuildBlockedMessage(unitType, check.reason)
+      ? buildWhyExplanation(
+          world,
+          PLAYER_FACTION,
+          territoryId,
+          unitType,
+          check.reason,
+        )
       : undefined;
 
   return (
     <Pressable onPress={onBuild}>
-      <TerminalCard style={blocked ? styles.blocked : undefined}>
+      <View style={[styles.actionBlock, blocked ? styles.blocked : undefined]}>
         <Text style={styles.optionTitle}>
           {unitType.name} (tier {unitType.tier})
         </Text>
-        <Text style={styles.optionSub}>
-          {formatFunding(unitType.fundingCost)} · {unitType.manpowerCost} MP ·{' '}
-          {unitType.buildHours}h
-        </Text>
-        {blockerText && <Text style={styles.blocker}>{blockerText}</Text>}
-      </TerminalCard>
+        <Text style={styles.optionSub}>{unitType.buildHours}h build time</Text>
+        <CostBlock preview={preview} />
+        <WhyBlock explanation={whyText} />
+      </View>
     </Pressable>
   );
 }
@@ -237,36 +337,43 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 12,
   },
-  selected: {
-    borderColor: terminal.accent,
+  subsection: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 12,
+    marginBottom: 6,
   },
   blocked: {
     borderColor: terminal.warning,
-    opacity: 0.85,
+    opacity: 0.9,
+  },
+  actionBlock: {
+    borderWidth: 1,
+    borderColor: terminal.border,
+    borderRadius: 4,
+    padding: 10,
+    marginBottom: 8,
+    gap: 4,
   },
   optionTitle: {
     color: terminal.text,
     fontFamily: terminal.mono,
     fontSize: 14,
+    fontWeight: '700',
   },
   optionSub: {
     color: terminal.muted,
     fontFamily: terminal.mono,
     fontSize: 12,
-    marginTop: 2,
   },
   stat: {
     color: terminal.text,
     fontFamily: terminal.mono,
     fontSize: 13,
     marginBottom: 4,
-  },
-  blocker: {
-    color: terminal.warning,
-    fontFamily: terminal.mono,
-    fontSize: 12,
-    marginTop: 6,
-    lineHeight: 18,
   },
   muted: {
     color: terminal.muted,
