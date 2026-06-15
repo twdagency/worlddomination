@@ -1,4 +1,4 @@
-import type { Id, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
 import { isTerritoryVisible } from './visibility';
 import {
   formatBattleNarrative,

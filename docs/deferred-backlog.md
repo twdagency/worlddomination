@@ -140,5 +140,21 @@ presses multiple fronts and the player must ALLOCATE forces, not just relocate t
 - **Stale destination order round-trip** (non-blocking test): build scout → observe Berlin → scout dies → Berlin stale →
   player orders attack on Berlin → confirm order executes and state stays consistent.
 
-- **Genghis aggressive scouting visibility**: confirm Genghis produces a scout within a 72h window on
-  `createSprint4World`. If not, revisit aggressive scoring weights during post-5.5 play-testing.
+- **Genghis aggressive scouting visibility**: Phase 7 cold-play on `createSprint4World` (72h, no player orders) recorded **zero** steppe scout builds, moves, or intel reports (`genghis-72h-scout-observation` snapshot). Revisit aggressive scoring weights during Sprint 6 play-testing — not a Sprint 5.5 blocker.
+
+
+Sprint 6 candidate: Scout intel richness
+
+Scouts currently produce the same TerritorySnapshot shape as direct units. They differ only in observation range.
+
+Proposal: scout observations include composition detail (unit types, fortifications, possibly readiness) that direct sight does not. This converts scouts from "longer-range eyes" into "specialists whose observations carry analysis."
+
+Strategically: scouts become useful even for territory you can already see, because composition data is qualitatively different from presence data.
+
+Architecturally: requires TerritorySnapshot schema extension and likely requires the underlying simulation to track unit composition explicitly. Pairs naturally with Sprint 6's diplomacy work because allied/treaty intel sources can be tuned to produce different intel qualities (filtered vs. precise vs. approximate).
+
+Open questions:
+
+What composition fields does scout intel include vs. omit?
+Does scout intel degrade with extended range?
+Does the simulation need to track unit types explicitly, or can composition be inferred from existing data?

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { formatIntelSourceLabel } from 'sim';
+import { formatIntelSourceLabel, type IntelSource } from 'sim';
 import { terminal } from '../theme/terminal';
 
 /** Renders provenance when non-direct sources contribute. Hidden for direct-only intel. */

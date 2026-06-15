@@ -11,7 +11,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench:ai": "tsx perf/aiDecision.bench.ts"
+    "bench:ai": "tsx perf/aiDecision.bench.ts",
+    "bench:intel": "tsx perf/intelStore.bench.ts"
   },
   "devDependencies": {
     "tsx": "^4.20.3",

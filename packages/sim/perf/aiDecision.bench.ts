@@ -19,6 +19,7 @@ import { collectAiOrders } from '../src/ai';
 import { AI_DECISION_INTERVAL_MS } from '../src/constants';
 import { computeStance, STANCE_WINDOW_MS } from '../src/stance';
 import { buildBenchWorld } from './benchWorld';
+import { runIntelBenchmarks } from './intelStore.bench';
 
 const BENCH_START_MS = 1_700_000_000_000;
 const WARMUP = 25;
@@ -95,6 +96,7 @@ function runBenchmarks(): {
   decision: BenchResult[];
   advance: BenchResult[];
   legibility: BenchResult[];
+  intel: ReturnType<typeof runIntelBenchmarks>;
   legibilitySharePct: number;
 } {
   const decisionMs = BENCH_START_MS + AI_DECISION_INTERVAL_MS;
@@ -119,6 +121,9 @@ function runBenchmarks(): {
     bench('renderDigestText (uncompacted)', () => {
       renderDigestText(advanced, events);
     }),
+    bench('renderDigestText (player-filtered)', () => {
+      renderDigestText(advanced, events, undefined, 'faction-player');
+    }),
     bench('renderCompactDigestText (24h)', () => {
       renderCompactDigestText(advanced, events, awayMs);
     }),
@@ -135,8 +140,9 @@ function runBenchmarks(): {
   const advance24 = advance.find((row) => row.label === '24h skip')!.medianMs;
   const legibilityTotal = legibility.reduce((sum, row) => sum + row.medianMs, 0);
   const legibilitySharePct = advance24 > 0 ? (legibilityTotal / advance24) * 100 : 0;
+  const intel = runIntelBenchmarks();
 
-  return { decision, advance, legibility, legibilitySharePct };
+  return { decision, advance, legibility, intel, legibilitySharePct };
 }
 
 function renderBaseline(results: ReturnType<typeof runBenchmarks>): string {
@@ -162,11 +168,19 @@ function renderBaseline(results: ReturnType<typeof runBenchmarks>): string {
     .map((row) => `| ${row.label} | ${fmtMs(row.medianMs)} | ${fmtMs(row.p95Ms)} |`)
     .join('\n');
 
+  const intelRows = results.intel.intel
+    .map((row) => `| ${row.label} | ${fmtMs(row.medianMs)} | ${fmtMs(row.p95Ms)} |`)
+    .join('\n');
+
+  const recordCountRows = Object.entries(results.intel.recordCounts)
+    .map(([label, count]) => `| ${label} | ${count} |`)
+    .join('\n');
+
   return `# Sim performance baseline
 
 Recorded: ${date}  
 Commit: \`${commit}\`  
-Runner: \`packages/sim/perf/aiDecision.bench.ts\`
+Runners: \`packages/sim/perf/aiDecision.bench.ts\`, \`packages/sim/perf/intelStore.bench.ts\`
 
 ## Methodology
 
@@ -214,7 +228,23 @@ ${legibilityRows}
 
 At current sprint4 scale both sim and observers are sub-millisecond. The share ratio is useful for regression drift; absolute microseconds matter more for mobile UX until skips grow much larger.
 
-Sprint 5 dispatch/compaction/stance is observer-only; overhead should stay a small fraction of simulation cost.
+Sprint 5.5 intel store and player-filtered dispatch reads are observer-only; overhead should stay a small fraction of simulation cost.
+
+## Intel store (\`createSprint4World\`)
+
+Merge, observation recording, and prune cost after 24h/72h simulation skips.
+
+| Operation | Median | p95 |
+|-----------|--------|-----|
+${intelRows}
+
+**Record counts (all factions, post-skip):**
+
+| Skip | Records |
+|------|---------|
+${recordCountRows}
+
+If merge or record counts grow superlinearly with skip length, treat as a Sprint 6 optimization candidate — do not tune in sprint close.
 
 ## Review thresholds (guidance)
 
@@ -229,10 +259,11 @@ Sprint 5 dispatch/compaction/stance is observer-only; overhead should stay a sma
 
 \`\`\`bash
 pnpm --filter sim bench:ai
+pnpm --filter sim bench:intel
 pnpm --filter sim bench:ai -- --write-baseline
 \`\`\`
 
-Update this file when AI, clock, or legibility paths change materially.
+Update this file when AI, clock, intel, or legibility paths change materially.
 `;
 }
 
@@ -259,6 +290,14 @@ function main(): void {
     console.log(`${row.label}: median ${fmtMs(row.medianMs)}, p95 ${fmtMs(row.p95Ms)}`);
   }
   console.log(`Legibility share of 24h advanceTo median: ${results.legibilitySharePct.toFixed(2)}%`);
+
+  console.log('\n=== Intel store (createSprint4World) ===');
+  for (const row of results.intel.intel) {
+    console.log(`${row.label}: median ${fmtMs(row.medianMs)}, p95 ${fmtMs(row.p95Ms)}`);
+  }
+  for (const [label, count] of Object.entries(results.intel.recordCounts)) {
+    console.log(`  ${label} records: ${count}`);
+  }
 
   if (writeBaseline) {
     const dir = dirname(fileURLToPath(import.meta.url));
