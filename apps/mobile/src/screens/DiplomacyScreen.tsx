@@ -20,6 +20,7 @@ import {
 import { useGame } from '../game/GameContext';
 import { isTimestampedDispatch } from '../game/actions';
 import { formatStanceDetail, stanceColor } from '../game/diplomacyStanceDisplay';
+import { getFactionIdentity } from '../game/factionDisplay';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { evaluateCostLines, treatyOfferLine } from '../game/costPreview';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
@@ -81,7 +82,6 @@ export function DiplomacyScreen() {
       Object.values(world.factions)
         .filter((faction) => faction.id !== playerId)
         .map((faction) => {
-          const leader = world.leaders[faction.leaderId];
           const reputation = world.reputation[playerId]?.[faction.id] ?? 0;
           const stance = computeStance(
             world,
@@ -92,7 +92,7 @@ export function DiplomacyScreen() {
           );
           return {
             id: faction.id,
-            name: leader?.name ?? faction.id,
+            identity: getFactionIdentity(world, faction.id),
             status: diplomaticRelationshipStatus(world, playerId, faction.id),
             reputationLabel: reputationCategory(reputation),
             reputation,
@@ -101,7 +101,7 @@ export function DiplomacyScreen() {
         })
         .sort((a, b) => {
           const priority = diplomacySortPriority(a.status) - diplomacySortPriority(b.status);
-          return priority !== 0 ? priority : a.name.localeCompare(b.name);
+          return priority !== 0 ? priority : a.identity.leaderName.localeCompare(b.identity.leaderName);
         }),
     [world, playerId, timestampedDispatches],
   );
@@ -195,8 +195,8 @@ export function DiplomacyScreen() {
         return (
           <ExpandableRow
             rowId={item.id}
-            title={item.name}
-            subtitle={`${statusLabel(item.status)} · ${item.reputationLabel}`}
+            title={item.identity.compactLine}
+            subtitle={`${statusLabel(item.status)} · ${item.identity.citiesLine}`}
             expanded={expanded}
             highlighted={pending}
             onToggle={(id) => setExpandedFactionId((prev) => toggleExpandedRow(prev, id))}
@@ -260,7 +260,7 @@ export function DiplomacyScreen() {
             }
             tertiary={
               <Text style={styles.tertiaryText}>
-                Reputation score: {item.reputation} ({item.reputationLabel})
+                Reputation: {item.reputation} ({item.reputationLabel}) · {item.identity.primaryLine}
               </Text>
             }
           />

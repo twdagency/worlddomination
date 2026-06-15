@@ -31,7 +31,7 @@ const SPRINT4_TERRITORIES = {
   },
 } as const;
 
-/** Sprint 4: player + Caesar / Genghis / Elizabeth AI with distinct personalities. */
+/** Sprint 4: player Elizabeth + Caesar / Genghis / Philip II AI with distinct personalities. */
 export function createSprint4World(nowMs: number = Date.now()): WorldState {
   const base = createSprint3World(nowMs);
   const factions = {
@@ -61,7 +61,7 @@ export function createSprint4World(nowMs: number = Date.now()): WorldState {
     },
     'faction-britain': {
       id: 'faction-britain',
-      leaderId: 'leader-elizabeth',
+      leaderId: 'leader-philip',
       isPlayer: false,
       funding: 24_000,
       manpower: 8_500,

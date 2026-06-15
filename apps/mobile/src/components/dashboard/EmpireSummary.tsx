@@ -25,7 +25,7 @@ export function EmpireSummary({ summary }: EmpireSummaryProps) {
 
       <View style={styles.block}>
         <Text style={styles.leader}>
-          {summary.leaderName} — {summary.regionName}
+          {summary.leaderName} of {summary.regionName}
         </Text>
         <Text style={styles.sub}>{cities}</Text>
       </View>

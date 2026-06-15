@@ -7,16 +7,16 @@ exports[`sprint 6 integration > sprint4 britain-player diplomacy protocol > spri
   "breakImportance": "high",
   "caesarDeclined": true,
   "digest": "Caesar — tick 1700900000000
-DIPLOMACY — Caesar declined alliance with Elizabeth.
+DIPLOMACY — Caesar declined alliance with Philip II.
 Genghis — tick 1700921600000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700921600000
 INTEL — Caesar forces advancing from Paris toward London
-INCOME — funding 3523.5
+INCOME — funding 3355.5000000000005
 DIPLOMACY — Alliance formed with Genghis.
 Caesar — tick 1700943200000
 INTEL — Caesar forces advancing from Paris toward London
-Elizabeth — tick 1700943200000
+Philip II — tick 1700943200000
 INTEL — Genghis's forces report Genghis activity at Berlin
 Caesar — tick 1700964800000
 INTEL — Caesar forces advancing from Paris toward London
@@ -32,9 +32,9 @@ Caesar — tick 1701072800000
 INTEL — Caesar forces advancing from Paris toward London
 Caesar — tick 1701094400000
 INTEL — Infrastructure upgraded at Paris (Caesar)
-INCOME — funding 29356.5
-Elizabeth — tick 1701094400000
-DIPLOMACY — Elizabeth has broken alliance with Genghis.",
+INCOME — funding 28012.500000000004
+Philip II — tick 1701094400000
+DIPLOMACY — Philip II has broken alliance with Genghis.",
   "genghisReputationLabel": "Wary",
 }
 `;

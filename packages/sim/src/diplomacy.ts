@@ -65,6 +65,7 @@ export function diplomacyDefaults(factions: Record<Id, Faction>): {
 
 /** Backfill diplomacy fields on saves created before Sprint 6. Preserves stored reputation values. */
 export function ensureWorldDiplomacy(world: WorldState): WorldState {
+  // Composed by ensureWorldMigrations; kept for diplomacy-only tests and direct import.
   const alliances = world.alliances ?? [];
   const treaties = world.treaties ?? [];
   const reputation = createInitialReputation(world.factions);

@@ -37,12 +37,16 @@ export function WorldScreen() {
         const isUnknown = item.state === 'unknown';
         const isStale = item.state === 'stale';
         const displayName = isUnknown ? '???' : item.name;
+        const subtitleParts = [intelSubtitle(item.state, item.lastObservedAt, world.nowMs)];
+        if (item.ownerAffiliation) {
+          subtitleParts.push(item.ownerAffiliation);
+        }
 
         return (
           <ExpandableRow
             rowId={item.territoryId}
             title={displayName}
-            subtitle={intelSubtitle(item.state, item.lastObservedAt, world.nowMs)}
+            subtitle={subtitleParts.join(' · ')}
             expanded={expandedTerritoryId === item.territoryId}
             highlighted={isStale}
             onToggle={(id) => setExpandedTerritoryId((prev) => toggleExpandedRow(prev, id))}

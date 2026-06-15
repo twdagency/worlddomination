@@ -177,6 +177,8 @@ export {
 } from './pendingProposals';
 export { reputationCategory } from './reputationDisplay';
 export type { ReputationCategory } from './reputationDisplay';
+export { ensureWorldMigrations } from './migrations';
+export type { WorldMigrationCatalog } from './migrations';
 export {
   areAllied,
   breakAlliance,

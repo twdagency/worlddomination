@@ -59,7 +59,7 @@ describe('dispatch diplomacy', () => {
     const event = allianceFormedEvent(GENGHIS, BRITAIN, START_MS, GENGHIS);
     expect(dispatchLineForEvent(world, event, BRITAIN)).toContain('Alliance formed with Genghis');
     expect(dispatchLineForEvent(world, event, CAESAR)).toContain(
-      'Elizabeth and Genghis have formed an alliance',
+      'Philip II and Genghis have formed an alliance',
     );
   });
 
@@ -67,7 +67,7 @@ describe('dispatch diplomacy', () => {
     const world = createSprint4World(START_MS);
     const event = allianceBrokenEvent(GENGHIS, BRITAIN, START_MS);
     expect(dispatchLineForEvent(world, event, BRITAIN)).toContain('broken our alliance');
-    expect(dispatchLineForEvent(world, event, CAESAR)).toContain('broken alliance with Elizabeth');
+    expect(dispatchLineForEvent(world, event, CAESAR)).toContain('broken alliance with Philip II');
   });
 
   it('shows alliance events to all factions and hides treaty events from non-parties', () => {

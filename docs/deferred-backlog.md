@@ -345,3 +345,9 @@ environmental layer can land cleanly LATER without anticipation NOW.
 If a Sprint 6–8 feature genuinely needs an environmental hook to make sense,
 that is a signal to revisit the sprint scope, not to start building the
 environmental layer early.
+
+## UI — Diplomacy identity axes (Sprint 8+)
+
+DiplomacyScreen tertiary disclosure (reputation score + stance today) is the
+home for full canon Layer 3 identity-axis display when multi-axis reputation
+tracking ships.

@@ -42,7 +42,7 @@ exports[`sprint 5.5 integration > Genghis scout fixture: transit-aware scoring d
 
 exports[`sprint 5.5 integration > sprint4: 24h cold-play player digest > sprint4-cold-play-24h-digest 1`] = `
 "Genghis — tick 1700921600000
-DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Philip II and Genghis have formed an alliance.
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700921600000
 INTEL — Caesar forces advancing from Paris toward London
@@ -64,7 +64,7 @@ Genghis — tick 1700986400000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700986400000
 INTEL — Caesar forces advancing from Paris toward London
-INCOME — funding 14476.5"
+INCOME — funding 14236.5"
 `;
 
 exports[`sprint 5.5 integration > sprint4: live → stale → unknown arc on Berlin > sprint4-intel-arc-digest 1`] = `

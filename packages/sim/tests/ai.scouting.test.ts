@@ -86,7 +86,7 @@ describe('AI scouting behavior', () => {
     }
   });
 
-  it('Elizabeth-AI scouts defensively — build or hold on own frontier', () => {
+  it('Philip II-AI scouts defensively — build or hold on own frontier', () => {
     const base = withoutCombatUnits(createSprint4World(START_MS), 'faction-britain');
     const world: WorldState = {
       ...base,

@@ -44,6 +44,6 @@ describe('digest preservation', () => {
     expect(digest).toMatch(/Caesar — tick/);
     expect(digest).toMatch(/Caesar forces advancing/);
     expect(digest).toMatch(/Genghis/);
-    expect(digest).toMatch(/Elizabeth/);
+    expect(digest).toMatch(/Philip II/);
   });
 });

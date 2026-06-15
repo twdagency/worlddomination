@@ -10,7 +10,7 @@ exports[`AI diplomacy cold-play #1 (72h, pre-transit scoring) > records alliance
     },
   ],
   "digest": "Genghis — tick 1700921600000
-DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Philip II and Genghis have formed an alliance.
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700921600000
 INTEL — Caesar forces advancing from Paris toward London
@@ -72,15 +72,15 @@ Elizabeth — tick 1701137600000
 DIPLOMACY — You declined alliance with Genghis.
 Genghis — tick 1701137600000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
+Caesar — tick 1701137600000
+INTEL — Infrastructure upgraded at Paris (Caesar)
 INTEL — Caesar forces arrived at London — contact expected
 Elizabeth at London — Caesar annihilated, no casualties.
 Elizabeth — tick 1701159200000
 DIPLOMACY — You declined alliance with Genghis.
 Genghis — tick 1701159200000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
-Caesar — tick 1701159200000
-INTEL — Infrastructure upgraded at Paris (Caesar)
-INCOME — funding 44875.284244862334",
+INCOME — funding 44172.74999999999",
   "genghisOrdersAtEnd": [],
   "reputationSample": {
     "britainViewOfGenghis": 0,

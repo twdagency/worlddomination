@@ -10,6 +10,7 @@ import {
 import type { ResourceId, UnitType, WorldState } from 'sim';
 import { UNIT_TYPES } from 'shared';
 import { useGame } from '../game/GameContext';
+import { getFactionIdentity } from '../game/factionDisplay';
 import { playerOwnedTerritories, PLAYER_FACTION_ID } from '../game/playerView';
 import {
   collectActiveBuilds,
@@ -111,10 +112,14 @@ export function TerritoryScreen() {
   const maxTier = maxBuildableTier(territory.infraLevel);
   const facilityLabel = territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
   const infraCost = infraUpgradeCostPreview(world, territoryId, PLAYER_FACTION);
+  const playerIdentity = getFactionIdentity(world, PLAYER_FACTION);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>Territory</Text>
+      <Text style={styles.playerIdentity}>
+        {playerIdentity.compactLine} · {playerIdentity.citiesLine}
+      </Text>
 
       <ActionFeedbackBanner action={['build', 'upgradeInfra']} feedback={actionFeedback} />
 
@@ -326,7 +331,14 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 18,
     fontWeight: '700',
+    marginBottom: 8,
+  },
+  playerIdentity: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
     marginBottom: 16,
+    lineHeight: 18,
   },
   section: {
     color: terminal.muted,

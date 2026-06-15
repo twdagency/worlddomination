@@ -2,7 +2,7 @@
 
 exports[`AI scouting behavior > 24h cold-play shows AI scout activity and stays within digest cap > ai-scouting-24h-digest 1`] = `
 "Genghis — tick 1700621600000
-DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Philip II and Genghis have formed an alliance.
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700621600000
 INTEL — Caesar forces advancing from Paris toward London
@@ -24,5 +24,5 @@ Genghis — tick 1700686400000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700686400000
 INTEL — Caesar forces advancing from Paris toward London
-INCOME — funding 14476.5"
+INCOME — funding 14236.5"
 `;

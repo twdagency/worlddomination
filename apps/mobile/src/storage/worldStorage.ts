@@ -1,12 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SimEvent, WorldState } from 'sim';
-import { ensureWorldDiplomacy } from 'sim';
+import { ensureWorldMigrations } from 'sim';
+import { LEADERS_BY_ID } from 'shared';
+import { UNIT_TYPES_BY_ID } from 'shared';
 import { STORAGE_KEYS } from '../theme/terminal';
 
 export async function loadWorld(): Promise<WorldState | null> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.world);
   if (!raw) return null;
-  return ensureWorldDiplomacy(JSON.parse(raw) as WorldState);
+  return ensureWorldMigrations(JSON.parse(raw) as WorldState, {
+    unitTypes: UNIT_TYPES_BY_ID,
+    leaders: LEADERS_BY_ID,
+  });
 }
 
 export async function saveWorld(world: WorldState): Promise<void> {

@@ -2,16 +2,16 @@
 
 exports[`dispatch snapshot > locks 12h skip digest on createSprint4World 1`] = `
 "Genghis — tick 1700021600000
-DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Philip II and Genghis have formed an alliance.
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700021600000
 INTEL — Caesar forces advancing from Paris toward London
 INTEL — Infrastructure upgraded at Berlin (Genghis)
-Elizabeth — tick 1700021600000
-INTEL — Construction begun at Madrid (Elizabeth)
+Philip II — tick 1700021600000
+INTEL — Construction begun at Madrid (Philip II)
 Genghis — tick 1700021600000
-INTEL — Elizabeth's forces report construction at Madrid
-Elizabeth — tick 1700021600000
+INTEL — Philip II's forces report construction at Madrid
+Philip II — tick 1700021600000
 INTEL — Genghis's forces report Genghis activity at Berlin
 Elizabeth — tick 1700043200000
 DIPLOMACY — Elizabeth declined alliance with Genghis.
@@ -20,9 +20,9 @@ DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700043200000
 INTEL — Caesar forces advancing from Paris toward London
 INTEL — Infrastructure upgraded at Berlin (Genghis)
-Elizabeth — tick 1700043200000
-INTEL — Construction begun at Madrid (Elizabeth)
-Elizabeth — tick 1700043200000
+Philip II — tick 1700043200000
+INTEL — Construction begun at Madrid (Philip II)
+Philip II — tick 1700043200000
 INTEL — Genghis's forces report Genghis activity at Berlin
-INCOME — funding 7174.5"
+INCOME — funding 7054.5"
 `;

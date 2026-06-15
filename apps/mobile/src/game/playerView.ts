@@ -18,6 +18,7 @@ import {
   type WorldState,
 } from 'sim';
 import { formatDateTime } from '../utils/format';
+import { formatFactionIdentityLine, getFactionIdentity } from './factionDisplay';
 
 export const PLAYER_FACTION_ID = 'faction-player';
 
@@ -35,6 +36,7 @@ export interface TerritoryIntelDisplay {
   sources: IntelSource[];
   lastObservedAt?: number;
   snapshot?: TerritorySnapshot;
+  ownerAffiliation?: string;
 }
 
 function revealAll(world: WorldState): FactionVisibility {
@@ -82,6 +84,13 @@ export function getTerritoryIntelDisplay(
     return { territoryId, state: 'unknown', name: 'Unknown', sources: [] };
   }
 
+  const ownerId =
+    intel.snapshot?.ownerId ?? world.territories[territoryId]?.ownerId;
+  const ownerAffiliation =
+    ownerId && world.factions[ownerId]
+      ? formatFactionIdentityLine(getFactionIdentity(world, ownerId))
+      : undefined;
+
   return {
     territoryId,
     state: intel.state,
@@ -89,6 +98,7 @@ export function getTerritoryIntelDisplay(
     sources: intel.sources,
     lastObservedAt: intel.state === 'stale' ? intel.lastObservedAt : undefined,
     snapshot: intel.snapshot,
+    ownerAffiliation,
   };
 }
 
@@ -409,6 +419,7 @@ export function getDashboardEmpireSummary(
   if (!faction) return null;
 
   const leader = world.leaders[faction.leaderId];
+  const identity = getFactionIdentity(world, factionId);
   const territories = playerOwnedTerritories(world).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
@@ -429,9 +440,9 @@ export function getDashboardEmpireSummary(
 
   return {
     factionId,
-    leaderName: leader?.name ?? factionId,
-    regionName: leader?.region ?? 'Unknown',
-    territoryNames: territories.map((territory) => territory.name),
+    leaderName: identity.leaderName,
+    regionName: identity.countryName,
+    territoryNames: identity.territoryNames,
     funding: faction.funding,
     manpower: Math.floor(faction.manpower),
     manpowerCap: faction.manpowerCap,
