@@ -4,6 +4,7 @@ import { useGame } from '../game/GameContext';
 import { formatDispatchLine, buildDisplayDispatchFeed, isDispatchDetailEvent, isTimestampedDispatch } from '../game/actions';
 import { BattleDetailCard } from '../components/BattleDetailCard';
 import { DevTimeSkip } from '../components/DevTimeSkip';
+import { DevScenarioSelector } from '../components/DevScenarioSelector';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import { formatAwayDuration, formatDateTime, formatFunding } from '../utils/format';
@@ -35,6 +36,7 @@ export function DispatchesScreen() {
         </Text>
       </View>
 
+      {__DEV__ && <DevScenarioSelector />}
       {__DEV__ && <DevTimeSkip />}
 
       <FlatList
