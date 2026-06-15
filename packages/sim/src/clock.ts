@@ -80,6 +80,7 @@ export function advanceTo(
       at: current.nowMs,
       funding: incomeAccrued.funding,
       resourcesByTerritory: incomeAccrued.resourcesByTerritory,
+      importance: 'low',
     });
   }
 

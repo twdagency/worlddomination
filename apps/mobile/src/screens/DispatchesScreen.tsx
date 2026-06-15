@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useGame } from '../game/GameContext';
-import { formatDispatchLine, buildDispatchFeed, isDispatchDetailEvent, isTimestampedDispatch } from '../game/actions';
+import { formatDispatchLine, buildDisplayDispatchFeed, isDispatchDetailEvent, isTimestampedDispatch } from '../game/actions';
 import { BattleDetailCard } from '../components/BattleDetailCard';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { TerminalCard } from '../components/TerminalCard';
@@ -22,7 +22,7 @@ export function DispatchesScreen() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const faction = world.factions['faction-player'];
   const recent = [...dispatches].filter(isTimestampedDispatch);
-  const feed = buildDispatchFeed(world, recent, formatDispatchLine).reverse();
+  const feed = buildDisplayDispatchFeed(world, recent, awayMs).reverse();
 
   return (
     <View style={styles.container}>

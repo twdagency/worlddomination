@@ -75,6 +75,7 @@ export {
   beatHeader,
   buildDispatchFeed,
   computeBeatId,
+  dispatchLineForEvent,
   formatBuildStartedLine,
   formatInfraUpgradedLine,
   formatIntentArrivalLine,
@@ -85,4 +86,16 @@ export {
   taggedOrderFields,
 } from './dispatch';
 export type { DispatchBeatGroup, DispatchFeedItem } from './dispatch';
+export {
+  COMPACTION_THRESHOLD_MS,
+  DISPATCH_LINE_CAP,
+  arrivalImportance,
+  departureImportance,
+  factionIdFromEvent,
+  mediumCompactionCategory,
+  resolveEventImportance,
+} from './importance';
+export type { DispatchImportance } from './types';
+export type { MediumCompactionCategory } from './importance';
+export { compactDispatchFeed, renderCompactDigestText } from './compaction';
 export { resolveHostileArrival } from './arrivalCombat';

@@ -1,6 +1,7 @@
 import { resolveHostileArrival } from './arrivalCombat';
 import { DEFAULT_TRAIT, MS_PER_HOUR } from './constants';
 import { haversineKm } from './geo';
+import { arrivalImportance, departureImportance } from './importance';
 import type { Id, Millis, Order, OrderIntent, SimEvent, TraitKey, TransitOrder, Unit, WorldState } from './types';
 
 type TransitOrderFields = {
@@ -133,6 +134,7 @@ export function applyMoveOrders(
       intent: order.intent,
       beatId: order.beatId,
       decisionTickMs: order.decisionTickMs,
+      importance: departureImportance(order.intent),
     });
   }
 
@@ -184,6 +186,7 @@ export function resolveArrivals(
     units = resolution.units;
     territories = resolution.territories;
     rng = resolution.rng;
+    const snapshotWorld = { ...world, units, territories, rng };
     events.push(
       {
         kind: 'arrival',
@@ -198,6 +201,12 @@ export function resolveArrivals(
         intent: unit.transit.intent,
         beatId: unit.transit.beatId,
         decisionTickMs: unit.transit.decisionTickMs,
+        importance: arrivalImportance(
+          snapshotWorld,
+          unit.ownerId,
+          territoryId,
+          unit.transit.intent,
+        ),
       },
       ...resolution.events,
     );

@@ -1,6 +1,8 @@
 import {
   advanceTo,
   buildDispatchFeed,
+  compactDispatchFeed,
+  COMPACTION_THRESHOLD_MS,
   formatBattleNarrative,
   formatBuildStartedLine,
   formatInfraUpgradedLine,
@@ -174,8 +176,19 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
   return `${event.kind} event`;
 }
 
-export { buildDispatchFeed };
+export { buildDispatchFeed, compactDispatchFeed, COMPACTION_THRESHOLD_MS };
 export type { DispatchFeedItem };
+
+export function buildDisplayDispatchFeed(
+  world: WorldState,
+  events: SimEvent[],
+  awayMs: number,
+): DispatchFeedItem[] {
+  if (awayMs > COMPACTION_THRESHOLD_MS) {
+    return compactDispatchFeed(world, events, awayMs, formatDispatchLine);
+  }
+  return buildDispatchFeed(world, events, formatDispatchLine);
+}
 
 export function isDispatchDetailEvent(
   event: SimEvent,

@@ -60,6 +60,7 @@ describe('movement', () => {
       intent: 'defend',
       beatId: move.beatId,
       decisionTickMs: world.nowMs,
+      importance: 'medium',
     });
   });
 

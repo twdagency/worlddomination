@@ -174,6 +174,8 @@ export type Order =
 
 export type CovertOpKind = 'recon' | 'sabotage' | 'subvert' | 'counterintel';
 
+export type DispatchImportance = 'high' | 'medium' | 'low';
+
 export interface BattleReport {
   attackerId: Id;
   defenderId: Id;
@@ -199,6 +201,7 @@ export type SimEvent =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'arrival';
@@ -213,8 +216,9 @@ export type SimEvent =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+      importance?: DispatchImportance;
     }
-  | { kind: 'battle'; at: Millis; territoryId: Id; report: BattleReport }
+  | { kind: 'battle'; at: Millis; territoryId: Id; report: BattleReport; importance: DispatchImportance }
   | {
       kind: 'withdrawal';
       at: Millis;
@@ -226,6 +230,7 @@ export type SimEvent =
       defenderLosses: number;
       attackerLosses: number;
       underFire: boolean;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'secured';
@@ -234,12 +239,14 @@ export type SimEvent =
       factionId: Id;
       unitIds: Id[];
       enemyWithdrew: boolean;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'income';
       at: Millis;
       funding: number;
       resourcesByTerritory: Record<Id, Partial<Record<ResourceId, number>>>;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'production';
@@ -248,6 +255,7 @@ export type SimEvent =
       unitTypeId: Id;
       count: number;
       factionId: Id;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'buildStarted';
@@ -259,6 +267,7 @@ export type SimEvent =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'infraUpgraded';
@@ -269,8 +278,16 @@ export type SimEvent =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+      importance?: DispatchImportance;
     }
-  | { kind: 'buildBlocked'; at: Millis; territoryId: Id; reason: string; missing?: ResourceId }
+  | {
+      kind: 'buildBlocked';
+      at: Millis;
+      territoryId: Id;
+      reason: string;
+      missing?: ResourceId;
+      importance?: DispatchImportance;
+    }
   | { kind: 'procedural'; at: Millis; eventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
   | { kind: 'victory'; at: Millis; factionId: Id }

@@ -289,6 +289,7 @@ export function applyBuildOrders(
         intent: order.intent,
         beatId: order.beatId,
         decisionTickMs: order.decisionTickMs,
+        importance: 'medium',
       });
       continue;
     }
@@ -304,6 +305,7 @@ export function applyBuildOrders(
           at: world.nowMs,
           territoryId: order.territoryId,
           reason: formatBuildBlockedMessage(undefined, { code: 'max-infra' }),
+          importance: 'medium',
         });
         continue;
       }
@@ -318,6 +320,7 @@ export function applyBuildOrders(
           at: world.nowMs,
           territoryId: order.territoryId,
           reason: 'Insufficient funding for infrastructure upgrade',
+          importance: 'medium',
         });
         continue;
       }
@@ -337,6 +340,7 @@ export function applyBuildOrders(
         intent: order.intent,
         beatId: order.beatId,
         decisionTickMs: order.decisionTickMs,
+        importance: 'medium',
       });
     }
   }
@@ -382,6 +386,7 @@ export function resolveProductionCompletions(
         unitTypeId: item.unitTypeId,
         count: item.count,
         factionId: ownerId,
+        importance: 'medium',
       });
       territoryChanged = true;
     }
