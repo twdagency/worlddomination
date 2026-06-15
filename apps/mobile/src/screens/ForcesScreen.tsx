@@ -1,13 +1,17 @@
 import React from 'react';
 import { FlatList, StyleSheet, Text } from 'react-native';
 import { useGame } from '../game/GameContext';
+import {
+  getPlayerVisibleTerritoryName,
+  playerForces,
+} from '../game/playerView';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import { formatDuration } from '../utils/format';
 
 export function ForcesScreen() {
   const { world, wallNowMs } = useGame();
-  const units = Object.values(world.units).filter((u) => u.ownerId === 'faction-player');
+  const units = playerForces(world);
 
   return (
     <FlatList
@@ -22,7 +26,7 @@ export function ForcesScreen() {
 
         if (inTransit) {
           const destId = inTransit.toTerritoryId ?? '';
-          const dest = world.territories[destId]?.name ?? destId;
+          const dest = getPlayerVisibleTerritoryName(world, destId);
           const remaining = Math.max(0, inTransit.arriveMs - wallNowMs);
           return (
             <TerminalCard>
@@ -35,7 +39,7 @@ export function ForcesScreen() {
         }
 
         const location = item.locationId
-          ? (world.territories[item.locationId]?.name ?? item.locationId)
+          ? getPlayerVisibleTerritoryName(world, item.locationId)
           : 'Unknown';
 
         return (

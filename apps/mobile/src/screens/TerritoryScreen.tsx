@@ -10,6 +10,7 @@ import {
 import type { ResourceId, UnitType } from 'sim';
 import { UNIT_TYPES } from 'shared';
 import { useGame } from '../game/GameContext';
+import { getPlayerVisibleTerritory, playerOwnedTerritories, PLAYER_FACTION_ID } from '../game/playerView';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -20,7 +21,7 @@ import {
   formatResource,
 } from '../utils/format';
 
-const PLAYER_FACTION = 'faction-player';
+const PLAYER_FACTION = PLAYER_FACTION_ID;
 const BUILDABLE_UNITS = UNIT_TYPES.filter((u) => u.domain === 'land' || u.domain === 'sea');
 
 function resourceLabel(id: ResourceId): string {
@@ -38,14 +39,13 @@ export function TerritoryScreen() {
   const faction = world.factions[PLAYER_FACTION];
 
   const playerTerritories = useMemo(
-    () =>
-      Object.values(world.territories).filter((t) => t.ownerId === PLAYER_FACTION),
-    [world.territories],
+    () => playerOwnedTerritories(world),
+    [world],
   );
 
   const [territoryId, setTerritoryId] = useState(playerTerritories[0]?.id ?? '');
 
-  const territory = world.territories[territoryId];
+  const territory = getPlayerVisibleTerritory(world, territoryId);
   const maxTier = territory ? maxBuildableTier(territory.infraLevel) : 0;
   const facilityLabel = territory && territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
 

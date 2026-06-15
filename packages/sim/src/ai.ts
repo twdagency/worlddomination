@@ -3,7 +3,7 @@ import { haversineKm } from './geo';
 import { buildTransit } from './movement';
 import { canBuild } from './production';
 import {
-  getFactionVisibility,
+  computeVisibility,
   isTerritoryVisible,
   isUnitVisible,
   visibleEnemyUnits,
@@ -65,7 +65,7 @@ function scoreDefend(world: WorldState, factionId: Id, weights: LeaderWeights): 
 }
 
 function scoreAttack(world: WorldState, factionId: Id, weights: LeaderWeights): ScoredOrder | null {
-  const visibility = getFactionVisibility(world, factionId);
+  const visibility = computeVisibility(world, factionId);
   let best: ScoredOrder | null = null;
 
   for (const unit of idleUnits(world, factionId)) {
@@ -105,7 +105,7 @@ function scoreAttack(world: WorldState, factionId: Id, weights: LeaderWeights): 
 }
 
 function scoreExpand(world: WorldState, factionId: Id, weights: LeaderWeights): ScoredOrder | null {
-  const visibility = getFactionVisibility(world, factionId);
+  const visibility = computeVisibility(world, factionId);
   let best: ScoredOrder | null = null;
 
   for (const unit of idleUnits(world, factionId)) {

@@ -36,6 +36,7 @@ export {
   nextAiDecisionMs,
 } from './ai';
 export {
+  computeVisibility,
   getFactionVisibility,
   isTerritoryVisible,
   isUnitVisible,
@@ -43,6 +44,7 @@ export {
   visibleEnemyUnits,
   visibleTerritories,
 } from './visibility';
+export type { FactionVisibility } from './visibility';
 export {
   applyUnitLosses,
   computeWithdrawalCasualties,
