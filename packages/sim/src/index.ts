@@ -76,6 +76,7 @@ export {
   recordDirectObservations,
   recordAlliedObservations,
   recordIntelObservations,
+  recordTreatyObservations,
   recordScoutFinalObservations,
 } from './intel';
 export {

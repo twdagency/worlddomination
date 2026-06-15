@@ -251,6 +251,10 @@ function appendAlliedShares(
 /**
  * Copies each ally's own direct/scout records into the other's intel store as 'allied'.
  * Non-transitive: allied/treaty records are never re-shared.
+ *
+ * Dedup at emission: skip if an identical allied copy already exists (same
+ * observer, territory, observationTime). Near-duplicates from successive ticks
+ * with newer observationTime are retained; merge picks the freshest at read time.
  */
 export function recordAlliedObservations(world: WorldState, gameTime: Millis = world.nowMs): IntelStore {
   const store: IntelStore = { ...ensureIntelStore(world) };
@@ -306,6 +310,82 @@ export function pruneAlliedIntelOnBreak(
 
   if (!changed) return world;
   return { ...world, intel: store };
+}
+
+function shareableInScope(
+  records: IntelRecord[],
+  sharingFaction: Id,
+  scopedTerritoryIds: Set<Id>,
+  gameTime: Millis,
+): IntelRecord[] {
+  return shareableAllyRecords(records, sharingFaction, gameTime).filter((record) =>
+    scopedTerritoryIds.has(record.territoryId),
+  );
+}
+
+function toTreatyRecord(record: IntelRecord, treatyExpiresAt: Millis): IntelRecord {
+  return {
+    observerFaction: record.observerFaction,
+    territoryId: record.territoryId,
+    observationTime: record.observationTime,
+    snapshot: record.snapshot,
+    source: 'treaty',
+    expiresAt: treatyExpiresAt,
+    confidence: record.confidence,
+  };
+}
+
+function hasTreatyCopy(records: IntelRecord[], candidate: IntelRecord): boolean {
+  return records.some(
+    (record) =>
+      record.source === 'treaty' &&
+      record.observerFaction === candidate.observerFaction &&
+      record.territoryId === candidate.territoryId &&
+      record.observationTime === candidate.observationTime &&
+      record.expiresAt === candidate.expiresAt,
+  );
+}
+
+function appendTreatyShares(
+  receiverRecords: IntelRecord[],
+  shares: IntelRecord[],
+  treatyExpiresAt: Millis,
+): IntelRecord[] {
+  let next = receiverRecords;
+  for (const share of shares) {
+    const treatyRecord = toTreatyRecord(share, treatyExpiresAt);
+    if (!hasTreatyCopy(next, treatyRecord)) {
+      next = appendRecord(next, treatyRecord);
+    }
+  }
+  return next;
+}
+
+/**
+ * Copies scoped direct/scout records between treaty parties as 'treaty'-sourced intel.
+ * Record expiresAt is the treaty's expiry (decay window may prune sooner).
+ */
+export function recordTreatyObservations(world: WorldState, gameTime: Millis = world.nowMs): IntelStore {
+  const store: IntelStore = { ...ensureIntelStore(world) };
+  const activeTreaties = world.treaties.filter((treaty) => gameTime < treaty.expiresAt);
+
+  for (const treaty of activeTreaties) {
+    const [partyA, partyB] = treaty.parties;
+    const scope = new Set(treaty.scope.territoryIds);
+    const pairs: ReadonlyArray<readonly [Id, Id]> = [
+      [partyA, partyB],
+      [partyB, partyA],
+    ];
+
+    for (const [sharer, receiver] of pairs) {
+      const receiverRecords = store[receiver] ?? [];
+      const shares = shareableInScope(store[sharer] ?? [], sharer, scope, gameTime);
+      const next = appendTreatyShares(receiverRecords, shares, treaty.expiresAt);
+      if (next !== receiverRecords) store[receiver] = next;
+    }
+  }
+
+  return store;
 }
 
 /** @deprecated Use `recordIntelObservations`. */

@@ -151,6 +151,11 @@ export function breakAlliance(world: WorldState, factionA: Id, factionB: Id): Wo
   const next = world.alliances.filter((pair) => !(pair.factionA === a && pair.factionB === b));
   if (next.length === world.alliances.length) return world;
 
+  // SPRINT-6 architectural note: alliance formation is intel-agnostic (emission runs at
+  // the next tick boundary, driven by state). Breaking has immediate intel implications
+  // (must prune broken-ally records to preserve fog parity), so breakAlliance imports
+  // pruneAlliedIntelOnBreak. This asymmetry is intentional; do not generalize into an
+  // event bus without strong justification.
   return pruneAlliedIntelOnBreak(
     {
       ...world,
