@@ -1,0 +1,17 @@
+export const STORAGE_KEYS = {
+  world: '@worlddomination/world',
+  dispatches: '@worlddomination/dispatches',
+  lastActiveMs: '@worlddomination/lastActiveMs',
+} as const;
+
+export const terminal = {
+  bg: '#0a0e14',
+  card: '#121820',
+  border: '#2a3544',
+  text: '#c9d1d9',
+  muted: '#6e7681',
+  accent: '#3fb950',
+  warning: '#d29922',
+  danger: '#f85149',
+  mono: 'monospace' as const,
+};

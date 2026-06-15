@@ -1,0 +1,13 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "sim": ["../../packages/sim/src/index.ts"],
+      "sim/*": ["../../packages/sim/src/*"],
+      "shared": ["../../packages/shared/src/index.ts"],
+      "shared/*": ["../../packages/shared/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

@@ -1,0 +1,40 @@
+import type { Leader } from 'sim';
+
+export const LEADERS: Leader[] = [
+  {
+    id: 'leader-alexander',
+    name: 'Alexander',
+    region: 'Macedon',
+    era: 'Classical',
+    weights: { aggression: 9, risk: 7, economy: 4, expansion: 10 },
+    traits: { landSpeedMult: 1.15, attackCombatMod: 1.1 },
+  },
+  {
+    id: 'leader-caesar',
+    name: 'Caesar',
+    region: 'Rome',
+    era: 'Classical',
+    weights: { aggression: 8, risk: 6, economy: 7, expansion: 8 },
+    traits: { incomeMult: 1.1, buildTimeMult: 0.95 },
+  },
+  {
+    id: 'leader-genghis',
+    name: 'Genghis',
+    region: 'Steppe',
+    era: 'Medieval',
+    weights: { aggression: 10, risk: 8, economy: 3, expansion: 9 },
+    traits: { landSpeedMult: 1.25, attackCombatMod: 1.15 },
+  },
+  {
+    id: 'leader-elizabeth',
+    name: 'Elizabeth',
+    region: 'Britain',
+    era: 'Early Modern',
+    weights: { aggression: 5, risk: 4, economy: 9, expansion: 7 },
+    traits: { incomeMult: 1.2, seaSpeedMult: 1.15, homeDefenseCombatMod: 1.1 },
+  },
+];
+
+export const LEADERS_BY_ID: Record<string, Leader> = Object.fromEntries(
+  LEADERS.map((l) => [l.id, l]),
+);
