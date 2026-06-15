@@ -3,6 +3,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { TransitOrder } from 'sim';
 import { moveDistanceKm, previewMoveEtaMs } from 'sim';
 import { useGame } from '../game/GameContext';
+import {
+  getPlayerVisibleTerritory,
+  playerMoveDestinations,
+  playerMovableUnits,
+  PLAYER_FACTION_ID,
+} from '../game/playerView';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import {
@@ -12,8 +18,6 @@ import {
   formatSpeed,
 } from '../utils/format';
 
-const DESTINATIONS = ['territory-paris', 'territory-berlin', 'territory-madrid'] as const;
-
 const STANCES: { id: TransitOrder['stanceOnArrival']; label: string; hint: string }[] = [
   { id: 'assault', label: 'Assault', hint: 'Attack hostile garrison on arrival' },
   { id: 'secure', label: 'Secure', hint: 'Occupy neutral ground only' },
@@ -22,21 +26,16 @@ const STANCES: { id: TransitOrder['stanceOnArrival']; label: string; hint: strin
 
 export function OrderScreen() {
   const { world, confirmMove } = useGame();
-  const movableUnits = Object.values(world.units).filter(
-    (u) => u.ownerId === 'faction-player' && !u.transit && u.locationId,
-  );
+  const movableUnits = playerMovableUnits(world);
 
   const [unitId, setUnitId] = useState(movableUnits[0]?.id ?? '');
   const [destinationId, setDestinationId] = useState<string>('');
   const [stance, setStance] = useState<TransitOrder['stanceOnArrival']>('assault');
 
-  const unit = world.units[unitId];
+  const unit = movableUnits.find((u) => u.id === unitId);
   const availableDestinations = useMemo(
-    () =>
-      DESTINATIONS.filter((id) => id !== unit?.locationId).filter(
-        (id) => world.territories[id],
-      ),
-    [unit?.locationId, world.territories],
+    () => playerMoveDestinations(world, unit?.locationId),
+    [world, unit?.locationId],
   );
 
   useEffect(() => {
@@ -45,9 +44,7 @@ export function OrderScreen() {
       return;
     }
     setDestinationId((prev) =>
-      availableDestinations.includes(prev as (typeof DESTINATIONS)[number])
-        ? prev
-        : availableDestinations[0],
+      availableDestinations.some((t) => t.id === prev) ? prev : availableDestinations[0].id,
     );
   }, [unitId, availableDestinations]);
 
@@ -58,15 +55,16 @@ export function OrderScreen() {
   }, [world, unitId, destinationId, unit?.locationId]);
 
   const fromName = unit?.locationId
-    ? world.territories[unit.locationId]?.name
+    ? getPlayerVisibleTerritory(world, unit.locationId)?.name
     : undefined;
-  const toName = destinationId ? world.territories[destinationId]?.name : undefined;
+  const destination = destinationId ? getPlayerVisibleTerritory(world, destinationId) : undefined;
+  const toName = destination?.name;
   const distance =
     unitId && destinationId && unit?.locationId !== destinationId
       ? moveDistanceKm(world, unitId, destinationId)
       : null;
-  const destOwner = world.territories[destinationId]?.ownerId;
-  const isHostile = destOwner && destOwner !== 'faction-player';
+  const destOwner = destination?.ownerId;
+  const isHostile = destOwner && destOwner !== PLAYER_FACTION_ID;
 
   const canConfirm = Boolean(
     unitId &&
@@ -108,13 +106,12 @@ export function OrderScreen() {
           <Text style={styles.muted}>No valid destinations — force is not stationed for redeployment.</Text>
         </TerminalCard>
       ) : (
-        availableDestinations.map((id) => {
-        const t = world.territories[id];
-        const name = t?.name ?? id;
-        const hostile = t?.ownerId && t.ownerId !== 'faction-player';
-        const selected = id === destinationId;
+        availableDestinations.map((t) => {
+        const name = t.name;
+        const hostile = t.ownerId && t.ownerId !== PLAYER_FACTION_ID;
+        const selected = t.id === destinationId;
         return (
-          <Pressable key={id} onPress={() => setDestinationId(id)}>
+          <Pressable key={t.id} onPress={() => setDestinationId(t.id)}>
             <TerminalCard style={selected ? styles.selected : undefined}>
               <Text style={styles.optionTitle}>
                 {name}

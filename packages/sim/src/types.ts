@@ -44,6 +44,8 @@ export type TraitKey =
   | 'espionageMult'
   | 'counterIntelMult';
 
+export type LeaderTempo = 'fast' | 'steady' | 'slow';
+
 export interface Leader {
   id: Id;
   name: string;
@@ -51,6 +53,7 @@ export interface Leader {
   era: string;
   weights: LeaderWeights;
   traits: Partial<Record<TraitKey, number>>;
+  tempo: LeaderTempo;
 }
 
 export interface UnitType {
@@ -69,6 +72,8 @@ export interface UnitType {
   capacity?: number;
 }
 
+export type OrderIntent = 'defend' | 'attack' | 'expand' | 'build';
+
 export interface TransitOrder {
   fromId: Id;
   toCoord: Coord;
@@ -77,6 +82,9 @@ export interface TransitOrder {
   arriveMs: Millis;
   distanceKm: number;
   stanceOnArrival: 'assault' | 'secure' | 'hold';
+  intent: OrderIntent;
+  beatId: string;
+  decisionTickMs: Millis;
 }
 
 export interface Unit {
@@ -138,15 +146,35 @@ export type Order =
       unitId: Id;
       toTerritoryId: Id;
       stanceOnArrival: TransitOrder['stanceOnArrival'];
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+      count?: number;
     }
-  | { kind: 'build'; territoryId: Id; unitTypeId: Id; count: number }
-  | { kind: 'upgradeInfra'; territoryId: Id }
+  | {
+      kind: 'build';
+      territoryId: Id;
+      unitTypeId: Id;
+      count: number;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
+  | {
+      kind: 'upgradeInfra';
+      territoryId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
   | { kind: 'setPolicy'; factionId: Id; policies: Partial<Policies> }
   | { kind: 'setStance'; unitId: Id; stance: Unit['stance'] }
   | { kind: 'eventChoice'; eventId: Id; choiceId: Id }
   | { kind: 'covertOp'; spyUnitId: Id; targetId: Id; op: CovertOpKind };
 
 export type CovertOpKind = 'recon' | 'sabotage' | 'subvert' | 'counterintel';
+
+export type DispatchImportance = 'high' | 'medium' | 'low';
 
 export interface BattleReport {
   attackerId: Id;
@@ -170,6 +198,10 @@ export type SimEvent =
       unitTypeId: Id;
       count: number;
       stanceOnArrival: TransitOrder['stanceOnArrival'];
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'arrival';
@@ -181,8 +213,12 @@ export type SimEvent =
       count: number;
       stanceOnArrival: TransitOrder['stanceOnArrival'];
       fromTerritoryId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
     }
-  | { kind: 'battle'; at: Millis; territoryId: Id; report: BattleReport }
+  | { kind: 'battle'; at: Millis; territoryId: Id; report: BattleReport; importance: DispatchImportance }
   | {
       kind: 'withdrawal';
       at: Millis;
@@ -194,6 +230,7 @@ export type SimEvent =
       defenderLosses: number;
       attackerLosses: number;
       underFire: boolean;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'secured';
@@ -202,12 +239,14 @@ export type SimEvent =
       factionId: Id;
       unitIds: Id[];
       enemyWithdrew: boolean;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'income';
       at: Millis;
       funding: number;
       resourcesByTerritory: Record<Id, Partial<Record<ResourceId, number>>>;
+      importance?: DispatchImportance;
     }
   | {
       kind: 'production';
@@ -216,8 +255,39 @@ export type SimEvent =
       unitTypeId: Id;
       count: number;
       factionId: Id;
+      importance?: DispatchImportance;
     }
-  | { kind: 'buildBlocked'; at: Millis; territoryId: Id; reason: string; missing?: ResourceId }
+  | {
+      kind: 'buildStarted';
+      at: Millis;
+      territoryId: Id;
+      factionId: Id;
+      unitTypeId: Id;
+      count: number;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'infraUpgraded';
+      at: Millis;
+      territoryId: Id;
+      factionId: Id;
+      infraLevel: number;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'buildBlocked';
+      at: Millis;
+      territoryId: Id;
+      reason: string;
+      missing?: ResourceId;
+      importance?: DispatchImportance;
+    }
   | { kind: 'procedural'; at: Millis; eventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
   | { kind: 'victory'; at: Millis; factionId: Id }

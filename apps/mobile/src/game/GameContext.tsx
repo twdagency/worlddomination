@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { createSprint4World } from 'shared';
 import type { SimEvent, TransitOrder, WorldState } from 'sim';
 import { nextEventMs } from 'sim';
 import {
@@ -12,11 +11,20 @@ import {
   skipToNextEvent,
 } from './actions';
 import {
+  createWorldForScenario,
+  DEFAULT_SCENARIO_ID,
+  isDevScenarioId,
+  type DevScenarioId,
+} from './scenarios';
+import {
+  clearCampaignStorage,
   loadDispatches,
   loadLastActiveMs,
+  loadScenarioId,
   loadWorld,
   saveDispatches,
   saveLastActiveMs,
+  saveScenarioId,
   saveWorld,
 } from '../storage/worldStorage';
 
@@ -25,12 +33,14 @@ interface GameContextValue {
   world: WorldState;
   dispatches: SimEvent[];
   awayMs: number;
+  scenarioId: DevScenarioId;
   /** Wall-clock ms for live ETA display (campaign time tracks real time). */
   wallNowMs: number;
   confirmMove: (unitId: string, toTerritoryId: string, stanceOnArrival?: TransitOrder['stanceOnArrival']) => Promise<void>;
   issueBuild: (territoryId: string, unitTypeId: string, count?: number) => Promise<void>;
   issueUpgradeInfra: (territoryId: string) => Promise<void>;
   skipNext: () => Promise<void>;
+  loadScenario: (id: DevScenarioId) => Promise<void>;
 }
 
 const GameContext = React.createContext<GameContextValue | null>(null);
@@ -43,9 +53,15 @@ async function persist(world: WorldState, dispatches: SimEvent[]): Promise<void>
   ]);
 }
 
+function resolveScenarioId(stored: string | null): DevScenarioId {
+  if (stored && isDevScenarioId(stored)) return stored;
+  return DEFAULT_SCENARIO_ID;
+}
+
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
-  const [world, setWorld] = useState<WorldState>(() => createSprint4World());
+  const [scenarioId, setScenarioId] = useState<DevScenarioId>(DEFAULT_SCENARIO_ID);
+  const [world, setWorld] = useState<WorldState>(() => createWorldForScenario(DEFAULT_SCENARIO_ID));
   const [dispatches, setDispatches] = useState<SimEvent[]>([]);
   const [awayMs, setAwayMs] = useState(0);
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
@@ -73,17 +89,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [storedWorld, storedDispatches, lastActive] = await Promise.all([
+      const [storedWorld, storedDispatches, lastActive, storedScenarioId] = await Promise.all([
         loadWorld(),
         loadDispatches(),
         loadLastActiveMs(),
+        loadScenarioId(),
       ]);
       if (cancelled) return;
-      await applyCatchUp(
-        storedWorld ?? createSprint4World(),
-        storedDispatches,
-        lastActive,
-      );
+
+      const id = resolveScenarioId(storedScenarioId);
+      setScenarioId(id);
+
+      const worldMatchesScenario = storedWorld?.scenarioId === id;
+      const baseWorld = worldMatchesScenario ? storedWorld! : createWorldForScenario(id);
+      const baseDispatches = worldMatchesScenario ? storedDispatches : [];
+
+      await applyCatchUp(baseWorld, baseDispatches, worldMatchesScenario ? lastActive : null);
       if (!cancelled) setReady(true);
     })();
     return () => {
@@ -108,7 +129,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [ready, world]);
 
-  // Live wall clock for ETA countdowns; catch up sim when an arrival is due.
   useEffect(() => {
     if (!ready) return;
 
@@ -173,9 +193,32 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     await persist(result.world, merged);
   };
 
+  const loadScenario = async (id: DevScenarioId) => {
+    if (!__DEV__) return;
+    const fresh = createWorldForScenario(id);
+    setScenarioId(id);
+    setAwayMs(0);
+    setDispatches([]);
+    setWorld(fresh);
+    await clearCampaignStorage();
+    await Promise.all([saveScenarioId(id), saveWorld(fresh), saveDispatches([]), saveLastActiveMs(Date.now())]);
+  };
+
   return (
     <GameContext.Provider
-      value={{ ready, world, dispatches, awayMs, wallNowMs, confirmMove, issueBuild: issueBuildOrder, issueUpgradeInfra: issueUpgrade, skipNext }}
+      value={{
+        ready,
+        world,
+        dispatches,
+        awayMs,
+        scenarioId,
+        wallNowMs,
+        confirmMove,
+        issueBuild: issueBuildOrder,
+        issueUpgradeInfra: issueUpgrade,
+        skipNext,
+        loadScenario,
+      }}
     >
       {children}
     </GameContext.Provider>

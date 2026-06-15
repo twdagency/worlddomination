@@ -62,13 +62,16 @@ function onlyAllowedOrders(orders: Order[]): void {
 describe('ai', () => {
   it('is deterministic for the same world state', () => {
     const world = makeAiWorld('leader-genghis');
-    const first = decideOrders(world, 'faction-ai');
-    const second = decideOrders(world, 'faction-ai');
+    const first = decideOrders(world, 'faction-ai', world.nowMs);
+    const second = decideOrders(world, 'faction-ai', world.nowMs);
     expect(second).toEqual(first);
+    if (first[0]?.kind === 'move') {
+      expect(first[0].count).toBe(7);
+    }
   });
 
   it('aggressive leader attacks while mercantile leader builds', () => {
-    const genghisOrders = decideOrders(makeAiWorld('leader-genghis'), 'faction-ai');
+    const genghisOrders = decideOrders(makeAiWorld('leader-genghis'), 'faction-ai', makeAiWorld('leader-genghis').nowMs);
     const elizabethWorld = makeAiWorld('leader-elizabeth', {
       territories: {
         [LONDON.id]: {
@@ -80,17 +83,21 @@ describe('ai', () => {
         [PARIS.id]: { ...PARIS, ownerId: 'faction-player' },
       },
     });
-    const elizabethOrders = decideOrders(elizabethWorld, 'faction-ai');
+    const elizabethOrders = decideOrders(elizabethWorld, 'faction-ai', elizabethWorld.nowMs);
 
     expect(genghisOrders[0]?.kind).toBe('move');
     if (genghisOrders[0]?.kind === 'move') {
       expect(genghisOrders[0].toTerritoryId).toBe(PARIS.id);
       expect(genghisOrders[0].stanceOnArrival).toBe('assault');
+      expect(genghisOrders[0].intent).toBe('attack');
+      expect(genghisOrders[0].count).toBe(7);
     }
 
     expect(elizabethOrders[0]?.kind).toBe('build');
     if (elizabethOrders[0]?.kind === 'build') {
       expect(elizabethOrders[0].unitTypeId).toBe('levy-t1');
+      expect(elizabethOrders[0].intent).toBe('build');
+      expect(elizabethOrders[0].count).toBe(1);
     }
   });
 
@@ -103,7 +110,7 @@ describe('ai', () => {
       },
     });
 
-    const orders = decideOrders(world, 'faction-ai');
+    const orders = decideOrders(world, 'faction-ai', world.nowMs);
     onlyAllowedOrders(orders);
 
     for (const order of orders) {
@@ -116,30 +123,19 @@ describe('ai', () => {
   it('emits only valid Order[] and never mutates world', () => {
     const world = makeAiWorld('leader-caesar');
     const frozen = structuredClone(world);
-    const orders = decideOrders(world, 'faction-ai');
+    const orders = decideOrders(world, 'faction-ai', world.nowMs);
     onlyAllowedOrders(orders);
     expect(world).toEqual(frozen);
   });
 
   it('AI move obeys the same real travel times as a player move', () => {
     const world = makeAiWorld('leader-genghis');
-    const orders = decideOrders(world, 'faction-ai');
+    const orders = decideOrders(world, 'faction-ai', world.nowMs);
     expect(orders[0]?.kind).toBe('move');
     if (orders[0]?.kind !== 'move') return;
 
     const aiResult = tick(world, orders, 0);
-    const playerResult = tick(
-      world,
-      [
-        {
-          kind: 'move',
-          unitId: orders[0].unitId,
-          toTerritoryId: orders[0].toTerritoryId,
-          stanceOnArrival: orders[0].stanceOnArrival,
-        },
-      ],
-      0,
-    );
+    const playerResult = tick(world, [orders[0]], 0);
 
     expect(aiResult.world.units[orders[0].unitId]?.transit).toEqual(
       playerResult.world.units[orders[0].unitId]?.transit,

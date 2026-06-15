@@ -45,7 +45,7 @@ function withinRange(
 }
 
 /** Territories and units visible to `factionId` from owned ground and scouting range. */
-export function getFactionVisibility(world: WorldState, factionId: Id): FactionVisibility {
+export function computeVisibility(world: WorldState, factionId: Id): FactionVisibility {
   const rangeKm = scoutRangeKm(world, factionId);
   const observers = observerCoords(world, factionId);
   const territoryIds = new Set<Id>();
@@ -75,27 +75,32 @@ export function getFactionVisibility(world: WorldState, factionId: Id): FactionV
   return { territoryIds, unitIds };
 }
 
+/** @deprecated Use `computeVisibility` — identical behavior, kept for call-site clarity during migration. */
+export function getFactionVisibility(world: WorldState, factionId: Id): FactionVisibility {
+  return computeVisibility(world, factionId);
+}
+
 export function isTerritoryVisible(
   world: WorldState,
   factionId: Id,
   territoryId: Id,
 ): boolean {
-  return getFactionVisibility(world, factionId).territoryIds.has(territoryId);
+  return computeVisibility(world, factionId).territoryIds.has(territoryId);
 }
 
 export function isUnitVisible(world: WorldState, factionId: Id, unitId: Id): boolean {
-  return getFactionVisibility(world, factionId).unitIds.has(unitId);
+  return computeVisibility(world, factionId).unitIds.has(unitId);
 }
 
 export function visibleEnemyUnits(world: WorldState, factionId: Id): Unit[] {
-  const visibility = getFactionVisibility(world, factionId);
+  const visibility = computeVisibility(world, factionId);
   return Object.values(world.units).filter(
     (unit) => unit.ownerId !== factionId && visibility.unitIds.has(unit.id),
   );
 }
 
 export function visibleTerritories(world: WorldState, factionId: Id): Territory[] {
-  const visibility = getFactionVisibility(world, factionId);
+  const visibility = computeVisibility(world, factionId);
   return Object.values(world.territories).filter((territory) =>
     visibility.territoryIds.has(territory.id),
   );

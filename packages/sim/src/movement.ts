@@ -1,7 +1,15 @@
 import { resolveHostileArrival } from './arrivalCombat';
 import { DEFAULT_TRAIT, MS_PER_HOUR } from './constants';
 import { haversineKm } from './geo';
-import type { Id, Millis, Order, SimEvent, TraitKey, TransitOrder, Unit, WorldState } from './types';
+import { arrivalImportance, departureImportance } from './importance';
+import type { Id, Millis, Order, OrderIntent, SimEvent, TraitKey, TransitOrder, Unit, WorldState } from './types';
+
+type TransitOrderFields = {
+  stanceOnArrival: TransitOrder['stanceOnArrival'];
+  intent: OrderIntent;
+  beatId: string;
+  decisionTickMs: Millis;
+};
 
 function speedTraitKey(unitTypeDomain: string): TraitKey {
   if (unitTypeDomain === 'sea') return 'seaSpeedMult';
@@ -31,7 +39,7 @@ export function buildTransit(
   world: WorldState,
   unit: Unit,
   toTerritoryId: Id,
-  stanceOnArrival: TransitOrder['stanceOnArrival'],
+  order: TransitOrderFields,
   departMs: Millis,
 ): TransitOrder | null {
   const fromTerritoryId = unit.locationId;
@@ -57,7 +65,10 @@ export function buildTransit(
     departMs,
     arriveMs,
     distanceKm,
-    stanceOnArrival,
+    stanceOnArrival: order.stanceOnArrival,
+    intent: order.intent,
+    beatId: order.beatId,
+    decisionTickMs: order.decisionTickMs,
   };
 }
 
@@ -76,18 +87,36 @@ export function applyMoveOrders(
     if (!unit || unit.transit) continue;
     if (unit.locationId === order.toTerritoryId) continue;
 
+    const moveCount = order.count ?? unit.count;
+    if (moveCount <= 0 || moveCount > unit.count) continue;
+
+    let movingUnitId = order.unitId;
+    let movingUnit = unit;
+
+    if (moveCount < unit.count) {
+      const detachedId = `${order.unitId}-commit-${order.decisionTickMs}`;
+      units[order.unitId] = { ...unit, count: unit.count - moveCount };
+      movingUnit = {
+        ...unit,
+        id: detachedId,
+        count: moveCount,
+      };
+      movingUnitId = detachedId;
+      units[detachedId] = movingUnit;
+    }
+
     const transit = buildTransit(
       world,
-      unit,
+      movingUnit,
       order.toTerritoryId,
-      order.stanceOnArrival,
+      order,
       world.nowMs,
     );
-    if (!transit || !unit.locationId) continue;
+    if (!transit || !movingUnit.locationId) continue;
 
-    const fromTerritoryId = unit.locationId;
-    units[order.unitId] = {
-      ...unit,
+    const fromTerritoryId = movingUnit.locationId;
+    units[movingUnitId] = {
+      ...movingUnit,
       locationId: undefined,
       transit,
     };
@@ -95,13 +124,17 @@ export function applyMoveOrders(
     events.push({
       kind: 'departure',
       at: world.nowMs,
-      unitId: order.unitId,
+      unitId: movingUnitId,
       fromTerritoryId,
       toTerritoryId: order.toTerritoryId,
-      ownerId: unit.ownerId,
-      unitTypeId: unit.typeId,
-      count: unit.count,
+      ownerId: movingUnit.ownerId,
+      unitTypeId: movingUnit.typeId,
+      count: moveCount,
       stanceOnArrival: order.stanceOnArrival,
+      intent: order.intent,
+      beatId: order.beatId,
+      decisionTickMs: order.decisionTickMs,
+      importance: departureImportance(order.intent),
     });
   }
 
@@ -153,6 +186,7 @@ export function resolveArrivals(
     units = resolution.units;
     territories = resolution.territories;
     rng = resolution.rng;
+    const snapshotWorld = { ...world, units, territories, rng };
     events.push(
       {
         kind: 'arrival',
@@ -164,6 +198,15 @@ export function resolveArrivals(
         count: unit.count,
         stanceOnArrival,
         fromTerritoryId: unit.transit.fromId,
+        intent: unit.transit.intent,
+        beatId: unit.transit.beatId,
+        decisionTickMs: unit.transit.decisionTickMs,
+        importance: arrivalImportance(
+          snapshotWorld,
+          unit.ownerId,
+          territoryId,
+          unit.transit.intent,
+        ),
       },
       ...resolution.events,
     );

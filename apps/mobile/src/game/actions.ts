@@ -1,15 +1,22 @@
 import {
   advanceTo,
-  formatArrivalNarrative,
+  buildDispatchFeed,
+  compactDispatchFeed,
+  COMPACTION_THRESHOLD_MS,
   formatBattleNarrative,
-  formatDepartureNarrative,
+  formatBuildStartedLine,
+  formatInfraUpgradedLine,
+  formatIntentArrivalLine,
+  formatIntentDepartureLine,
   formatProductionNarrative,
   formatSecuredNarrative,
   formatWithdrawalNarrative,
+  intentFromMoveStance,
   nextEventMs,
+  taggedOrderFields,
   tick,
 } from 'sim';
-import type { SimEvent, WorldState } from 'sim';
+import type { DispatchFeedItem, SimEvent, WorldState } from 'sim';
 import type { TransitOrder } from 'sim';
 
 export function mergeDispatches(existing: SimEvent[], incoming: SimEvent[]): SimEvent[] {
@@ -24,13 +31,34 @@ export function catchUp(world: WorldState, targetMs: number = Date.now()): {
   return advanceTo(world, targetMs);
 }
 
+const PLAYER_FACTION = 'faction-player';
+
 export function issueMove(
   world: WorldState,
   unitId: string,
   toTerritoryId: string,
   stanceOnArrival: TransitOrder['stanceOnArrival'] = 'assault',
 ): { world: WorldState; events: SimEvent[] } {
-  return tick(world, [{ kind: 'move', unitId, toTerritoryId, stanceOnArrival }], 0);
+  const unit = world.units[unitId];
+  const intent = intentFromMoveStance(
+    stanceOnArrival,
+    unit?.ownerId ?? PLAYER_FACTION,
+    toTerritoryId,
+    world,
+  );
+  return tick(
+    world,
+    [
+      {
+        kind: 'move',
+        unitId,
+        toTerritoryId,
+        stanceOnArrival,
+        ...taggedOrderFields(PLAYER_FACTION, world.nowMs, intent),
+      },
+    ],
+    0,
+  );
 }
 
 export function issueBuild(
@@ -39,14 +67,36 @@ export function issueBuild(
   unitTypeId: string,
   count: number = 1,
 ): { world: WorldState; events: SimEvent[] } {
-  return tick(world, [{ kind: 'build', territoryId, unitTypeId, count }], 0);
+  return tick(
+    world,
+    [
+      {
+        kind: 'build',
+        territoryId,
+        unitTypeId,
+        count,
+        ...taggedOrderFields(PLAYER_FACTION, world.nowMs, 'build'),
+      },
+    ],
+    0,
+  );
 }
 
 export function issueUpgradeInfra(
   world: WorldState,
   territoryId: string,
 ): { world: WorldState; events: SimEvent[] } {
-  return tick(world, [{ kind: 'upgradeInfra', territoryId }], 0);
+  return tick(
+    world,
+    [
+      {
+        kind: 'upgradeInfra',
+        territoryId,
+        ...taggedOrderFields(PLAYER_FACTION, world.nowMs, 'build'),
+      },
+    ],
+    0,
+  );
 }
 
 export function skipToNextEvent(world: WorldState): {
@@ -75,11 +125,19 @@ function formatIncomeLine(
 
 export function formatDispatchLine(event: SimEvent, world: WorldState): string {
   if (event.kind === 'departure') {
-    return formatDepartureNarrative(world, event);
+    return formatIntentDepartureLine(world, event);
   }
 
   if (event.kind === 'arrival') {
-    return formatArrivalNarrative(world, event);
+    return formatIntentArrivalLine(world, event);
+  }
+
+  if (event.kind === 'buildStarted') {
+    return formatBuildStartedLine(world, event);
+  }
+
+  if (event.kind === 'infraUpgraded') {
+    return formatInfraUpgradedLine(world, event);
   }
 
   if (event.kind === 'battle') {
@@ -116,6 +174,20 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
   }
 
   return `${event.kind} event`;
+}
+
+export { buildDispatchFeed, compactDispatchFeed, COMPACTION_THRESHOLD_MS };
+export type { DispatchFeedItem };
+
+export function buildDisplayDispatchFeed(
+  world: WorldState,
+  events: SimEvent[],
+  awayMs: number,
+): DispatchFeedItem[] {
+  if (awayMs > COMPACTION_THRESHOLD_MS) {
+    return compactDispatchFeed(world, events, awayMs, formatDispatchLine);
+  }
+  return buildDispatchFeed(world, events, formatDispatchLine);
 }
 
 export function isDispatchDetailEvent(

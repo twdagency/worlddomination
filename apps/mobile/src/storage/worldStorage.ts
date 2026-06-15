@@ -30,3 +30,19 @@ export async function loadLastActiveMs(): Promise<number | null> {
 export async function saveLastActiveMs(ms: number): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.lastActiveMs, String(ms));
 }
+
+export async function loadScenarioId(): Promise<string | null> {
+  return AsyncStorage.getItem(STORAGE_KEYS.scenarioId);
+}
+
+export async function saveScenarioId(id: string): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEYS.scenarioId, id);
+}
+
+export async function clearCampaignStorage(): Promise<void> {
+  await AsyncStorage.multiRemove([
+    STORAGE_KEYS.world,
+    STORAGE_KEYS.dispatches,
+    STORAGE_KEYS.lastActiveMs,
+  ]);
+}

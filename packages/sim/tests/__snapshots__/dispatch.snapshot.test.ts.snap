@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`dispatch snapshot > locks 12h skip digest on createSprint4World 1`] = `
+"Caesar — tick 1700021600000
+INTEL — Caesar forces advancing from Paris toward London
+Genghis — tick 1700021600000
+INTEL — Infrastructure upgraded at Berlin (Genghis)
+Elizabeth — tick 1700021600000
+INTEL — Construction begun at Madrid (Elizabeth)
+Caesar — tick 1700043200000
+INTEL — Caesar forces advancing from Paris toward London
+Genghis — tick 1700043200000
+INTEL — Infrastructure upgraded at Berlin (Genghis)
+Elizabeth — tick 1700043200000
+INTEL — Construction begun at Madrid (Elizabeth)
+INTEL — Elizabeth — 1× Levy ready at Madrid
+INCOME — funding 7174.5"
+`;

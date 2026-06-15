@@ -8,6 +8,7 @@ export const LEADERS: Leader[] = [
     era: 'Classical',
     weights: { aggression: 9, risk: 7, economy: 4, expansion: 10 },
     traits: { landSpeedMult: 1.15, attackCombatMod: 1.1 },
+    tempo: 'fast',
   },
   {
     id: 'leader-caesar',
@@ -16,6 +17,7 @@ export const LEADERS: Leader[] = [
     era: 'Classical',
     weights: { aggression: 8, risk: 6, economy: 7, expansion: 8 },
     traits: { incomeMult: 1.1, buildTimeMult: 0.95 },
+    tempo: 'steady',
   },
   {
     id: 'leader-genghis',
@@ -24,6 +26,7 @@ export const LEADERS: Leader[] = [
     era: 'Medieval',
     weights: { aggression: 10, risk: 8, economy: 3, expansion: 9 },
     traits: { landSpeedMult: 1.25, attackCombatMod: 1.15 },
+    tempo: 'fast',
   },
   {
     id: 'leader-elizabeth',
@@ -32,6 +35,7 @@ export const LEADERS: Leader[] = [
     era: 'Early Modern',
     weights: { aggression: 5, risk: 4, economy: 9, expansion: 7 },
     traits: { incomeMult: 1.2, seaSpeedMult: 1.15, homeDefenseCombatMod: 1.1 },
+    tempo: 'slow',
   },
 ];
 

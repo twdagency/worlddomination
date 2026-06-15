@@ -89,6 +89,7 @@ export function resolveHostileArrival(
         factionId: attackerId,
         unitIds: [arrivingUnit.id],
         enemyWithdrew: false,
+        importance: 'high',
       });
     }
     return { units, territories, rng, events };
@@ -147,6 +148,7 @@ export function resolveHostileArrival(
       defenderLosses: defenderLossesReported,
       attackerLosses: casualties.attackerLosses,
       underFire,
+      importance: 'high',
     });
 
     defenders = standing;
@@ -165,6 +167,7 @@ export function resolveHostileArrival(
       factionId: attackerId,
       unitIds: [arrivingUnit.id].filter((id) => units[id]),
       enemyWithdrew: fleeing.length > 0,
+      importance: 'high',
     });
     return { units, territories, rng, events };
   }
@@ -205,6 +208,7 @@ export function resolveHostileArrival(
     at,
     territoryId,
     report,
+    importance: 'high',
   });
 
   if (battle.winnerId === attackerId) {
@@ -215,6 +219,7 @@ export function resolveHostileArrival(
       factionId: attackerId,
       unitIds: [arrivingUnit.id].filter((id) => units[id]),
       enemyWithdrew: false,
+      importance: 'high',
     });
   }
 

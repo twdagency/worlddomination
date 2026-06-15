@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scenario sprint5 > locks 24h compact digest for cold-read regression 1`] = `
+"Caesar — tick 1700121600000
+INTEL — Caesar forces advancing from Bucharest toward Belgrade
+Genghis — tick 1700121600000
+INTEL — Genghis forces advancing from Sofia toward Belgrade
+INTEL — 4 construction projects begun (Elizabeth)
+INTEL — Genghis forces arrived at Belgrade — contact expected
+Bloody clash at Belgrade: Elizabeth prevailed over Genghis (3 casualties, enemy 6 fallen).
+Caesar — tick 1700143200000
+INTEL — Caesar forces advancing from Bucharest toward Belgrade
+Genghis — tick 1700143200000
+INTEL — Genghis forces advancing from Sofia toward Belgrade
+INTEL — 2 production completions (Elizabeth)
+INTEL — Genghis forces arrived at Belgrade — contact expected
+Elizabeth at Belgrade — Genghis annihilated, no casualties.
+Caesar — tick 1700164800000
+INTEL — Caesar forces advancing from Bucharest toward Belgrade
+Genghis — tick 1700164800000
+INTEL — Genghis forces advancing from Sofia toward Belgrade
+INTEL — Genghis forces arrived at Belgrade — contact expected
+Elizabeth at Belgrade — Genghis annihilated, no casualties.
+Caesar — tick 1700186400000
+INTEL — Caesar forces advancing from Bucharest toward Belgrade
+INTEL — 1 infrastructure upgrades (Genghis)
+INCOME — +$14,201 funding accrued while away
+…and 4 other movements"
+`;
