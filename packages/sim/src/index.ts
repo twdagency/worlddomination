@@ -98,4 +98,6 @@ export {
 export type { DispatchImportance } from './types';
 export type { MediumCompactionCategory } from './importance';
 export { compactDispatchFeed, renderCompactDigestText } from './compaction';
+export { computeStance, orderIntentsInWindow, STANCE_WINDOW_MS, stanceLabel } from './stance';
+export type { FactionStance } from './stance';
 export { resolveHostileArrival } from './arrivalCombat';
