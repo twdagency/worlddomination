@@ -120,9 +120,14 @@ export {
 } from './dispatch';
 export { formatIntelSourceLabel } from './intelDisplay';
 export {
+  REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED,
+  REPUTATION_PENALTY_ALLIANCE_BREAK_OBSERVER,
+  applyAllianceBreakReputationPenalty,
+  createInitialReputation,
+} from './reputation';
+export {
   areAllied,
   breakAlliance,
-  createInitialReputation,
   diplomacyDefaults,
   ensureWorldDiplomacy,
   formAlliance,
@@ -142,7 +147,7 @@ export {
 } from './intelDispatch';
 export type { IntelReportVariant } from './intelDispatch';
 export type { DispatchBeatGroup, DispatchFeedItem } from './dispatch';
-export type { ScoutingPriority } from './types';
+export type { ScoutingPriority, DiplomaticPosture } from './types';
 export {
   compactDispatchFeed,
   renderCompactDigestText,

@@ -259,6 +259,7 @@ function leaderWeights(world: WorldState, factionId: Id): LeaderWeights {
     economy: 5,
     expansion: 5,
     scoutingPriority: 'broad',
+    diplomaticPosture: 'isolationist',
   };
 }
 

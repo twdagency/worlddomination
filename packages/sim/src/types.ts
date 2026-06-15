@@ -25,12 +25,15 @@ export interface RngState {
 
 export type ScoutingPriority = 'aggressive' | 'defensive' | 'broad';
 
+export type DiplomaticPosture = 'opportunist' | 'isolationist' | 'loyal';
+
 export interface LeaderWeights {
   aggression: number;
   risk: number;
   economy: number;
   expansion: number;
   scoutingPriority: ScoutingPriority;
+  diplomaticPosture: DiplomaticPosture;
 }
 
 export type TraitKey =

@@ -40,7 +40,14 @@ const BASELINE_LEADER: Leader = {
   name: 'Baseline',
   region: 'Test',
   era: 'Modern',
-  weights: { aggression: 5, risk: 5, economy: 5, expansion: 5, scoutingPriority: 'broad' },
+  weights: {
+    aggression: 5,
+    risk: 5,
+    economy: 5,
+    expansion: 5,
+    scoutingPriority: 'broad',
+    diplomaticPosture: 'opportunist',
+  },
   traits: {},
   tempo: 'steady',
 };

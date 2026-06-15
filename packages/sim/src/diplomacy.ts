@@ -8,6 +8,12 @@ import type {
   WorldState,
 } from './types';
 import { pruneAlliedIntelOnBreak } from './intel';
+import {
+  applyAllianceBreakReputationPenalty,
+  createInitialReputation,
+} from './reputation';
+
+export { createInitialReputation } from './reputation';
 
 // SPRINT-6 PHASE-6: pending player proposals need a queue structure — design when DiplomacyScreen is wired.
 
@@ -41,22 +47,6 @@ function sortAlliances(alliances: AlliancePair[]): AlliancePair[] {
 
 function sortTreaties(treaties: Treaty[]): Treaty[] {
   return [...treaties].sort((left, right) => left.id.localeCompare(right.id));
-}
-
-/** All-pairs-zero reputation matrix (excludes self-pairs). */
-export function createInitialReputation(factions: Record<Id, Faction>): Reputation {
-  const factionIds = Object.keys(factions).sort();
-  const reputation: Reputation = {};
-
-  for (const observer of factionIds) {
-    reputation[observer] = {};
-    for (const subject of factionIds) {
-      if (observer === subject) continue;
-      reputation[observer][subject] = 0;
-    }
-  }
-
-  return reputation;
 }
 
 export function diplomacyDefaults(factions: Record<Id, Faction>): {
@@ -144,25 +134,43 @@ export function formAlliance(
   };
 }
 
-export function breakAlliance(world: WorldState, factionA: Id, factionB: Id): WorldState {
-  if (factionA === factionB) return world;
+/**
+ * Faction `breaker` unilaterally ends their alliance with `betrayed`.
+ * Multi-effect: removes alliance, prunes allied intel, applies reputation
+ * penalties (-40 to betrayed's view, -20 to all other observers).
+ */
+export function breakAlliance(
+  world: WorldState,
+  breaker: Id,
+  betrayed: Id,
+): WorldState {
+  if (breaker === betrayed) return world;
 
-  const [a, b] = normalizeFactionPair(factionA, factionB);
+  const [a, b] = normalizeFactionPair(breaker, betrayed);
   const next = world.alliances.filter((pair) => !(pair.factionA === a && pair.factionB === b));
   if (next.length === world.alliances.length) return world;
 
+  // breakAlliance is intentionally a multi-effect operation:
+  // 1. Removes alliance pair from state
+  // 2. Prunes allied intel records (fog parity at break boundary)
+  // 3. Applies reputation penalties (observer -20, betrayed -40)
+  // Keep these together — splitting them would create windows where alliance is
+  // broken but intel/reputation hasn't caught up.
+  //
   // SPRINT-6 architectural note: alliance formation is intel-agnostic (emission runs at
-  // the next tick boundary, driven by state). Breaking has immediate intel implications
-  // (must prune broken-ally records to preserve fog parity), so breakAlliance imports
-  // pruneAlliedIntelOnBreak. This asymmetry is intentional; do not generalize into an
-  // event bus without strong justification.
-  return pruneAlliedIntelOnBreak(
-    {
-      ...world,
-      alliances: next,
-    },
-    a,
-    b,
+  // the next tick boundary, driven by state). Breaking has immediate intel and reputation
+  // implications, so breakAlliance imports pruneAlliedIntelOnBreak and
+  // applyAllianceBreakReputationPenalty. This asymmetry is intentional; do not generalize
+  // into an event bus without strong justification.
+  const withoutAlliance = {
+    ...world,
+    alliances: next,
+  };
+
+  return applyAllianceBreakReputationPenalty(
+    pruneAlliedIntelOnBreak(withoutAlliance, a, b),
+    breaker,
+    betrayed,
   );
 }
 
