@@ -8,6 +8,7 @@ import { DispatchesScreen } from '../screens/DispatchesScreen';
 import { ForcesScreen } from '../screens/ForcesScreen';
 import { OrderScreen } from '../screens/OrderScreen';
 import { TerritoryScreen } from '../screens/TerritoryScreen';
+import { WorldScreen } from '../screens/WorldScreen';
 import { terminal } from '../theme/terminal';
 
 const Tab = createBottomTabNavigator();
@@ -53,6 +54,7 @@ export function RootTabs() {
       >
         <Tab.Screen name="Dispatches" component={DispatchesScreen} />
         <Tab.Screen name="Factions" component={FactionsScreen} />
+        <Tab.Screen name="World" component={WorldScreen} />
         <Tab.Screen name="Territory" component={TerritoryScreen} />
         <Tab.Screen name="Forces" component={ForcesScreen} />
         <Tab.Screen name="Order" component={OrderScreen} />

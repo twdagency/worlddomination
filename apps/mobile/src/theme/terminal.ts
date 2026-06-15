@@ -11,6 +11,7 @@ export const terminal = {
   border: '#2a3544',
   text: '#c9d1d9',
   muted: '#6e7681',
+  stale: '#8b949e',
   accent: '#3fb950',
   warning: '#d29922',
   danger: '#f85149',

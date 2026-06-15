@@ -1,7 +1,9 @@
 import {
   computeVisibility,
   type FactionVisibility,
+  type IntelSource,
   type Territory,
+  type TerritorySnapshot,
   type TerritoryVisibilityState,
   type Unit,
   type WorldState,
@@ -11,9 +13,19 @@ export const PLAYER_FACTION_ID = 'faction-player';
 
 /**
  * When true, map/order views show all territories and units (fog off).
- * Gate for cold-read debugging — do not enable in production builds.
+ * Bypasses the intel store entirely — every territory renders as live `direct`.
+ * Gate for cold-read debugging during UI work; do not enable in production builds.
  */
 export const DEV_REVEAL = false;
+
+export interface TerritoryIntelDisplay {
+  territoryId: string;
+  state: 'live' | 'stale' | 'unknown';
+  name: string;
+  sources: IntelSource[];
+  lastObservedAt?: number;
+  snapshot?: TerritorySnapshot;
+}
 
 function revealAll(world: WorldState): FactionVisibility {
   const territoryStates: Record<string, TerritoryVisibilityState> = {};
@@ -45,6 +57,39 @@ export function playerVisibility(world: WorldState): FactionVisibility {
   return computeVisibility(world, PLAYER_FACTION_ID);
 }
 
+function territoryName(world: WorldState, territoryId: string): string {
+  return world.territories[territoryId]?.name ?? territoryId;
+}
+
+/** Tri-state intel for one territory — primary UI read path in Phase 2+. */
+export function getTerritoryIntelDisplay(
+  world: WorldState,
+  territoryId: string,
+): TerritoryIntelDisplay {
+  const intel = playerVisibility(world).territoryStates[territoryId] ?? { state: 'unknown' };
+
+  if (intel.state === 'unknown') {
+    return { territoryId, state: 'unknown', name: 'Unknown', sources: [] };
+  }
+
+  return {
+    territoryId,
+    state: intel.state,
+    name: territoryName(world, territoryId),
+    sources: intel.sources,
+    lastObservedAt: intel.state === 'stale' ? intel.lastObservedAt : undefined,
+    snapshot: intel.snapshot,
+  };
+}
+
+/** All territories with live / stale / unknown rendering metadata. */
+export function playerWorldIntel(world: WorldState): TerritoryIntelDisplay[] {
+  return Object.keys(world.territories)
+    .sort((a, b) => territoryName(world, a).localeCompare(territoryName(world, b)))
+    .map((territoryId) => getTerritoryIntelDisplay(world, territoryId));
+}
+
+/** Live geometric sight only — unchanged Sprint 5 semantics. */
 export function playerVisibleTerritories(world: WorldState): Territory[] {
   const { territoryIds } = playerVisibility(world);
   return Object.values(world.territories).filter((territory) =>
@@ -77,6 +122,7 @@ export function playerForces(world: WorldState): Unit[] {
   );
 }
 
+/** Live sight only — binary fog gate for detail that must reflect current ground truth. */
 export function getPlayerVisibleTerritory(
   world: WorldState,
   territoryId: string,
@@ -90,8 +136,40 @@ export function getPlayerVisibleTerritoryName(world: WorldState, territoryId: st
   return getPlayerVisibleTerritory(world, territoryId)?.name ?? 'Unknown';
 }
 
-/** Move destinations: visible territories excluding the unit's current location. */
-export function playerMoveDestinations(world: WorldState, fromTerritoryId: string | undefined): Territory[] {
+/** Live or stale — for labels where historical knowledge is enough. */
+export function getPlayerKnownTerritoryName(world: WorldState, territoryId: string): string {
+  return getTerritoryIntelDisplay(world, territoryId).name;
+}
+
+/** Owner at observation time for stale destinations; live owner for current sight. */
+export function ownerIdForIntelDisplay(
+  world: WorldState,
+  display: TerritoryIntelDisplay,
+): string | undefined {
+  if (display.state === 'live') {
+    return world.territories[display.territoryId]?.ownerId;
+  }
+  if (display.state === 'stale') {
+    return display.snapshot?.ownerId;
+  }
+  return undefined;
+}
+
+/** Move destinations: live and stale territories; unknown filtered out. */
+export function playerOrderDestinations(
+  world: WorldState,
+  fromTerritoryId: string | undefined,
+): TerritoryIntelDisplay[] {
   if (!fromTerritoryId) return [];
-  return playerVisibleTerritories(world).filter((territory) => territory.id !== fromTerritoryId);
+  return playerWorldIntel(world).filter(
+    (display) => display.territoryId !== fromTerritoryId && display.state !== 'unknown',
+  );
+}
+
+/** @deprecated Use `playerOrderDestinations` for tri-state move targets. */
+export function playerMoveDestinations(world: WorldState, fromTerritoryId: string | undefined): Territory[] {
+  return playerOrderDestinations(world, fromTerritoryId)
+    .filter((display) => display.state === 'live')
+    .map((display) => world.territories[display.territoryId])
+    .filter((territory): territory is Territory => territory !== undefined);
 }

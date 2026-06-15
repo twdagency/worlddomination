@@ -2,7 +2,7 @@ import React from 'react';
 import { FlatList, StyleSheet, Text } from 'react-native';
 import { useGame } from '../game/GameContext';
 import {
-  getPlayerVisibleTerritoryName,
+  getPlayerKnownTerritoryName,
   playerForces,
 } from '../game/playerView';
 import { TerminalCard } from '../components/TerminalCard';
@@ -26,7 +26,7 @@ export function ForcesScreen() {
 
         if (inTransit) {
           const destId = inTransit.toTerritoryId ?? '';
-          const dest = getPlayerVisibleTerritoryName(world, destId);
+          const dest = getPlayerKnownTerritoryName(world, destId);
           const remaining = Math.max(0, inTransit.arriveMs - wallNowMs);
           return (
             <TerminalCard>
@@ -39,7 +39,7 @@ export function ForcesScreen() {
         }
 
         const location = item.locationId
-          ? getPlayerVisibleTerritoryName(world, item.locationId)
+          ? getPlayerKnownTerritoryName(world, item.locationId)
           : 'Unknown';
 
         return (

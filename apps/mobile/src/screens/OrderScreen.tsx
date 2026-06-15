@@ -3,12 +3,15 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { TransitOrder } from 'sim';
 import { moveDistanceKm, previewMoveEtaMs } from 'sim';
 import { useGame } from '../game/GameContext';
+import { formatIntelAge } from '../game/intelDisplay';
 import {
   getPlayerVisibleTerritory,
-  playerMoveDestinations,
+  ownerIdForIntelDisplay,
   playerMovableUnits,
+  playerOrderDestinations,
   PLAYER_FACTION_ID,
 } from '../game/playerView';
+import { IntelSourceHint } from '../components/IntelSourceHint';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import {
@@ -34,7 +37,7 @@ export function OrderScreen() {
 
   const unit = movableUnits.find((u) => u.id === unitId);
   const availableDestinations = useMemo(
-    () => playerMoveDestinations(world, unit?.locationId),
+    () => playerOrderDestinations(world, unit?.locationId),
     [world, unit?.locationId],
   );
 
@@ -44,9 +47,13 @@ export function OrderScreen() {
       return;
     }
     setDestinationId((prev) =>
-      availableDestinations.some((t) => t.id === prev) ? prev : availableDestinations[0].id,
+      availableDestinations.some((t) => t.territoryId === prev)
+        ? prev
+        : availableDestinations[0].territoryId,
     );
   }, [unitId, availableDestinations]);
+
+  const selectedDestination = availableDestinations.find((t) => t.territoryId === destinationId);
 
   const preview = useMemo(() => {
     if (!unitId || !destinationId || !unit?.locationId) return null;
@@ -57,13 +64,14 @@ export function OrderScreen() {
   const fromName = unit?.locationId
     ? getPlayerVisibleTerritory(world, unit.locationId)?.name
     : undefined;
-  const destination = destinationId ? getPlayerVisibleTerritory(world, destinationId) : undefined;
-  const toName = destination?.name;
+  const toName = selectedDestination?.name;
   const distance =
     unitId && destinationId && unit?.locationId !== destinationId
       ? moveDistanceKm(world, unitId, destinationId)
       : null;
-  const destOwner = destination?.ownerId;
+  const destOwner = selectedDestination
+    ? ownerIdForIntelDisplay(world, selectedDestination)
+    : undefined;
   const isHostile = destOwner && destOwner !== PLAYER_FACTION_ID;
 
   const canConfirm = Boolean(
@@ -106,21 +114,35 @@ export function OrderScreen() {
           <Text style={styles.muted}>No valid destinations — force is not stationed for redeployment.</Text>
         </TerminalCard>
       ) : (
-        availableDestinations.map((t) => {
-        const name = t.name;
-        const hostile = t.ownerId && t.ownerId !== PLAYER_FACTION_ID;
-        const selected = t.id === destinationId;
-        return (
-          <Pressable key={t.id} onPress={() => setDestinationId(t.id)}>
-            <TerminalCard style={selected ? styles.selected : undefined}>
-              <Text style={styles.optionTitle}>
-                {name}
-                {hostile ? ' [HOSTILE]' : ''}
-              </Text>
-            </TerminalCard>
-          </Pressable>
-        );
-      })
+        availableDestinations.map((destination) => {
+          const hostile =
+            ownerIdForIntelDisplay(world, destination) &&
+            ownerIdForIntelDisplay(world, destination) !== PLAYER_FACTION_ID;
+          const selected = destination.territoryId === destinationId;
+          const isStale = destination.state === 'stale';
+
+          return (
+            <Pressable key={destination.territoryId} onPress={() => setDestinationId(destination.territoryId)}>
+              <TerminalCard
+                style={[
+                  selected ? styles.selected : undefined,
+                  isStale ? styles.staleCard : undefined,
+                ]}
+              >
+                <Text style={[styles.optionTitle, isStale && styles.staleTitle]}>
+                  {destination.name}
+                  {hostile ? ' [HOSTILE]' : ''}
+                </Text>
+                {isStale && destination.lastObservedAt !== undefined && (
+                  <Text style={styles.staleSub}>
+                    {formatIntelAge(world.nowMs, destination.lastObservedAt)}
+                  </Text>
+                )}
+                <IntelSourceHint sources={destination.sources} />
+              </TerminalCard>
+            </Pressable>
+          );
+        })
       )}
 
       <Text style={styles.section}>Stance on arrival</Text>
@@ -142,6 +164,11 @@ export function OrderScreen() {
           <Text style={styles.route}>Speed: {formatSpeed(preview.speedKmh)}</Text>
           <Text style={styles.eta}>ETA: {formatDuration(preview.travelMs)}</Text>
           <Text style={styles.arrival}>Arrival: {formatDateTime(preview.etaMs)}</Text>
+          {selectedDestination?.state === 'stale' && selectedDestination.lastObservedAt !== undefined && (
+            <Text style={styles.staleWarning}>
+              Acting on stale intelligence ({formatIntelAge(world.nowMs, selectedDestination.lastObservedAt)}).
+            </Text>
+          )}
           {isHostile && stance === 'assault' && (
             <Text style={styles.combatHint}>⚔ Assault will engage hostile garrison on arrival.</Text>
           )}
@@ -194,16 +221,28 @@ const styles = StyleSheet.create({
   selected: {
     borderColor: terminal.accent,
   },
+  staleCard: {
+    borderColor: terminal.stale,
+  },
   optionTitle: {
     color: terminal.text,
     fontFamily: terminal.mono,
     fontSize: 14,
+  },
+  staleTitle: {
+    color: terminal.stale,
   },
   optionSub: {
     color: terminal.muted,
     fontFamily: terminal.mono,
     fontSize: 12,
     marginTop: 2,
+  },
+  staleSub: {
+    color: terminal.stale,
+    fontFamily: terminal.mono,
+    fontSize: 11,
+    marginTop: 4,
   },
   muted: {
     color: terminal.muted,
@@ -228,6 +267,13 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 12,
     marginTop: 4,
+  },
+  staleWarning: {
+    color: terminal.stale,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    marginTop: 8,
+    lineHeight: 18,
   },
   combatHint: {
     color: terminal.danger,
