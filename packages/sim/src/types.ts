@@ -162,6 +162,19 @@ export interface Faction {
   identityTags?: string[];
 }
 
+/** Political entity — 1:1 with legacy `Faction` IDs during the Sprint 8 alias period. */
+export interface Country {
+  id: Id;
+  /** Display name — typically the leader's region (e.g. England, France). */
+  name: string;
+  leaderId: Id;
+  /** Designated capital city; empty when the country holds no cities. */
+  capitalTerritoryId: Id;
+  defeated: boolean;
+  isPlayer: boolean;
+  diplomaticPosture?: DiplomaticPosture;
+}
+
 export type Order =
   | {
       kind: 'move';
@@ -580,6 +593,8 @@ export interface WorldState {
   territories: Record<Id, Territory>;
   units: Record<Id, Unit>;
   factions: Record<Id, Faction>;
+  /** Populated by `ensureWorldCountries` — parallel to `factions` during alias period. */
+  countries?: Record<Id, Country>;
   leaders: Record<Id, Leader>;
   unitTypes: Record<Id, UnitType>;
   intel: IntelStore;

@@ -179,6 +179,18 @@ export { reputationCategory } from './reputationDisplay';
 export type { ReputationCategory } from './reputationDisplay';
 export { ensureWorldMigrations, ensureWorldTimeMultiplier } from './migrations';
 export {
+  activeCountries,
+  CANONICAL_CAPITALS,
+  CANONICAL_CAPITALS_BY_SCENARIO,
+  citiesOf,
+  countryToFaction,
+  ensureWorldCountries,
+  factionToCountry,
+  findCountry,
+  resolveCanonicalCapital,
+  syncCountriesFromFactions,
+} from './country';
+export {
   backfillLegacyDispatchEventIds,
   DEFAULT_NEXT_EVENT_ID,
   emit,

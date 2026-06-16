@@ -12,6 +12,7 @@ import {
 } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import { evaluateBeatProgression } from './beatController';
+import { syncCountriesFromFactions } from './country';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
@@ -130,7 +131,7 @@ export function tick(
   // 4. emitIntelReportEvents
   // 5. evaluateBeatProgression ← runs here
   const progression = evaluateBeatProgression(next, events);
-  next = progression.world;
+  next = syncCountriesFromFactions(progression.world);
   events.push(...progression.events);
 
   const stamped = stampEvents(next, events);
