@@ -177,6 +177,10 @@ export interface Country {
   lastConquerorId?: Id;
   /** Territory ID of the most recently lost city (defeat narrative). */
   lastLostTerritoryId?: Id;
+  /** Wall-clock time when defeat was recorded (undefined for pre-Phase-9 saves). */
+  defeatedAt?: Millis;
+  /** Alliance partner IDs at the moment of defeat (empty for migrated saves). */
+  formerAllianceIds?: Id[];
 }
 
 export type Order =
@@ -519,6 +523,8 @@ export type SimEventKind =
       countryId: Id;
       defeatedBy?: Id;
       finalTerritoryId: Id;
+      /** Alliance partners at the moment of defeat. */
+      formerAlliances?: Id[];
       importance?: DispatchImportance;
     };
 

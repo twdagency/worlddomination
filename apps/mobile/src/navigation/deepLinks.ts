@@ -3,12 +3,18 @@ import type { Id } from 'sim';
 import type { RootTabParamList } from './types';
 
 export type DeepLinkTarget =
-  | { tab: 'home'; screen?: 'dashboard' | 'dispatches'; dispatchId?: Id; unreadOnly?: boolean }
+  | {
+      tab: 'home';
+      screen?: 'dashboard' | 'dispatches' | 'defeatedCountries';
+      dispatchId?: Id;
+      unreadOnly?: boolean;
+    }
   | {
       tab: 'world';
       screen?: 'world';
       focusTerritoryId?: Id;
       focusCountryId?: Id;
+      territoryFilter?: 'defeated';
     }
   | {
       tab: 'actions';
@@ -69,6 +75,10 @@ export function navigateTo(navigation: RootNavigation, target: DeepLinkTarget): 
         });
         return;
       }
+      if (target.screen === 'defeatedCountries') {
+        navigation.navigate('Dashboard', { screen: 'DefeatedCountries' });
+        return;
+      }
       navigation.navigate('Dashboard', { screen: 'DashboardHome' });
       return;
     }
@@ -78,6 +88,7 @@ export function navigateTo(navigation: RootNavigation, target: DeepLinkTarget): 
         params: {
           focusTerritoryId: target.focusTerritoryId,
           focusCountryId: target.focusCountryId,
+          territoryFilter: target.territoryFilter,
         },
       });
       return;

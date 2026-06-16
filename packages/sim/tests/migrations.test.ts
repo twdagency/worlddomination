@@ -48,4 +48,35 @@ describe('ensureWorldMigrations', () => {
     const migrated = ensureWorldMigrations(legacy, { leaders: LEADERS_BY_ID });
     expect(migrated.leaders['leader-philip']?.name).toBe('Philip II');
   });
+
+  it('backfills formerAllianceIds with an empty array for already-defeated countries', () => {
+    const world = ensureWorldMigrations(createSprint4World(START_MS), {
+      leaders: LEADERS_BY_ID,
+      unitTypes: UNIT_TYPES_BY_ID,
+    });
+    const defeated = {
+      ...world,
+      countries: {
+        ...world.countries!,
+        'faction-rome': {
+          ...world.countries!['faction-rome']!,
+          defeated: true,
+        },
+      },
+      territories: Object.fromEntries(
+        Object.entries(world.territories).map(([id, territory]) => [
+          id,
+          territory.ownerId === 'faction-rome'
+            ? { ...territory, ownerId: 'faction-player' }
+            : territory,
+        ]),
+      ),
+    };
+
+    const migrated = ensureWorldMigrations(defeated, {
+      leaders: LEADERS_BY_ID,
+      unitTypes: UNIT_TYPES_BY_ID,
+    });
+    expect(migrated.countries!['faction-rome']?.formerAllianceIds).toEqual([]);
+  });
 });

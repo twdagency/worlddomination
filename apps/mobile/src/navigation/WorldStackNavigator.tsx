@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { WorldScreen } from '../screens/WorldScreen';
+import { DefeatedCountriesScreen } from '../screens/DefeatedCountriesScreen';
 import { WORLD_STACK_SCREEN_OPTIONS } from './homeStackConfig';
 import type { WorldStackParamList } from './types';
 
@@ -10,6 +11,7 @@ export function WorldStackNavigator() {
   return (
     <Stack.Navigator screenOptions={WORLD_STACK_SCREEN_OPTIONS}>
       <Stack.Screen name="WorldHome" component={WorldScreen} />
+      <Stack.Screen name="DefeatedCountries" component={DefeatedCountriesScreen} />
     </Stack.Navigator>
   );
 }

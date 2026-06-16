@@ -32,6 +32,7 @@ import {
   selectCountryById,
   selectDiplomacyTargets,
 } from '../game/countrySelector';
+import { selectDefeatedCountries } from '../game/defeatedCountrySelector';
 import { LinkText } from '../components/navigation/LinkText';
 import { deepLinkForEntity } from '../navigation/deepLinks';
 import { useDeepLinkNavigation } from '../navigation/useDeepLinkNavigation';
@@ -132,6 +133,7 @@ export function DiplomacyScreen() {
   }, [focusCountryId, countries]);
 
   const activeTreaties = playerId ? getActiveTreaties(world, playerId, world.nowMs) : [];
+  const defeatedCountries = useMemo(() => selectDefeatedCountries(world), [world]);
 
   const treatyTerritories = Object.values(world.territories)
     .filter((territory) => territory.ownerId !== playerId)
@@ -200,7 +202,21 @@ export function DiplomacyScreen() {
         </View>
       }
       ListFooterComponent={
-        <TerminalCard style={styles.footer}>
+        <View style={styles.footerWrap}>
+          {defeatedCountries.length > 0 ? (
+            <Pressable
+              style={styles.historyLink}
+              onPress={() => navigateDeep({ tab: 'home', screen: 'defeatedCountries' })}
+              accessibilityRole="button"
+              testID="diplomacy-defeated-history-link"
+            >
+              <Text style={styles.historyLabel}>
+                Diplomatic history — View {defeatedCountries.length} defeated{' '}
+                {defeatedCountries.length === 1 ? 'country' : 'countries'}
+              </Text>
+            </Pressable>
+          ) : null}
+          <TerminalCard style={styles.footer}>
           <Text style={styles.sectionLabel}>Active treaties</Text>
           {activeTreaties.length === 0 ? (
             <Text style={styles.muted}>None</Text>
@@ -226,6 +242,7 @@ export function DiplomacyScreen() {
             })
           )}
         </TerminalCard>
+        </View>
       }
       renderItem={({ item }) => {
         const expanded = expandedFactionId === item.id;
@@ -484,8 +501,24 @@ const styles = StyleSheet.create({
   territoryRow: {
     paddingVertical: 4,
   },
-  footer: {
+  footerWrap: {
+    gap: 8,
     marginTop: 8,
+  },
+  historyLink: {
+    borderColor: terminal.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+  },
+  historyLabel: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  footer: {
+    marginTop: 0,
   },
   treatyLine: {
     color: terminal.text,

@@ -4,6 +4,7 @@ import type { ActionMenuScreen } from './tabConfig';
 export type HomeStackParamList = {
   DashboardHome: undefined;
   Dispatches: { dispatchId?: string; unreadOnly?: boolean } | undefined;
+  DefeatedCountries: undefined;
 };
 
 export type ActionStackParamList = {
@@ -15,7 +16,10 @@ export type ActionStackParamList = {
 };
 
 export type WorldStackParamList = {
-  WorldHome: { focusTerritoryId?: string; focusCountryId?: string } | undefined;
+  WorldHome:
+    | { focusTerritoryId?: string; focusCountryId?: string; territoryFilter?: 'defeated' }
+    | undefined;
+  DefeatedCountries: undefined;
 };
 
 export type RootTabParamList = {

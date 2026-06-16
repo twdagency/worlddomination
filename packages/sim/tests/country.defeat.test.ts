@@ -151,7 +151,25 @@ describe('country defeat and capital relocation (Phase 2)', () => {
       countryId: ROME,
       defeatedBy: BRITAIN,
       finalTerritoryId: PARIS,
+      formerAlliances: [],
     });
+  });
+
+  it('records former alliances on the countryDefeated event at defeat time', () => {
+    const base = migrate(createSprint4World(START_MS));
+    const allied = {
+      ...base,
+      alliances: [{ factionA: BRITAIN, factionB: ROME, formedAt: START_MS }],
+    };
+    const afterCapture = captureCity(allied, PARIS, ROME, 'faction-player');
+    const { events, world } = syncCountriesFromFactions(afterCapture);
+    const defeat = events.find((e) => e.kind === 'countryDefeated');
+    expect(defeat).toMatchObject({
+      kind: 'countryDefeated',
+      formerAlliances: [BRITAIN],
+    });
+    expect(world.countries![ROME]?.formerAllianceIds).toEqual([BRITAIN]);
+    expect(world.countries![ROME]?.defeatedAt).toBe(afterCapture.nowMs);
   });
 
   it('breaks infraLevel ties on capital selection using lexicographic territory ID', () => {

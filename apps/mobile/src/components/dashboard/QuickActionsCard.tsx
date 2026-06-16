@@ -19,23 +19,35 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 interface QuickActionsCardProps {
   onAction: (action: QuickActionId) => void;
+  disabled?: boolean;
 }
 
-export function QuickActionsCard({ onAction }: QuickActionsCardProps) {
+export function QuickActionsCard({ onAction, disabled = false }: QuickActionsCardProps) {
   return (
-    <TerminalCard testID="dashboard-quick-actions">
+    <TerminalCard testID="dashboard-quick-actions" style={disabled ? styles.disabledCard : undefined}>
       <Text style={styles.label}>Quick Actions</Text>
+      {disabled ? (
+        <Text style={styles.disabledHint} testID="quick-actions-read-only">
+          Read-only — your country has fallen.
+        </Text>
+      ) : null}
       <View style={styles.grid}>
         {QUICK_ACTIONS.map((action) => (
           <Pressable
             key={action.id}
-            style={styles.button}
-            onPress={() => onAction(action.id)}
+            style={[styles.button, disabled && styles.buttonDisabled]}
+            onPress={() => {
+              if (!disabled) onAction(action.id);
+            }}
+            disabled={disabled}
             accessibilityRole="button"
             accessibilityLabel={action.label}
+            accessibilityState={{ disabled }}
             testID={`quick-action-${action.id}`}
           >
-            <Text style={styles.buttonLabel}>{action.label}</Text>
+            <Text style={[styles.buttonLabel, disabled && styles.buttonLabelDisabled]}>
+              {action.label}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -71,5 +83,20 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 13,
     fontWeight: '700',
+  },
+  disabledCard: {
+    opacity: 0.7,
+  },
+  disabledHint: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.45,
+  },
+  buttonLabelDisabled: {
+    color: terminal.muted,
   },
 });

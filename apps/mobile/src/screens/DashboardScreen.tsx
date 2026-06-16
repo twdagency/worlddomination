@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGame } from '../game/GameContext';
 import { selectPlayerCountry } from '../game/countrySelector';
+import { selectDefeatedCountries } from '../game/defeatedCountrySelector';
 import { selectPendingDilemmaCards } from '../game/dilemmaSelector';
 import {
   getDashboardActiveForcesSummary,
@@ -14,6 +15,7 @@ import { navigateTo } from '../navigation/deepLinks';
 import type { HomeStackParamList } from '../navigation/types';
 import { ActiveForcesCard } from '../components/dashboard/ActiveForcesCard';
 import { CountryStatusCard } from '../components/dashboard/CountryStatusCard';
+import { PlayerFallenOverlay } from '../components/dashboard/PlayerFallenOverlay';
 import { DispatchesCard } from '../components/dashboard/DispatchesCard';
 import { QuickActionsCard, type QuickActionId } from '../components/dashboard/QuickActionsCard';
 import { ScrollFadeFooter } from '../components/ScrollFadeFooter';
@@ -24,9 +26,11 @@ type DashboardNavigation = NativeStackNavigationProp<HomeStackParamList, 'Dashbo
 export function DashboardScreen() {
   const navigation = useNavigation<DashboardNavigation>();
   const { world, dispatches, openDilemmaModal } = useGame();
+  const [fallenAcknowledged, setFallenAcknowledged] = useState(false);
 
   const pendingDilemmas = useMemo(() => selectPendingDilemmaCards(world), [world]);
   const playerCountry = useMemo(() => selectPlayerCountry(world), [world]);
+  const defeatedCountries = useMemo(() => selectDefeatedCountries(world), [world]);
   const dispatchDigest = useMemo(
     () => getDashboardDispatchesDigest(world, dispatches),
     [world, dispatches],
@@ -66,8 +70,19 @@ export function DashboardScreen() {
     );
   }
 
+  const openDefeatedCountries = () => {
+    navigation.navigate('DefeatedCountries');
+  };
+
+  const showFallenOverlay = Boolean(playerCountry?.defeated && !fallenAcknowledged);
+
   return (
     <View style={styles.scrollWrap}>
+      <PlayerFallenOverlay
+        visible={showFallenOverlay}
+        countryName={playerCountry?.name ?? 'Your country'}
+        onContinue={() => setFallenAcknowledged(true)}
+      />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -106,7 +121,11 @@ export function DashboardScreen() {
 
         <View style={styles.spacer} />
 
-        <CountryStatusCard country={playerCountry} />
+        <CountryStatusCard
+          country={playerCountry}
+          defeatedCount={defeatedCountries.length}
+          onViewDefeated={defeatedCountries.length > 0 ? openDefeatedCountries : undefined}
+        />
 
         <View style={styles.spacer} />
 
@@ -114,7 +133,10 @@ export function DashboardScreen() {
 
         <View style={styles.spacer} />
 
-        <QuickActionsCard onAction={handleQuickAction} />
+        <QuickActionsCard
+          onAction={handleQuickAction}
+          disabled={playerCountry.defeated}
+        />
       </ScrollView>
       <ScrollFadeFooter testID="dashboard-scroll-fade" />
     </View>

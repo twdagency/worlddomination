@@ -5,6 +5,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import TestRenderer, { type ReactTestInstance } from 'react-test-renderer';
 import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import { stampEvents } from 'sim';
+
+const START_MS = 1_700_600_000_000;
 import { DashboardScreen } from '../src/screens/DashboardScreen';
 import {
   DASHBOARD_DISPATCHES_DIGEST_LIMIT,
@@ -34,9 +36,10 @@ const gameState = vi.hoisted(() => ({
 
 vi.mock('../src/game/GameContext', () => ({
   useGame: () => ({
-    world: gameState.world ?? createSprint4World(),
+    world: gameState.world ?? createSprint4World(START_MS),
     dispatches: gameState.dispatches,
     resolvePendingDilemma: vi.fn(),
+    openDilemmaModal: vi.fn(),
   }),
 }));
 

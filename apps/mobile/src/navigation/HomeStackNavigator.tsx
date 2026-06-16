@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DashboardScreen } from '../screens/DashboardScreen';
+import { DefeatedCountriesScreen } from '../screens/DefeatedCountriesScreen';
 import { DispatchesScreen } from '../screens/DispatchesScreen';
 import { HOME_STACK_SCREEN_OPTIONS } from './homeStackConfig';
 import type { HomeStackParamList } from './types';
@@ -12,6 +13,7 @@ export function HomeStackNavigator() {
     <Stack.Navigator screenOptions={HOME_STACK_SCREEN_OPTIONS}>
       <Stack.Screen name="DashboardHome" component={DashboardScreen} />
       <Stack.Screen name="Dispatches" component={DispatchesScreen} />
+      <Stack.Screen name="DefeatedCountries" component={DefeatedCountriesScreen} />
     </Stack.Navigator>
   );
 }

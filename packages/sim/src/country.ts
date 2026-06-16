@@ -2,6 +2,7 @@ import type { Country, Faction, Id, Millis, SimEventDraft, Territory, WorldState
 import {
   dissolveAlliancesForDefeatedCountry,
   expireTreatiesForDefeatedCountry,
+  getAlliancesFor,
 } from './diplomacy';
 
 /**
@@ -200,6 +201,7 @@ function buildCapitalRelocatedEvent(
 function buildCountryDefeatedEvent(
   at: Millis,
   country: Country,
+  formerAlliances: Id[],
 ): SimEventDraft {
   return {
     kind: 'countryDefeated',
@@ -207,6 +209,7 @@ function buildCountryDefeatedEvent(
     countryId: country.id,
     defeatedBy: country.lastConquerorId,
     finalTerritoryId: country.lastLostTerritoryId ?? country.capitalTerritoryId,
+    formerAlliances,
     importance: 'high',
   };
 }
@@ -234,7 +237,19 @@ export function defeatCountry(
   if (!country || country.defeated) return { world, events: [] };
 
   const preDefeatSnapshot = country;
-  let w = setCountryDefeated(world, countryId);
+  const formerAllianceIds = getAlliancesFor(world, countryId);
+  let w: WorldState = {
+    ...world,
+    countries: {
+      ...world.countries!,
+      [countryId]: {
+        ...preDefeatSnapshot,
+        defeated: true,
+        defeatedAt: at,
+        formerAllianceIds,
+      },
+    },
+  };
   const events: SimEventDraft[] = [];
 
   const alliances = dissolveAlliancesForDefeatedCountry(w, countryId, at);
@@ -246,23 +261,41 @@ export function defeatCountry(
   events.push(...treaties.events);
 
   w = clearPendingDilemmasForCountry(w, countryId);
-  events.push(buildCountryDefeatedEvent(at, preDefeatSnapshot));
+  events.push(buildCountryDefeatedEvent(at, preDefeatSnapshot, formerAllianceIds));
 
   return { world: w, events };
 }
 
 /** Derive `world.countries` from legacy `world.factions`. Idempotent; no defeat events. */
 export function ensureWorldCountries(world: WorldState): WorldState {
+  let next: WorldState;
   if (countriesMatchFactions(world)) {
-    return syncCountriesFromFactions(world).world;
+    next = syncCountriesFromFactions(world).world;
+  } else {
+    const countries: Record<Id, Country> = {};
+    for (const faction of Object.values(world.factions)) {
+      countries[faction.id] = buildCountryFromFaction(world, faction);
+    }
+    next = syncCountriesFromFactions({ ...world, countries }).world;
+  }
+  return backfillCountryDefeatMetadata(next);
+}
+
+/** Older saves may lack defeat forensic fields — backfill with safe defaults. */
+export function backfillCountryDefeatMetadata(world: WorldState): WorldState {
+  if (!world.countries) return world;
+
+  let changed = false;
+  const countries: Record<Id, Country> = { ...world.countries };
+
+  for (const [countryId, country] of Object.entries(countries)) {
+    if (!country.defeated) continue;
+    if (country.formerAllianceIds !== undefined) continue;
+    countries[countryId] = { ...country, formerAllianceIds: [] };
+    changed = true;
   }
 
-  const countries: Record<Id, Country> = {};
-  for (const faction of Object.values(world.factions)) {
-    countries[faction.id] = buildCountryFromFaction(world, faction);
-  }
-
-  return syncCountriesFromFactions({ ...world, countries }).world;
+  return changed ? { ...world, countries } : world;
 }
 
 /**
