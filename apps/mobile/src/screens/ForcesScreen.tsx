@@ -3,9 +3,10 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useGame } from '../game/GameContext';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import {
-  getPlayerKnownTerritoryName,
   playerForces,
+  resolvePlayerFactionId,
 } from '../game/playerView';
+import { formatTransitEndpointLabel } from '../game/territoryOwnerLabel';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { terminal } from '../theme/terminal';
@@ -14,6 +15,7 @@ import { formatDuration } from '../utils/format';
 export function ForcesScreen() {
   const { world, wallNowMs } = useGame();
   const units = playerForces(world);
+  const playerId = resolvePlayerFactionId(world);
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
 
   return (
@@ -36,19 +38,31 @@ export function ForcesScreen() {
 
         if (inTransit) {
           const destId = inTransit.toTerritoryId ?? '';
-          const dest = getPlayerKnownTerritoryName(world, destId);
+          const originId = item.locationId;
+          const destLabel = formatTransitEndpointLabel(
+            world,
+            destId,
+            'compact',
+            playerId,
+            undefined,
+            true,
+          );
+          const originLabel = originId
+            ? formatTransitEndpointLabel(world, originId, 'inline', playerId)
+            : 'Unknown';
           const remaining = Math.max(0, inTransit.arriveMs - wallNowMs);
           return (
             <ExpandableRow
               rowId={item.id}
               title={label}
-              subtitle={`×${item.count} · IN TRANSIT → ${dest}`}
+              subtitle={`×${item.count} · IN TRANSIT ${originLabel} → ${destLabel}`}
               expanded={expandedUnitId === item.id}
               highlighted
               onToggle={(id) => setExpandedUnitId((prev) => toggleExpandedRow(prev, id))}
               secondary={
                 <>
-                  <Text style={styles.detail}>Destination: {dest}</Text>
+                  <Text style={styles.detail}>Origin: {originLabel}</Text>
+                  <Text style={styles.detail}>Destination: {destLabel}</Text>
                   <Text style={styles.eta}>ETA {formatDuration(remaining)}</Text>
                   <Text style={styles.detail}>
                     Stance: {inTransit.stanceOnArrival ?? 'hold'}
@@ -59,22 +73,23 @@ export function ForcesScreen() {
           );
         }
 
-        const location = item.locationId
-          ? getPlayerKnownTerritoryName(world, item.locationId)
+        const locationId = item.locationId;
+        const locationLabel = locationId
+          ? formatTransitEndpointLabel(world, locationId, 'inline', playerId)
           : 'Unknown';
 
         return (
           <ExpandableRow
             rowId={item.id}
             title={label}
-            subtitle={`×${item.count} · ${location}`}
+            subtitle={`×${item.count} · ${locationLabel}`}
             expanded={expandedUnitId === item.id}
             onToggle={(id) => setExpandedUnitId((prev) => toggleExpandedRow(prev, id))}
             secondary={
               <>
                 <Text style={styles.detail}>Tier {unitType?.tier ?? '?'}</Text>
                 <Text style={styles.detail}>Domain: {unitType?.domain ?? 'unknown'}</Text>
-                <Text style={styles.stationed}>Stationed at {location}</Text>
+                <Text style={styles.stationed}>Stationed at {locationLabel}</Text>
               </>
             }
           />

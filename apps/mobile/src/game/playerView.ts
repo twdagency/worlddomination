@@ -18,8 +18,9 @@ import {
   type WorldState,
 } from 'sim';
 import { resolvePlayerFactionId } from 'shared';
-import { formatDateTime } from '../utils/format';
+import { formatDateTime, formatDuration } from '../utils/format';
 import { formatFactionIdentityLine, getFactionIdentity } from './factionDisplay';
+import { formatTransitEndpointLabel } from './territoryOwnerLabel';
 
 export { resolvePlayerFactionId } from 'shared';
 
@@ -619,15 +620,25 @@ export function getDashboardActiveForcesSummary(world: WorldState): DashboardAct
   const units = playerForces(world);
   const inTransit = units.filter((unit) => unit.transit);
   const stationed = units.filter((unit) => !unit.transit);
+  const playerId = resolvePlayerFactionId(world);
 
   const items: DashboardActiveForceItem[] = inTransit.slice(0, 3).map((unit) => {
     const unitType = world.unitTypes[unit.typeId];
     const destId = unit.transit?.toTerritoryId;
-    const dest = destId ? getPlayerKnownTerritoryName(world, destId) : 'unknown';
+    const originId = unit.locationId;
+    const originLabel = originId
+      ? formatTransitEndpointLabel(world, originId, 'inline', playerId)
+      : 'unknown';
+    const destLabel = destId
+      ? formatTransitEndpointLabel(world, destId, 'compact', playerId, undefined, true)
+      : 'unknown';
+    const eta = formatDuration(
+      Math.max(0, (unit.transit?.arriveMs ?? 0) - world.nowMs),
+    );
     return {
       unitId: unit.id,
       label: unitType?.name ?? unit.id,
-      detail: `×${unit.count} → ${dest}`,
+      detail: `×${unit.count} from ${originLabel} → ${destLabel} · ETA ${eta}`,
       inTransit: true,
     };
   });

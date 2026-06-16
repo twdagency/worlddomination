@@ -15,12 +15,11 @@ import { getPlayerVisibleTerritory,
   playerOrderDestinations,
   resolvePlayerFactionId,
 } from '../game/playerView';
-import { selectCountryById } from '../game/countrySelector';
 import {
   classifyDestination,
-  formatDestinationRowTitle,
   type DestinationStance,
 } from '../game/orderDestinations';
+import { TerritoryOwnerLabel } from '../components/TerritoryOwnerLabel';
 import type { ActionStackParamList } from '../navigation/types';
 import { IntelSourceHint } from '../components/IntelSourceHint';
 import { TerminalCard } from '../components/TerminalCard';
@@ -229,12 +228,6 @@ export function OrderScreen() {
             destination.territoryId,
             ownerId,
           );
-          const ownerName = ownerId
-            ? selectCountryById(world, ownerId)?.leaderName
-            : undefined;
-          const ownerCountryName = ownerId
-            ? selectCountryById(world, ownerId)?.name
-            : undefined;
           const selected = destination.territoryId === destinationId;
           const isStale = destination.state === 'stale';
           const recommended =
@@ -252,15 +245,18 @@ export function OrderScreen() {
                   recommended ? styles.recommendedCard : undefined,
                 ]}
               >
-                <Text style={[styles.optionTitle, isStale && styles.staleTitle]}>
-                  {formatDestinationRowTitle(
-                    destination.name,
-                    destinationStance,
-                    ownerCountryName,
-                    ownerName,
-                    recommended,
-                  )}
-                </Text>
+                <TerritoryOwnerLabel
+                  world={world}
+                  territoryId={destination.territoryId}
+                  ownerIdOverride={ownerId}
+                  playerId={playerId}
+                  variant="inline"
+                  showStance
+                  showLeader
+                  stance={destinationStance}
+                  recommended={recommended}
+                  style={[styles.optionTitle, isStale && styles.staleTitle]}
+                />
                 {isStale && destination.lastObservedAt !== undefined && (
                   <Text style={styles.staleSub}>
                     {formatIntelAge(world.nowMs, destination.lastObservedAt)}

@@ -132,7 +132,9 @@ describe('dispatch diplomacy', () => {
       decisionTickMs: START_MS,
     };
 
-    expect(dispatchLineForEvent(world, report)).toContain('Per treaty, Genghis garrison at Berlin: moderate');
+    expect(dispatchLineForEvent(world, report)).toContain(
+      'Per treaty, Genghis garrison at Berlin (Steppe): moderate',
+    );
   });
 
   it('groups diplomatic events into beats by faction and tick', () => {

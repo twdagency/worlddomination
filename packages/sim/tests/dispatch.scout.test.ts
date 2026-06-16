@@ -57,7 +57,7 @@ describe('scout dispatch integration', () => {
         subjectFactionId: 'faction-steppe',
         intent: 'defend',
       }),
-    ).toBe('INTEL — Scouts report Genghis activity at Berlin');
+    ).toBe('INTEL — Scouts report Genghis activity at Berlin (Steppe)');
 
     expect(
       formatIntelReportLine(world, {
@@ -66,7 +66,7 @@ describe('scout dispatch integration', () => {
         subjectFactionId: 'faction-steppe',
         intent: 'attack',
       }),
-    ).toBe('INTEL — Scouts report Genghis forces massing at Berlin');
+    ).toBe('INTEL — Scouts report Genghis forces massing at Berlin (Steppe)');
 
     expect(
       formatIntelReportLine(world, {
@@ -74,7 +74,7 @@ describe('scout dispatch integration', () => {
         variant: 'construction',
         intent: 'build',
       }),
-    ).toBe('INTEL — Scouts report construction at Berlin');
+    ).toBe('INTEL — Scouts report construction at Berlin (Steppe)');
   });
 
   it('emits scout intelReport on tick when scout observes', () => {

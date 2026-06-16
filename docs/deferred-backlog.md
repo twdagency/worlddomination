@@ -389,3 +389,37 @@ migration backfills legacy dispatches with `legacy-{index}` IDs and starts
 full world JSON. If Sprint 8 introduces save slots or multiple campaigns,
 promote explicit campaign identity in storage (slot id, player faction id,
 scenario metadata) rather than inferring solely from `isPlayer`.
+
+
+Unit-aware order system redesign
+
+Rename UI section "STANCE ON ARRIVAL" → "ORDERS ON ARRIVAL" (or "MISSION")
+Reserve stance for AI faction posture (existing stance.ts)
+Per-unit-type order lists with shared verb pool (~8 verbs total)
+OrderOption data shape: { id, label, description, requiresTier?, validDestinations[] }
+Filter orders by destination status (no "Secure" on hostile territory)
+Tier-locked orders surface as greyed-out with tooltips
+Combined-force orders show combat unit's order list; scout auto-screens
+Scout order list: Recon / Infiltrate / Shadow / Screen / Sabotage(T2)
+Levy order list: Assault / Secure / Hold / Reinforce / Withdraw
+Future units (when roster expands): Men-at-Arms (Assault/Storm/Hold/Reinforce), Cavalry (Charge/Raid/Pursue/Hold/Screen), Archers (Assault/Garrison/Hold/Withdraw), Siege (Besiege/Bombard/Hold)
+"Raid" and "Pursue" verbs touch the in-transit interception system — far-future backlog item; coordinate when prioritized
+Source: 7c-era design session with other agent, 2026-06-16
+
+tructural integrity sprint candidates (from cold-play insights):
+
+#9 Defeated faction handling — when faction has zero territories, mark as defeated: true; remove from active diplomacy lists; preserve in dispatch history; coordinate with canon's "leader removed with country" (Option X)
+#10 Dilemma surfacing — promote from Dashboard card to modal popup with urgency window per design canon event-system Model C
+#11 Navigation IA redesign — Dispatches appears in both bottom nav and Home, Forces ambiguity, Home as parallel-paths-to-everywhere. Needs unified IA pass.
+#12 Deep linking — contextual cross-screen navigation: tap territory name in Diplomacy → navigate to that territory; tap "Move forces here" in World → opens Order with destination pre-set
+#13 Destination owner labels — territory ownership visible at decision points (Order screen, etc.)
+Order system unit-aware redesign — full Scout/Levy/Cavalry order verb system per other session's design pass
+#3a stack header pattern — if approach (2) wasn't fully clean, may need a navigation refactor pass to formalize "persistent header is the only header"
+
+## Sprint 9 documentation polish — country display naming (Sprint 8 Phase 10 note)
+
+Canonical pattern: **country display name derives from `leader.region`; faction/country ID is an opaque identifier.**
+
+Example: `faction-britain` led by Philip II renders as "Spain" (Philip's region), not "Britain". Same pattern as Sprint 7c country-led naming ("Rome — led by Caesar"). Document in player-facing glossary / dev onboarding so future agents do not treat ID slugs as display names.
+
+Source: Sprint 8 Phase 9 acceptance + Sprint 4 cold-play Spain naming flag.

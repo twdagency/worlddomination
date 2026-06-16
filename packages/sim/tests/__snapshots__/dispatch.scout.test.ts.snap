@@ -2,73 +2,73 @@
 
 exports[`scout dispatch integration > cold-read: build scout, move toward Berlin, skip 12h digest > cold-read-scout-digest 1`] = `
 "Elizabeth — tick 1700400000000
-PRODUCTION — Construction begun at London (Your)
+PRODUCTION — Construction begun at London (Britain) (Your)
 Genghis — tick 1700421600000
 DIPLOMACY — Philip II and Genghis have formed an alliance.
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700421600000
-INTEL — Caesar forces advancing from Paris toward London
-INTEL — Infrastructure upgraded at Berlin (Genghis)
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
+INTEL — Infrastructure upgraded at Berlin (Steppe) (Genghis)
 Philip II — tick 1700421600000
-INTEL — Construction begun at Madrid (Philip II)
+INTEL — Construction begun at Madrid (Spain) (Philip II)
 Philip II — tick 1700421600000
-INTEL — Genghis's forces report Genghis activity at Berlin
+INTEL — Genghis's forces report Genghis activity at Berlin (Steppe)
 Elizabeth — tick 1700443200000
 DIPLOMACY — Elizabeth declined alliance with Genghis.
 Genghis — tick 1700443200000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700443200000
-INTEL — Caesar forces advancing from Paris toward London
-INTEL — Infrastructure upgraded at Berlin (Genghis)
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
+INTEL — Infrastructure upgraded at Berlin (Steppe) (Genghis)
 Philip II — tick 1700443200000
-INTEL — Construction begun at Madrid (Philip II)
+INTEL — Construction begun at Madrid (Spain) (Philip II)
 Philip II — tick 1700443200000
-INTEL — Genghis's forces report Genghis activity at Berlin
+INTEL — Genghis's forces report Genghis activity at Berlin (Steppe)
 Elizabeth — tick 1700464800000
 DIPLOMACY — Elizabeth declined alliance with Genghis.
 Genghis — tick 1700464800000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700464800000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
 Philip II — tick 1700464800000
-INTEL — Construction begun at Madrid (Philip II)
+INTEL — Construction begun at Madrid (Spain) (Philip II)
 PRODUCTION — Your 1× Scout ready at London
 Elizabeth — tick 1700464800000
-INTEL — Scouts report Genghis forces massing at Berlin
+INTEL — Scouts report Genghis forces massing at Berlin (Steppe)
 INCOME — funding 10645.5
-DEPARTURE — Your forces advancing from London toward Berlin
+DEPARTURE — Your forces advancing from London (Britain) toward Berlin (Steppe)
 INTEL — Philip II — 1× Scout ready at Madrid
 Genghis — tick 1700468040000
-INTEL — Philip II's forces report construction at Madrid
-INTEL — Philip II's forces report Caesar forces massing at Paris
+INTEL — Philip II's forces report construction at Madrid (Spain)
+INTEL — Philip II's forces report Caesar forces massing at Paris (Rome)
 Philip II — tick 1700468040000
-INTEL — Scouts report Caesar forces massing at Paris
+INTEL — Scouts report Caesar forces massing at Paris (Rome)
 Elizabeth — tick 1700486400000
 DIPLOMACY — Elizabeth declined alliance with Genghis.
 Genghis — tick 1700486400000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700486400000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
 Philip II — tick 1700486400000
-INTEL — Construction begun at Madrid (Philip II)
+INTEL — Construction begun at Madrid (Spain) (Philip II)
 Genghis — tick 1700486400000
-INTEL — Philip II's forces report Caesar forces massing at Paris
+INTEL — Philip II's forces report Caesar forces massing at Paris (Rome)
 Philip II — tick 1700486400000
-INTEL — Scouts report Caesar forces massing at Paris
+INTEL — Scouts report Caesar forces massing at Paris (Rome)
 INTEL — Philip II — 3× Scout ready at Madrid
 Genghis — tick 1700489640000
-INTEL — Philip II's forces report construction at Madrid
+INTEL — Philip II's forces report construction at Madrid (Spain)
 Elizabeth — tick 1700508000000
 DIPLOMACY — Elizabeth declined alliance with Genghis.
 Genghis — tick 1700508000000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700508000000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
 Philip II — tick 1700508000000
-INTEL — Construction begun at Madrid (Philip II)
+INTEL — Construction begun at Madrid (Spain) (Philip II)
 Genghis — tick 1700508000000
-INTEL — Philip II's forces report Caesar forces massing at Paris
+INTEL — Philip II's forces report Caesar forces massing at Paris (Rome)
 Philip II — tick 1700508000000
-INTEL — Scouts report Caesar forces massing at Paris
+INTEL — Scouts report Caesar forces massing at Paris (Rome)
 INCOME — funding 7182"
 `;
