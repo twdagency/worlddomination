@@ -1,4 +1,4 @@
-import type { Country, Faction, Id, Territory, WorldState } from './types';
+import type { Country, Faction, Id, Millis, SimEventDraft, Territory, WorldState } from './types';
 
 /**
  * Scenario-specific capital assignments. Same faction ID may map to different
@@ -29,6 +29,11 @@ export const CANONICAL_CAPITALS: Record<Id, Id> = {
   ...CANONICAL_CAPITALS_BY_SCENARIO.tutorial,
 };
 
+export interface CountrySyncResult {
+  world: WorldState;
+  events: SimEventDraft[];
+}
+
 function countryName(world: WorldState, faction: Faction): string {
   const leader = world.leaders[faction.leaderId];
   return leader?.region ?? faction.id;
@@ -40,6 +45,60 @@ function ownedTerritories(world: WorldState, countryId: Id): Territory[] {
 
 export function citiesOf(world: WorldState, countryId: Id): Territory[] {
   return ownedTerritories(world, countryId);
+}
+
+export function isCountryDefeated(world: WorldState, countryId: Id): boolean {
+  return citiesOf(world, countryId).length === 0;
+}
+
+/**
+ * Highest infraLevel wins; ties broken by lexicographic territory ID.
+ * SPRINT-9: switch to population-based capital selection when available.
+ */
+export function selectNewCapital(cities: Territory[]): Territory {
+  return [...cities].sort((a, b) => {
+    const infraDiff = b.infraLevel - a.infraLevel;
+    if (infraDiff !== 0) return infraDiff;
+    return a.id.localeCompare(b.id);
+  })[0]!;
+}
+
+export function setCountryCapital(world: WorldState, countryId: Id, capitalTerritoryId: Id): WorldState {
+  const country = world.countries?.[countryId];
+  if (!country) return world;
+  return {
+    ...world,
+    countries: {
+      ...world.countries,
+      [countryId]: { ...country, capitalTerritoryId },
+    },
+  };
+}
+
+export function setCountryDefeated(world: WorldState, countryId: Id): WorldState {
+  const country = world.countries?.[countryId];
+  if (!country || country.defeated) return world;
+  return {
+    ...world,
+    countries: {
+      ...world.countries,
+      [countryId]: { ...country, defeated: true },
+    },
+  };
+}
+
+export function relocateCapitalIfNeeded(world: WorldState, countryId: Id): WorldState {
+  const country = findCountry(world, countryId);
+  if (!country || country.defeated) return world;
+
+  const capital = world.territories[country.capitalTerritoryId];
+  if (capital?.ownerId === countryId) return world;
+
+  const cities = citiesOf(world, countryId);
+  if (cities.length === 0) return world;
+
+  const newCapital = selectNewCapital(cities);
+  return setCountryCapital(world, countryId, newCapital.id);
 }
 
 export function resolveCanonicalCapital(
@@ -65,11 +124,8 @@ function buildCountryFromFaction(world: WorldState, faction: Faction): Country {
   const leader = world.leaders[faction.leaderId];
 
   if (ownedIds.length === 0 && capitalTerritoryId === '') {
-    // Graceful edge case: faction with no matching territory ownership.
     if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
-      console.warn(
-        `[country] ${faction.id} has no owned territories; capital left empty`,
-      );
+      console.warn(`[country] ${faction.id} has no owned territories; capital left empty`);
     }
   }
 
@@ -94,10 +150,68 @@ function countriesMatchFactions(world: WorldState): boolean {
   );
 }
 
-/** Derive `world.countries` from legacy `world.factions`. Idempotent. */
+/** Record conqueror when a city changes hands (ignores neutral captures and self-capture). */
+export function recordConquerorOnTerritoryCapture(
+  world: WorldState,
+  territoryId: Id,
+  previousOwnerId: Id | undefined,
+  newOwnerId: Id,
+): WorldState {
+  if (!previousOwnerId || previousOwnerId === newOwnerId || !world.countries) {
+    return world;
+  }
+
+  const country = world.countries[previousOwnerId];
+  if (!country) return world;
+
+  return {
+    ...world,
+    countries: {
+      ...world.countries,
+      [previousOwnerId]: {
+        ...country,
+        lastConquerorId: newOwnerId,
+        lastLostTerritoryId: territoryId,
+      },
+    },
+  };
+}
+
+function buildCapitalRelocatedEvent(
+  at: Millis,
+  countryId: Id,
+  oldCapitalTerritoryId: Id,
+  newCapitalTerritoryId: Id,
+): SimEventDraft {
+  return {
+    kind: 'capitalRelocated',
+    at,
+    countryId,
+    oldCapitalTerritoryId,
+    newCapitalTerritoryId,
+    importance: 'medium',
+  };
+}
+
+function buildCountryDefeatedEvent(
+  world: WorldState,
+  at: Millis,
+  country: Country,
+): SimEventDraft {
+  return {
+    kind: 'countryDefeated',
+    at,
+    countryId: country.id,
+    defeatedBy: country.lastConquerorId,
+    finalTerritoryId: country.lastLostTerritoryId ?? country.capitalTerritoryId,
+    importance: 'high',
+  };
+}
+
+/** Derive `world.countries` from legacy `world.factions`. Idempotent; no defeat events. */
 export function ensureWorldCountries(world: WorldState): WorldState {
   if (countriesMatchFactions(world)) {
-    return syncCountriesFromFactions(world);
+    return syncCountriesFromFactions(world).world;
   }
 
   const countries: Record<Id, Country> = {};
@@ -105,27 +219,54 @@ export function ensureWorldCountries(world: WorldState): WorldState {
     countries[faction.id] = buildCountryFromFaction(world, faction);
   }
 
-  return { ...world, countries };
+  return syncCountriesFromFactions({ ...world, countries }).world;
 }
 
 /**
- * Recompute `defeated` from territory ownership. Capital relocation deferred to Phase 2.
+ * Reconcile countries with territory ownership: capital relocation and defeat.
+ * Emits events only on transitions (not for countries already defeated at load).
  */
-export function syncCountriesFromFactions(world: WorldState): WorldState {
+export function syncCountriesFromFactions(world: WorldState): CountrySyncResult {
   if (!world.countries || Object.keys(world.countries).length === 0) {
-    return world;
+    return { world, events: [] };
   }
 
-  const countries: Record<Id, Country> = {};
-  for (const [id, country] of Object.entries(world.countries)) {
-    const owned = ownedTerritories(world, id);
-    countries[id] = {
-      ...country,
-      defeated: owned.length === 0,
-    };
+  let w = world;
+  const events: SimEventDraft[] = [];
+  const countries = w.countries!;
+  const countryIds = Object.keys(countries).sort();
+
+  for (const countryId of countryIds) {
+    const country = w.countries![countryId];
+    if (!country || country.defeated) continue;
+
+    const cities = citiesOf(w, countryId);
+    const capitalHeld = cities.some((city) => city.id === country.capitalTerritoryId);
+
+    if (!capitalHeld && cities.length > 0) {
+      const oldCapitalTerritoryId = country.capitalTerritoryId;
+      const newCapital = selectNewCapital(cities);
+      if (newCapital.id !== country.capitalTerritoryId) {
+        w = setCountryCapital(w, countryId, newCapital.id);
+        events.push(
+          buildCapitalRelocatedEvent(
+            w.nowMs,
+            countryId,
+            oldCapitalTerritoryId,
+            newCapital.id,
+          ),
+        );
+      }
+    }
+
+    if (cities.length === 0) {
+      const snapshot = w.countries![countryId]!;
+      w = setCountryDefeated(w, countryId);
+      events.push(buildCountryDefeatedEvent(w, w.nowMs, snapshot));
+    }
   }
 
-  return { ...world, countries };
+  return { world: w, events };
 }
 
 export function findCountry(world: WorldState, countryId: Id): Country | undefined {

@@ -173,6 +173,10 @@ export interface Country {
   defeated: boolean;
   isPlayer: boolean;
   diplomaticPosture?: DiplomaticPosture;
+  /** Faction that captured the most recently lost city (defeat attribution). */
+  lastConquerorId?: Id;
+  /** Territory ID of the most recently lost city (defeat narrative). */
+  lastLostTerritoryId?: Id;
 }
 
 export type Order =
@@ -499,6 +503,22 @@ export type SimEventKind =
       newOwnerId: Id;
       unitId: Id;
       fromTerritoryId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'capitalRelocated';
+      at: Millis;
+      countryId: Id;
+      oldCapitalTerritoryId: Id;
+      newCapitalTerritoryId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'countryDefeated';
+      at: Millis;
+      countryId: Id;
+      defeatedBy?: Id;
+      finalTerritoryId: Id;
       importance?: DispatchImportance;
     };
 

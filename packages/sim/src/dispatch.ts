@@ -1,4 +1,5 @@
 import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import { findCountry } from './country';
 import { isTerritoryVisible } from './visibility';
 import { isTreatyParty, otherParty } from './diplomaticDispatch';
 import {
@@ -311,6 +312,31 @@ export function formatTreatyDeclinedLine(
   return `DIPLOMACY — ${factionName(world, event.declinedBy)} declined treaty with ${otherName}.`;
 }
 
+export function formatCapitalRelocatedLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'capitalRelocated' }>,
+): string {
+  const country = findCountry(world, event.countryId);
+  const countryLabel = country?.name ?? event.countryId;
+  const oldName = territoryName(world, event.oldCapitalTerritoryId);
+  const newName = territoryName(world, event.newCapitalTerritoryId);
+  return `Capital of ${countryLabel} relocated from ${oldName} to ${newName}.`;
+}
+
+export function formatCountryDefeatedLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'countryDefeated' }>,
+): string {
+  const country = findCountry(world, event.countryId);
+  const countryLabel = country?.name ?? event.countryId;
+  const leader = world.factions[event.countryId]?.leaderId
+    ? (world.leaders[world.factions[event.countryId]!.leaderId]?.name ??
+      factionName(world, event.countryId))
+    : factionName(world, event.countryId);
+  const finalCity = territoryName(world, event.finalTerritoryId);
+  return `${countryLabel} has fallen. ${leader}'s reign ends at ${finalCity}.`;
+}
+
 export interface DispatchFeedItem {
   key: string;
   header?: string;
@@ -379,6 +405,10 @@ export function dispatchLineForEvent(
       return formatDispatchCancelledByAllianceLine(world, event);
     case 'orderRedirectedToAlly':
       return formatOrderRedirectedToAllyLine(world, event);
+    case 'capitalRelocated':
+      return formatCapitalRelocatedLine(world, event);
+    case 'countryDefeated':
+      return formatCountryDefeatedLine(world, event);
     default:
       return `${event.kind} event`;
   }
@@ -528,6 +558,8 @@ export function isDispatchVisibleToFaction(
 
     case 'allianceFormed':
     case 'allianceBroken':
+    case 'capitalRelocated':
+    case 'countryDefeated':
       return true;
 
     case 'treatyFormed':

@@ -84,6 +84,7 @@ export function tick(
   const {
     units: unitsAfterArrivals,
     territories,
+    countries: countriesAfterArrivals,
     rng,
     events: arrivalEvents,
     intel: intelAfterArrivals,
@@ -97,6 +98,7 @@ export function tick(
     ...afterEconomy,
     units: unitsAfterArrivals,
     territories,
+    countries: countriesAfterArrivals ?? afterEconomy.countries,
     rng,
     intel: intelAfterArrivals ?? ensureIntelStore(world),
   };
@@ -120,18 +122,20 @@ export function tick(
     ...afterDiplomacy,
     units: unitsAfterArrivals,
     territories,
+    countries: countriesAfterArrivals ?? afterDiplomacy.countries,
     rng,
     intel: nextIntel,
   };
 
-  // Tutorial beat progression (after intel emission; last step before tick return):
-  // 1. recordIntelObservations
-  // 2. recordAlliedObservations
-  // 3. recordTreatyObservations
-  // 4. emitIntelReportEvents
-  // 5. evaluateBeatProgression ← runs here
+  // Tick order after intel emission:
+  // 5. syncCountries — capital relocation + defeat (before beat predicates)
+  // 6. evaluateBeatProgression — sees countryDefeated in same tick
+  const countrySync = syncCountriesFromFactions(next);
+  next = countrySync.world;
+  events.push(...countrySync.events);
+
   const progression = evaluateBeatProgression(next, events);
-  next = syncCountriesFromFactions(progression.world);
+  next = progression.world;
   events.push(...progression.events);
 
   const stamped = stampEvents(next, events);

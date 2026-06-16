@@ -168,12 +168,14 @@ export function resolveArrivals(
 ): {
   units: WorldState['units'];
   territories: WorldState['territories'];
+  countries?: WorldState['countries'];
   rng: WorldState['rng'];
   intel: IntelStore;
   events: SimEventDraft[];
 } {
   let units = { ...world.units };
   let territories = { ...world.territories };
+  let countries = world.countries;
   let rng = world.rng;
   let intel = ensureIntelStore(world);
   const events: SimEventDraft[] = [];
@@ -198,7 +200,7 @@ export function resolveArrivals(
     };
 
     const resolution = resolveHostileArrival(
-      { ...world, units, territories, rng },
+      { ...world, units, territories, rng, countries },
       arrivedUnit,
       territoryId,
       at,
@@ -208,6 +210,7 @@ export function resolveArrivals(
 
     units = resolution.units;
     territories = resolution.territories;
+    countries = resolution.countries ?? countries;
     rng = resolution.rng;
     intel = resolution.intel;
     const snapshotWorld = { ...world, units, territories, rng, intel };
@@ -237,7 +240,7 @@ export function resolveArrivals(
     );
   }
 
-  return { units, territories, rng, intel, events };
+  return { units, territories, countries, rng, intel, events };
 }
 
 /** All pending arrival timestamps strictly after `nowMs`. */

@@ -187,9 +187,16 @@ export {
   ensureWorldCountries,
   factionToCountry,
   findCountry,
+  isCountryDefeated,
+  recordConquerorOnTerritoryCapture,
+  relocateCapitalIfNeeded,
   resolveCanonicalCapital,
+  selectNewCapital,
+  setCountryCapital,
+  setCountryDefeated,
   syncCountriesFromFactions,
 } from './country';
+export type { CountrySyncResult } from './country';
 export {
   backfillLegacyDispatchEventIds,
   DEFAULT_NEXT_EVENT_ID,

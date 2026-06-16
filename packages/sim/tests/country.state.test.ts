@@ -135,7 +135,7 @@ describe('country helpers', () => {
           isPlayer: false,
         },
       },
-    });
+    }).world;
     expect(citiesOf(world, 'faction-landless')).toEqual([]);
   });
 
@@ -186,7 +186,7 @@ describe('syncCountriesFromFactions', () => {
         [PARIS]: { ...world.territories[PARIS]!, ownerId: PLAYER },
       },
     };
-    const synced = syncCountriesFromFactions(afterLoss);
+    const { world: synced } = syncCountriesFromFactions(afterLoss);
     expect(synced.countries![rome]?.defeated).toBe(true);
     expect(citiesOf(synced, rome)).toHaveLength(0);
   });
