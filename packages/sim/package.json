@@ -15,6 +15,9 @@
     "bench:intel": "tsx perf/intelStore.bench.ts",
     "bench:diplomacy": "tsx perf/diplomacy.bench.ts"
   },
+  "dependencies": {
+    "shared": "workspace:*"
+  },
   "devDependencies": {
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",

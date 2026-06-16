@@ -1,4 +1,5 @@
 import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import { resolvePlayerFactionId } from 'shared';
 import { isTerritoryVisible } from './visibility';
 import { isTreatyParty, otherParty } from './diplomaticDispatch';
 import {
@@ -239,6 +240,24 @@ function hoursUntil(expiresAt: Millis, at: Millis): number {
   return Math.max(1, Math.round((expiresAt - at) / 3_600_000));
 }
 
+function formatAllyArrivalPeacefulLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'allyArrivalPeaceful' }>,
+): string {
+  const allyName = factionName(world, event.allyFactionId);
+  const place = territoryName(world, event.territoryId);
+  const origin = territoryName(world, event.fromTerritoryId);
+  return `DIPLOMACY — Forces from ${allyName} arrived at ${place} — peaceful, returned to ${origin}.`;
+}
+
+function formatDispatchCancelledByAllianceLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'dispatchCancelledByAlliance' }>,
+): string {
+  const allyName = factionName(world, event.allyFactionId);
+  return `DIPLOMACY — Order cancelled — alliance with ${allyName} formed mid-transit.`;
+}
+
 export function formatAllianceProposedLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'allianceProposed' }>,
@@ -346,6 +365,10 @@ export function dispatchLineForEvent(
       return `BLOCKED — ${event.reason}`;
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
+    case 'allyArrivalPeaceful':
+      return formatAllyArrivalPeacefulLine(world, event);
+    case 'dispatchCancelledByAlliance':
+      return formatDispatchCancelledByAllianceLine(world, event);
     default:
       return `${event.kind} event`;
   }
@@ -477,7 +500,7 @@ export function taggedOrderFields(
 }
 
 export function playerFactionId(world: WorldState): Id | undefined {
-  return Object.values(world.factions).find((faction) => faction.isPlayer)?.id;
+  return resolvePlayerFactionId(world);
 }
 
 /**

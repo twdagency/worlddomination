@@ -26,7 +26,8 @@ import { evaluateCostLines, treatyOfferLine } from '../game/costPreview';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
-import { PLAYER_FACTION_ID } from '../game/playerView';
+import { resolvePlayerFactionId } from 'shared';
+import { diplomacyTargetFactions } from '../game/diplomacySelector';
 import type { ActionStackParamList } from '../navigation/types';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -67,7 +68,7 @@ export function DiplomacyScreen() {
   const [treatyTarget, setTreatyTarget] = useState<string | null>(null);
   const [expandedFactionId, setExpandedFactionId] = useState<string | null>(null);
 
-  const playerId = playerFactionId(world) ?? PLAYER_FACTION_ID;
+  const playerId = resolvePlayerFactionId(world) ?? playerFactionId(world) ?? 'faction-player';
   const incoming = pendingProposalsForFaction(world, playerId);
   const timestampedDispatches = dispatches.filter(isTimestampedDispatch);
 
@@ -79,8 +80,7 @@ export function DiplomacyScreen() {
 
   const factions = useMemo(
     () =>
-      Object.values(world.factions)
-        .filter((faction) => faction.id !== playerId)
+      diplomacyTargetFactions(world)
         .map((faction) => {
           const reputation = world.reputation[playerId]?.[faction.id] ?? 0;
           const stance = computeStance(

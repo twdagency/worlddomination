@@ -287,8 +287,9 @@ export function applyAiDiplomaticDecisions(
 
     const acceptanceScore = scoreAllianceAcceptance(current, bestTarget, proposer);
     if (acceptanceScore >= ALLIANCE_ACCEPT_THRESHOLD) {
-      current = formAlliance(current, proposer, bestTarget, atMs);
-      events.push(allianceFormedEvent(proposer, bestTarget, atMs, proposer));
+      const formed = formAlliance(current, proposer, bestTarget, atMs);
+      current = formed.world;
+      events.push(...formed.events, allianceFormedEvent(proposer, bestTarget, atMs, proposer));
     }
   }
 

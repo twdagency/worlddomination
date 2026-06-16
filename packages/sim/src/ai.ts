@@ -1,4 +1,5 @@
 import { AI_DECISION_INTERVAL_MS, INFRA_UPGRADE_BASE_COST, MAX_INFRA_LEVEL } from './constants';
+import { areAllied } from './diplomacy';
 import { taggedOrderFields, assertActionableOrderTagged } from './dispatch';
 import { haversineKm } from './geo';
 import { INTEL_DECAY_WINDOW_MS } from './intel';
@@ -402,6 +403,7 @@ function scoreAttack(
 
     for (const territory of Object.values(world.territories)) {
       if (!territory.ownerId || territory.ownerId === factionId) continue;
+      if (areAllied(world, factionId, territory.ownerId)) continue;
       if (!visibility.territoryIds.has(territory.id)) continue;
 
       const visibleDefenders = Object.values(world.units).filter(

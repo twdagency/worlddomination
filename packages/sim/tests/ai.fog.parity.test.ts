@@ -167,7 +167,7 @@ describe('fog parity', () => {
   });
 
   it('allied intel sharing preserves symmetric tri-state under mirror scout positions', () => {
-    const allied = formAlliance(symmetricScoutWorld(), ALPHA, BETA, START_MS);
+    const allied = formAlliance(symmetricScoutWorld(), ALPHA, BETA, START_MS).world;
     const { world: observed } = tick(allied, [], 3_600_000);
     const withDirect = recordIntelObservations(observed);
     const withAllied = recordAlliedObservations({ ...observed, intel: withDirect });
@@ -226,7 +226,7 @@ describe('fog parity', () => {
   });
 
   it('allied and treaty sources merge to identical visibility states for symmetric receivers', () => {
-    const allied = formAlliance(symmetricScoutWorld(), ALPHA, BETA, START_MS);
+    const allied = formAlliance(symmetricScoutWorld(), ALPHA, BETA, START_MS).world;
     const observedAt = START_MS + 3_600_000;
     const { world: ticked } = tick(allied, [], 3_600_000);
     const base = { ...ticked, nowMs: observedAt };

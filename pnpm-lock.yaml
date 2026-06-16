@@ -95,6 +95,10 @@ importers:
         version: link:../sim
 
   packages/sim:
+    dependencies:
+      shared:
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       tsx:
         specifier: ^4.20.3

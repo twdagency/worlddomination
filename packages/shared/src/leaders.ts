@@ -66,6 +66,22 @@ export const LEADERS: Leader[] = [
     tempo: 'slow',
   },
   {
+    id: 'leader-suleiman',
+    name: 'Suleiman',
+    region: 'Ottoman Empire',
+    era: 'Early Modern',
+    weights: {
+      aggression: 5,
+      risk: 4,
+      economy: 9,
+      expansion: 7,
+      scoutingPriority: 'defensive',
+      diplomaticPosture: 'opportunist',
+    },
+    traits: { incomeMult: 1.2, seaSpeedMult: 1.15, homeDefenseCombatMod: 1.1 },
+    tempo: 'slow',
+  },
+  {
     id: 'leader-philip',
     name: 'Philip II',
     region: 'Spain',

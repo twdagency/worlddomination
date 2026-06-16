@@ -203,6 +203,7 @@ export function resolveArrivals(
       territoryId,
       at,
       stanceOnArrival,
+      unit.transit.fromId,
     );
 
     units = resolution.units;

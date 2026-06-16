@@ -86,10 +86,10 @@ export function playerProposeAlliance(
 
   const acceptanceScore = scoreAllianceAcceptance(world, targetId, playerId);
   if (acceptanceScore >= ALLIANCE_ACCEPT_THRESHOLD) {
-    const next = formAlliance(world, playerId, targetId, atMs);
+    const formed = formAlliance(world, playerId, targetId, atMs);
     return {
-      world: next,
-      events: [allianceFormedEvent(playerId, targetId, atMs, playerId)],
+      world: formed.world,
+      events: [...formed.events, allianceFormedEvent(playerId, targetId, atMs, playerId)],
     };
   }
 
@@ -174,8 +174,9 @@ export function playerAcceptProposal(
   const events: SimEvent[] = [];
 
   if (proposal.type === 'alliance') {
-    next = formAlliance(next, proposal.from, proposal.to, atMs);
-    events.push(allianceFormedEvent(proposal.from, proposal.to, atMs, proposal.from));
+    const formed = formAlliance(next, proposal.from, proposal.to, atMs);
+    next = formed.world;
+    events.push(...formed.events, allianceFormedEvent(proposal.from, proposal.to, atMs, proposal.from));
   } else {
     const territoryIds = proposal.scope?.territoryIds ?? [];
     if (territoryIds.length !== 1) return { world, events: [] };

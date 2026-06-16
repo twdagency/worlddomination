@@ -170,7 +170,7 @@ describe('treaty intel emission', () => {
 
   it('alliance and treaty between same parties accumulate both source types', () => {
     const base = createSprint4World(START_MS);
-    let world = formAlliance(base, GENGHIS, CAESAR, START_MS);
+    let world = formAlliance(base, GENGHIS, CAESAR, START_MS).world;
     world = formTreaty(world, {
       partyA: GENGHIS,
       partyB: CAESAR,
@@ -243,7 +243,7 @@ describe('treaty intel emission', () => {
 
   it('tick runs direct, allied, then treaty emission in order', () => {
     const world = formTreaty(
-      formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS),
+      formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world,
       {
         partyA: GENGHIS,
         partyB: CAESAR,

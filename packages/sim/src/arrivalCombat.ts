@@ -7,6 +7,7 @@ import {
   resolveBattle,
   sidePower,
 } from './combat';
+import { areAllied } from './diplomacy';
 import { recordDestroyedScoutIntel, ensureIntelStore } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import {
@@ -55,6 +56,50 @@ function relocateFleeingDefenders(
   return { units: next, fallbackId, destroyed };
 }
 
+function resolvePeacefulAllyArrival(
+  world: WorldState,
+  arrivingUnit: Unit,
+  territoryId: Id,
+  fromTerritoryId: Id | undefined,
+  at: Millis,
+): ArrivalResolution {
+  const events: SimEvent[] = [];
+  const units = { ...world.units };
+  const allyFactionId = world.territories[territoryId]?.ownerId;
+  const originId = fromTerritoryId ?? arrivingUnit.locationId;
+
+  if (originId) {
+    units[arrivingUnit.id] = {
+      ...arrivingUnit,
+      locationId: originId,
+      transit: undefined,
+    };
+  } else {
+    delete units[arrivingUnit.id];
+  }
+
+  if (allyFactionId) {
+    events.push({
+      kind: 'allyArrivalPeaceful',
+      at,
+      factionId: arrivingUnit.ownerId,
+      allyFactionId,
+      territoryId,
+      fromTerritoryId: originId ?? territoryId,
+      unitId: arrivingUnit.id,
+      importance: 'medium',
+    });
+  }
+
+  return {
+    units,
+    territories: { ...world.territories },
+    rng: world.rng,
+    intel: ensureIntelStore(world),
+    events,
+  };
+}
+
 /**
  * After a unit arrives at `territoryId`, resolve hostile confrontation,
  * retreat, or peaceful occupation. Pure.
@@ -65,6 +110,7 @@ export function resolveHostileArrival(
   territoryId: Id,
   at: Millis,
   stanceOnArrival: 'assault' | 'secure' | 'hold',
+  fromTerritoryId?: Id,
 ): ArrivalResolution {
   const events: SimEvent[] = [];
   let units = { ...world.units, [arrivingUnit.id]: arrivingUnit };
@@ -82,6 +128,20 @@ export function resolveHostileArrival(
 
   const isEnemyTerritory =
     defenderFactionId !== undefined && defenderFactionId !== attackerId;
+
+  if (
+    isEnemyTerritory &&
+    defenderFactionId &&
+    areAllied(world, attackerId, defenderFactionId)
+  ) {
+    return resolvePeacefulAllyArrival(
+      world,
+      arrivingUnit,
+      territoryId,
+      fromTerritoryId,
+      at,
+    );
+  }
 
   if (!isEnemyTerritory) {
     if (territory.ownerId === undefined) {

@@ -79,7 +79,9 @@ INTEL — Scouts report Genghis forces massing at Berlin"
 
 exports[`sprint 5.5 integration > sprint5: 24h cold-play player digest > sprint5-cold-play-24h-digest 1`] = `
 "Genghis — tick 1700971600000
-DIPLOMACY — Elizabeth and Genghis have formed an alliance.
+DIPLOMACY — Suleiman and Genghis have formed an alliance.
+Suleiman — tick 1700971600000
+DIPLOMACY — Suleiman proposes alliance. (Expires in 6h.)
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700971600000
 INTEL — Caesar forces advancing from Bucharest toward Belgrade
@@ -88,19 +90,30 @@ INTEL — Genghis forces arrived at Belgrade — contact expected
 Bloody clash at Belgrade: Elizabeth prevailed over Genghis (3 casualties, enemy 6 fallen).
 Elizabeth — tick 1700993200000
 DIPLOMACY — You declined alliance with Genghis.
+DIPLOMACY — You declined alliance with Suleiman.
 Genghis — tick 1700993200000
-DIPLOMACY — Genghis has broken alliance with Elizabeth.
+DIPLOMACY — Genghis has broken alliance with Suleiman.
+Suleiman — tick 1700993200000
+DIPLOMACY — Suleiman proposes alliance. (Expires in 6h.)
 Caesar — tick 1700993200000
 INTEL — Caesar forces advancing from Bucharest toward Belgrade
 INTEL — Genghis forces advancing from Sofia toward Belgrade
 INTEL — Genghis forces arrived at Belgrade — contact expected
 Elizabeth at Belgrade — Genghis annihilated, no casualties.
+Elizabeth — tick 1701014800000
+DIPLOMACY — You declined alliance with Suleiman.
+Suleiman — tick 1701014800000
+DIPLOMACY — Suleiman proposes alliance. (Expires in 6h.)
 Caesar — tick 1701014800000
 INTEL — Caesar forces advancing from Bucharest toward Belgrade
 Genghis — tick 1701014800000
 INTEL — Genghis forces advancing from Sofia toward Belgrade
 INTEL — Genghis forces arrived at Belgrade — contact expected
 Elizabeth at Belgrade — Genghis annihilated, no casualties.
+Elizabeth — tick 1701036400000
+DIPLOMACY — You declined alliance with Suleiman.
+Suleiman — tick 1701036400000
+DIPLOMACY — Suleiman proposes alliance. (Expires in 6h.)
 Caesar — tick 1701036400000
 INTEL — Caesar forces advancing from Bucharest toward Belgrade
 Genghis — tick 1701036400000
@@ -110,10 +123,10 @@ INCOME — funding 14201.56186860377"
 
 exports[`sprint 5.5 integration > sprint5: live → stale → unknown arc on Istanbul > sprint5-intel-arc-digest 1`] = `
 "Elizabeth — tick 1700953600000
-INTEL — Scouts report Elizabeth forces massing at Istanbul
+INTEL — Scouts report Suleiman forces massing at Istanbul
 Elizabeth — tick 1700953600000
 DEPARTURE — Your forces advancing from Belgrade toward Istanbul
 ARRIVAL — Your forces arrived at Istanbul — contact expected
 Elizabeth — tick 1701440385424.6687
-INTEL — Scouts report Elizabeth forces massing at Istanbul"
+INTEL — Scouts report Suleiman forces massing at Istanbul"
 `;

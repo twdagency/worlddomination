@@ -133,7 +133,7 @@ describe('AI diplomatic scoring', () => {
   });
 
   it('posture modulates break scores for identical conditions', () => {
-    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
     const opportunist = scoreAllianceBreak(
       withLeaderPosture(allied, 'leader-genghis', 'opportunist'),
       GENGHIS,
@@ -224,7 +224,7 @@ describe('AI diplomatic scoring', () => {
   });
 
   it('AI break path applies reputation penalties from Phase 4a', () => {
-    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, BRITAIN, START_MS);
+    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, BRITAIN, START_MS).world;
     const dominantAlly: WorldState = {
       ...allied,
       units: {

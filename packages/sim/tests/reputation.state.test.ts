@@ -55,7 +55,7 @@ describe('reputation state', () => {
   });
 
   it('alliance-break penalty applies betrayed -40 and observer -20 without touching breaker view', () => {
-    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
     const broken = breakAlliance(allied, GENGHIS, CAESAR);
 
     expect(broken.reputation[CAESAR][GENGHIS]).toBe(REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED);
@@ -69,11 +69,11 @@ describe('reputation state', () => {
   });
 
   it('repeated identical break sequences produce identical reputation', () => {
-    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
 
     const first = breakAlliance(allied, GENGHIS, CAESAR);
     const second = breakAlliance(
-      formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS),
+      formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world,
       GENGHIS,
       CAESAR,
     );

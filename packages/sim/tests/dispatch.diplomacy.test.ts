@@ -181,7 +181,7 @@ describe('dispatch diplomacy', () => {
   });
 
   it('emits allied intel dispatch lines to the allied receiver after tick', () => {
-    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, BRITAIN, START_MS);
+    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, BRITAIN, START_MS).world;
     const observedAt = START_MS + 2_000;
     const withIntel = {
       ...allied,

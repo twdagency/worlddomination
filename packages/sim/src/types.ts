@@ -457,6 +457,26 @@ export type SimEvent =
       at: Millis;
       factionId: Id;
       importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allyArrivalPeaceful';
+      at: Millis;
+      factionId: Id;
+      allyFactionId: Id;
+      territoryId: Id;
+      fromTerritoryId: Id;
+      unitId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'dispatchCancelledByAlliance';
+      at: Millis;
+      factionId: Id;
+      allyFactionId: Id;
+      unitId: Id;
+      fromTerritoryId: Id;
+      toTerritoryId: Id;
+      importance?: DispatchImportance;
     };
 
 export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty';

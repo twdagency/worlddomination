@@ -1,4 +1,5 @@
 export { LEADERS, LEADERS_BY_ID } from './leaders';
+export { resolvePlayerFactionId } from './playerFaction';
 export { UNIT_TYPES, UNIT_TYPES_BY_ID } from './units';
 export { createSprint1World, SPRINT1_TERRITORIES } from './scenario-sprint1';
 export { createSprint2World, SPRINT2_TERRITORIES } from './scenario-sprint2';
