@@ -13,6 +13,7 @@ export const terminal = {
   muted: '#6e7681',
   stale: '#8b949e',
   accent: '#3fb950',
+  tutorial: '#56d364',
   warning: '#d29922',
   danger: '#f85149',
   mono: 'monospace' as const,

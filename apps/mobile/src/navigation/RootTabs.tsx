@@ -5,6 +5,7 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGame } from '../game/GameContext';
 import { PersistentHeader } from '../components/PersistentHeader';
+import { TutorialBanner } from '../components/tutorial/TutorialBanner';
 import { ActionStackNavigator } from './ActionStackNavigator';
 import { DispatchesScreen } from '../screens/DispatchesScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -38,7 +39,7 @@ function tabBarIcon(iconName: string, activeIconName: string) {
 }
 
 export function RootTabs() {
-  const { ready } = useGame();
+  const { ready, shouldShowBanner, currentBeatCopy, dismissBanner } = useGame();
 
   if (!ready) {
     return (
@@ -53,6 +54,9 @@ export function RootTabs() {
     <NavigationContainer theme={navTheme}>
       <View style={styles.appShell}>
         <PersistentHeader />
+        {shouldShowBanner && currentBeatCopy ? (
+          <TutorialBanner copy={currentBeatCopy} onDismiss={dismissBanner} />
+        ) : null}
         <Tab.Navigator
           initialRouteName="Dashboard"
           screenOptions={{

@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import type { SimEvent, TransitOrder, WorldState } from 'sim';
+import type { BeatCopy } from 'shared';
+import type { SimEvent, TransitOrder, TutorialBeatId, WorldState } from 'sim';
 import {
   hasPendingProposalBetween,
   nextEventMs,
@@ -45,8 +46,19 @@ import {
   saveScenarioId,
   saveWorld,
 } from '../storage/worldStorage';
+import { selectTutorialState } from './tutorialSelector';
 
-interface GameContextValue {
+export interface TutorialContextSlice {
+  isTutorialActive: boolean;
+  currentBeat: TutorialBeatId | null;
+  currentBeatCopy: BeatCopy | null;
+  isBannerDismissed: boolean;
+  shouldShowBanner: boolean;
+  dismissBanner: () => void;
+  restoreBanner: () => void;
+}
+
+interface GameContextValue extends TutorialContextSlice {
   ready: boolean;
   world: WorldState;
   dispatches: SimEvent[];
@@ -95,12 +107,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [awayMs, setAwayMs] = useState(0);
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
+  const [lastDismissedBeat, setLastDismissedBeat] = useState<TutorialBeatId | null>(null);
   const worldRef = useRef(world);
   const dispatchesRef = useRef(dispatches);
   worldRef.current = world;
   dispatchesRef.current = dispatches;
 
   const hasPendingEvents = nextEventMs(world) !== null;
+
+  const tutorialState = useMemo(
+    () => selectTutorialState({ world, lastDismissedBeat }),
+    [world, lastDismissedBeat],
+  );
+
+  const dismissBanner = useCallback(() => {
+    const beat = worldRef.current.tutorial?.currentBeat;
+    if (beat) setLastDismissedBeat(beat);
+  }, []);
+
+  const restoreBanner = useCallback(() => {
+    setLastDismissedBeat(null);
+  }, []);
 
   const clearActionFeedback = useCallback(() => {
     setActionFeedback(null);
@@ -278,6 +305,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setAwayMs(0);
     setDispatches([]);
     setActionFeedback(null);
+    setLastDismissedBeat(null);
     setWorld(fresh);
     await clearCampaignStorage();
     await Promise.all([
@@ -366,6 +394,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         wallNowMs,
         actionFeedback,
         clearActionFeedback,
+        isTutorialActive: tutorialState.isActive,
+        currentBeat: tutorialState.currentBeat,
+        currentBeatCopy: tutorialState.currentBeatCopy,
+        isBannerDismissed:
+          tutorialState.currentBeat !== null &&
+          tutorialState.currentBeat === lastDismissedBeat,
+        shouldShowBanner: tutorialState.shouldShowBanner,
+        dismissBanner,
+        restoreBanner,
         confirmMove,
         issueBuild: issueBuildOrder,
         issueUpgradeInfra: issueUpgrade,

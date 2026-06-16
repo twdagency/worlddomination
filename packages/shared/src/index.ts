@@ -10,3 +10,4 @@ export {
   PLAYER_TUTORIAL_FACTION_ID,
   TUTORIAL_HOME_TERRITORY_ID,
 } from 'sim';
+export { TUTORIAL_BEAT_COPY, type BeatCopy } from './tutorialBeatCopy';
