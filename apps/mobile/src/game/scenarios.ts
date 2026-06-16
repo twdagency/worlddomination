@@ -1,10 +1,19 @@
-import { createSprint4World, createSprint5World } from 'shared';
+import { createSprint4World, createSprint5World, createTutorialWorld } from 'shared';
 import type { WorldState } from 'sim';
 
 export type DevScenarioId = 'sprint-4-ai-world' | 'sprint-5-legibility-demo';
 
+export type ScenarioId = DevScenarioId | 'tutorial';
+
 export interface DevScenario {
   id: DevScenarioId;
+  label: string;
+  blurb: string;
+  create: (nowMs?: number) => WorldState;
+}
+
+export interface Scenario {
+  id: ScenarioId;
   label: string;
   blurb: string;
   create: (nowMs?: number) => WorldState;
@@ -25,13 +34,33 @@ export const DEV_SCENARIOS: readonly DevScenario[] = [
   },
 ] as const;
 
+const TUTORIAL_SCENARIO: Scenario = {
+  id: 'tutorial',
+  label: 'Tutorial — Channel March',
+  blurb: 'London food pinch · Paris assault · Burgundy treaty path',
+  create: createTutorialWorld,
+};
+
+export const SCENARIOS: readonly Scenario[] = [...DEV_SCENARIOS, TUTORIAL_SCENARIO];
+
 export const DEFAULT_SCENARIO_ID: DevScenarioId = 'sprint-4-ai-world';
 
+export function getScenarioFactory(id: ScenarioId): (nowMs?: number) => WorldState {
+  const scenario = SCENARIOS.find((entry) => entry.id === id);
+  if (!scenario) {
+    throw new Error(`Unknown scenario: ${id}`);
+  }
+  return scenario.create;
+}
+
 export function createWorldForScenario(id: DevScenarioId, nowMs: number = Date.now()): WorldState {
-  const scenario = DEV_SCENARIOS.find((entry) => entry.id === id);
-  return (scenario ?? DEV_SCENARIOS[0]).create(nowMs);
+  return getScenarioFactory(id)(nowMs);
 }
 
 export function isDevScenarioId(value: string): value is DevScenarioId {
   return DEV_SCENARIOS.some((entry) => entry.id === value);
+}
+
+export function isScenarioId(value: string): value is ScenarioId {
+  return SCENARIOS.some((entry) => entry.id === value);
 }

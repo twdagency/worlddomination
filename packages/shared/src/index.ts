@@ -5,3 +5,4 @@ export { createSprint2World, SPRINT2_TERRITORIES } from './scenario-sprint2';
 export { createSprint3World, SPRINT3_TERRITORY_OVERRIDES } from './scenario-sprint3';
 export { createSprint4World, SPRINT4_TERRITORIES } from './scenario-sprint4';
 export { createSprint5World, SPRINT5_TERRITORIES } from './scenario-sprint5';
+export { createTutorialWorld, TUTORIAL_TERRITORIES } from './scenario-tutorial';

@@ -81,6 +81,38 @@ export const LEADERS: Leader[] = [
     traits: { homeDefenseCombatMod: 1.15, incomeMult: 1.1, buildTimeMult: 1.05 },
     tempo: 'slow',
   },
+  {
+    id: 'leader-henry-iv',
+    name: 'Henry IV',
+    region: 'France',
+    era: 'Early Modern',
+    weights: {
+      aggression: 5,
+      risk: 5,
+      economy: 6,
+      expansion: 6,
+      scoutingPriority: 'defensive',
+      diplomaticPosture: 'opportunist',
+    },
+    traits: {},
+    tempo: 'steady',
+  },
+  {
+    id: 'leader-charles-bold',
+    name: 'Charles the Bold',
+    region: 'Burgundy',
+    era: 'Medieval',
+    weights: {
+      aggression: 6,
+      risk: 6,
+      economy: 5,
+      expansion: 5,
+      scoutingPriority: 'defensive',
+      diplomaticPosture: 'loyal',
+    },
+    traits: {},
+    tempo: 'steady',
+  },
 ];
 
 export const LEADERS_BY_ID: Record<string, Leader> = Object.fromEntries(
