@@ -355,6 +355,13 @@ Every new persisted `WorldState` field ships with:
 
 This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
 
+## Process — canon-shift audit
+
+When upstream canon changes (e.g. Sprint 8 Option β: France defeated in Beat 2
+regardless of pinch path), re-audit downstream design decisions that assumed the
+old canon. Sprint 7b deferred governance skip on non-conquest pinch paths; that
+decision became wrong after Option β and was fixed in Sprint 8.5 Phase 1.
+
 ## Sprint 7b tutorial follow-ups
 
 ### Sprint 8 candidates
@@ -367,9 +374,9 @@ This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
   picker for New Game (tutorial + sandbox scenarios) deferred.
 
 ### Sprint 9 candidates (content depth)
-- **Dilemma triggers for treaty/infra pinch paths** — conquest path enqueues Foreign
-  Rule; treaty and food-infra paths auto-complete governance via side effect. Add
-  dilemmas such as "Treaty Terms" and "Foreign Investment."
+- ~~**Dilemma triggers for treaty/infra pinch paths**~~ — **Resolved Sprint 8.5 Phase 1.**
+  All pinch paths enqueue Foreign Rule per Option β; no separate Treaty Terms /
+  Foreign Investment dilemmas for Beat 4 completion.
 - **Treaty pinch UX feedback (Sprint 8.5 cold-play)** — treaty offer/decline path
   resolves Beat 4 without clear player feedback; coordinate with dilemma surfacing
   fix (#14) and Sprint 9 dispatch/UX polish.

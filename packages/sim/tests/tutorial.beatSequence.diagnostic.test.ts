@@ -65,13 +65,14 @@ describe('tutorial beat sequence diagnostics (#14)', () => {
     expect(hasForeignRulePending(afterPinch)).toBe(true);
   });
 
-  it('DIAGNOSTIC: food-infra pinch path skips dilemma and auto-completes governance', () => {
+  it('DIAGNOSTIC: food-infra pinch path enqueues foreign-rule without auto-completing governance', () => {
+    const base = worldAtPinchBeat();
     const world = {
-      ...worldAtPinchBeat(),
+      ...base,
       factions: {
-        ...worldAtPinchBeat().factions,
+        ...base.factions,
         [PLAYER_TUTORIAL_FACTION_ID]: {
-          ...worldAtPinchBeat().factions[PLAYER_TUTORIAL_FACTION_ID]!,
+          ...base.factions[PLAYER_TUTORIAL_FACTION_ID]!,
           funding: 50_000,
         },
       },
@@ -84,13 +85,15 @@ describe('tutorial beat sequence diagnostics (#14)', () => {
     const afterPinch = tick(world, [homeUpgrade], 0);
 
     expect(afterPinch.world.tutorial?.completedBeats).toContain('pinch');
-    expect(hasForeignRulePending(afterPinch.world)).toBe(false);
-    expect(afterPinch.world.tutorial?.completedBeats).toContain('governance');
-    expect(afterPinch.world.tutorial?.completedBeats).toContain('handoff');
-    expect(afterPinch.world.tutorial?.currentBeat).toBeNull();
+    expect(hasForeignRulePending(afterPinch.world)).toBe(true);
+    expect(afterPinch.world.tutorial?.completedBeats).not.toContain('governance');
+    expect(afterPinch.world.tutorial?.currentBeat).toBe('governance');
+    expect(afterPinch.events.some((event) => event.kind === 'tutorialHandoffReady')).toBe(
+      false,
+    );
   });
 
-  it('DIAGNOSTIC: treaty pinch path skips dilemma and auto-completes governance', () => {
+  it('DIAGNOSTIC: treaty pinch path enqueues foreign-rule without auto-completing governance', () => {
     const world = worldAtPinchBeat();
     const treatyFormed: SimEventDraft = {
       kind: 'treatyFormed',
@@ -103,19 +106,22 @@ describe('tutorial beat sequence diagnostics (#14)', () => {
     const afterPinch = evaluateBeatProgression(world, [treatyFormed]);
 
     expect(afterPinch.world.tutorial?.completedBeats).toContain('pinch');
-    expect(hasForeignRulePending(afterPinch.world)).toBe(false);
-    expect(afterPinch.world.tutorial?.completedBeats).toContain('governance');
-    expect(afterPinch.world.tutorial?.completedBeats).toContain('handoff');
-    expect(afterPinch.world.tutorial?.currentBeat).toBeNull();
+    expect(hasForeignRulePending(afterPinch.world)).toBe(true);
+    expect(afterPinch.world.tutorial?.completedBeats).not.toContain('governance');
+    expect(afterPinch.world.tutorial?.currentBeat).toBe('governance');
+    expect(afterPinch.events.some((event) => event.kind === 'tutorialHandoffReady')).toBe(
+      false,
+    );
   });
 
-  it('DIAGNOSTIC: handoff fires immediately after non-conquest pinch (skips Beat 5 UX)', () => {
+  it('DIAGNOSTIC: handoff does not fire until governance completes on non-conquest pinch', () => {
+    const base = worldAtPinchBeat();
     const world = {
-      ...worldAtPinchBeat(),
+      ...base,
       factions: {
-        ...worldAtPinchBeat().factions,
+        ...base.factions,
         [PLAYER_TUTORIAL_FACTION_ID]: {
-          ...worldAtPinchBeat().factions[PLAYER_TUTORIAL_FACTION_ID]!,
+          ...base.factions[PLAYER_TUTORIAL_FACTION_ID]!,
           funding: 50_000,
         },
       },
@@ -127,11 +133,12 @@ describe('tutorial beat sequence diagnostics (#14)', () => {
     );
     const afterPinch = tick(world, [homeUpgrade], 0);
 
+    expect(hasForeignRulePending(afterPinch.world)).toBe(true);
+    expect(afterPinch.world.tutorial?.currentBeat).toBe('governance');
     expect(
       afterPinch.events.some((event) => event.kind === 'tutorialHandoffReady'),
-    ).toBe(true);
-    expect(afterPinch.world.tutorial?.completedBeats).toContain('handoff');
-    expect(afterPinch.world.tutorial?.currentBeat).toBeNull();
+    ).toBe(false);
+    expect(afterPinch.world.tutorial?.completedBeats).not.toContain('handoff');
   });
 
   it('DIAGNOSTIC: handoff does not fire before governance completes on conquest path', () => {
