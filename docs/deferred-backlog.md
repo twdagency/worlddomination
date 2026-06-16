@@ -370,6 +370,9 @@ This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
 - **Dilemma triggers for treaty/infra pinch paths** — conquest path enqueues Foreign
   Rule; treaty and food-infra paths auto-complete governance via side effect. Add
   dilemmas such as "Treaty Terms" and "Foreign Investment."
+- **Treaty pinch UX feedback (Sprint 8.5 cold-play)** — treaty offer/decline path
+  resolves Beat 4 without clear player feedback; coordinate with dilemma surfacing
+  fix (#14) and Sprint 9 dispatch/UX polish.
 - **Dilemma consequence preview UI tuning** — Phase 6 ships Choose without spelling out
   "+200 gold, -30 standing" on option cards (legibility B: constraints visible,
   consequences hinted).
