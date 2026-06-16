@@ -439,6 +439,15 @@ export type SimEventKind =
       missing?: ResourceId;
       importance?: DispatchImportance;
     }
+  | {
+      kind: 'orderRejected';
+      at: Millis;
+      factionId: Id;
+      unitId: Id;
+      attemptedDestinationId: Id;
+      reason: string;
+      importance?: DispatchImportance;
+    }
   | { kind: 'procedural'; at: Millis; catalogEventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
   | { kind: 'victory'; at: Millis; factionId: Id }

@@ -403,7 +403,7 @@ function scoreAttack(
     if (!unit.locationId) continue;
 
     for (const territory of Object.values(world.territories)) {
-      if (!territory.ownerId || territory.ownerId === factionId) continue;
+      if (!territory.ownerId || territory.ownerId === factionId) continue; // never assault own territory
       if (areAllied(world, factionId, territory.ownerId)) continue;
       if (!visibility.territoryIds.has(territory.id)) continue;
 

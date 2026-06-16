@@ -121,10 +121,6 @@ describe('tutorial beat sequence invariants (Sprint 8.5)', () => {
     expect(progressed.events.some((event) => event.kind === 'tutorialHandoffReady')).toBe(true);
   });
 
-  it.skip('player cannot assault own territory — sim rejects invalid assault orders', () => {
-    // Phase 2: applyMoveOrders or validation layer rejects assault to friendly-owned dest.
-  });
-
   it.skip('income computation skips territories captured in the same tick', () => {
     // Phase 3: accrueEconomy runs after resolveArrivals, or excludes lost territories.
   });

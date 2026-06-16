@@ -17,6 +17,7 @@ import { getPlayerVisibleTerritory,
 } from '../game/playerView';
 import {
   classifyDestination,
+  filterOrderDestinationsForStance,
   type DestinationStance,
 } from '../game/orderDestinations';
 import { TerritoryOwnerLabel } from '../components/TerritoryOwnerLabel';
@@ -80,10 +81,10 @@ export function OrderScreen() {
   }, [isMovementBeat, movableUnits]);
 
   const unit = movableUnits.find((u) => u.id === unitId);
-  const availableDestinations = useMemo(
-    () => playerOrderDestinations(world, unit?.locationId),
-    [world, unit?.locationId],
-  );
+  const availableDestinations = useMemo(() => {
+    const destinations = playerOrderDestinations(world, unit?.locationId);
+    return filterOrderDestinationsForStance(world, playerId, stance, destinations);
+  }, [world, unit?.locationId, playerId, stance]);
 
   useEffect(() => {
     if (presetLocked) return;
