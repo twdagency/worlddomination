@@ -1,0 +1,45 @@
+import type { Dilemma } from 'shared';
+
+export const FOREIGN_RULE_DILEMMA: Dilemma = {
+  id: 'foreign-rule',
+  title: 'How will you rule Paris?',
+  prompt:
+    'Paris has fallen. Its people are not your own. You must decide how to administer this conquered city.',
+  options: [
+    {
+      id: 'harsh-repression',
+      label: 'Harsh repression',
+      description:
+        'Crush dissent. Extract maximum value. Other nations will note your cruelty.',
+      consequences: [
+        { kind: 'resourceDelta', resource: 'gold', amount: 200 },
+        { kind: 'standingDelta', amount: -30 },
+        { kind: 'reputationDelta', target: 'all-others', amount: -15 },
+      ],
+      identityShift: { tags: ['authoritarian', 'harsh'] },
+    },
+    {
+      id: 'conciliation',
+      label: 'Conciliation and integration',
+      description:
+        'Win hearts. Build loyalty. The path is slow but the foundation is solid.',
+      consequences: [
+        { kind: 'resourceDelta', resource: 'gold', amount: 50 },
+        { kind: 'standingDelta', amount: 20 },
+        { kind: 'reputationDelta', target: 'all-others', amount: 10 },
+      ],
+      identityShift: { tags: ['liberal', 'merciful'] },
+    },
+    {
+      id: 'exploit-extract',
+      label: 'Exploit and extract',
+      description: 'Strip the city of its wealth. Worry about consequences later.',
+      consequences: [
+        { kind: 'resourceDelta', resource: 'gold', amount: 400 },
+        { kind: 'standingDelta', amount: -40 },
+        { kind: 'reputationDelta', target: 'all-others', amount: -25 },
+      ],
+      identityShift: { tags: ['mercantilist', 'harsh'] },
+    },
+  ],
+};

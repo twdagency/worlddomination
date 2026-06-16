@@ -11,3 +11,9 @@ export {
   TUTORIAL_HOME_TERRITORY_ID,
 } from 'sim';
 export { TUTORIAL_BEAT_COPY, type BeatCopy } from './tutorialBeatCopy';
+export type {
+  Dilemma,
+  DilemmaOption,
+  DilemmaConsequence,
+  IdentityShift,
+} from './dilemmas';

@@ -208,6 +208,10 @@ export {
   STANDARD_TIME_MULTIPLIER,
   PLAYER_TUTORIAL_FACTION_ID,
   TUTORIAL_HOME_TERRITORY_ID,
+  TUTORIAL_PARIS_TERRITORY_ID,
+  TUTORIAL_BURGUNDY_TERRITORY_ID,
+  TUTORIAL_CALAIS_TERRITORY_ID,
+  TUTORIAL_BURGUNDY_FACTION_ID,
   createInitialTutorialState,
   markBeatComplete,
   graduateTutorial,
@@ -223,6 +227,12 @@ export {
   createBeatController,
   evaluateBeatProgression,
 } from './beatController';
+export {
+  enqueuePendingDilemma,
+  getDilemmaById,
+  resolveDilemma,
+} from './dilemmas';
+export { FOREIGN_RULE_DILEMMA } from './dilemmas/foreignRule';
 export {
   compactDispatchFeed,
   renderCompactDigestText,

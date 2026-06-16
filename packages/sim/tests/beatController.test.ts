@@ -106,20 +106,11 @@ describe('beat controller', () => {
     expect(afterSecond.tutorial?.completedBeats).toEqual(['movement']);
   });
 
-  it('does not evaluate later-beat predicates while movement is current', () => {
+  it('later-beat predicates do not fire during movement', () => {
     const world = createTutorialWorld(START_MS);
     const next = controller.evaluate(buildStartedEvent(), world);
     expect(next.tutorial?.currentBeat).toBe('movement');
     expect(next.tutorial?.completedBeats).toEqual([]);
-  });
-
-  it('stub predicates for beats 2–6 return false in Phase 3', () => {
-    const world = createTutorialWorld(START_MS);
-    const probe = buildStartedEvent();
-    for (const predicate of TUTORIAL_BEAT_PREDICATES) {
-      if (predicate.beat === 'movement') continue;
-      expect(predicate.isComplete(probe, world)).toBe(false);
-    }
   });
 
   it('tick integration completes movement beat on London → Paris arrival', () => {
@@ -138,7 +129,8 @@ describe('beat controller', () => {
     const { world: afterMarch } = tick(world, [order], travelMs);
 
     expect(afterMarch.tutorial?.completedBeats).toContain('movement');
-    expect(afterMarch.tutorial?.currentBeat).toBe('combat');
+    expect(afterMarch.tutorial?.completedBeats).toContain('combat');
+    expect(afterMarch.tutorial?.currentBeat).toBe('economy');
   });
 
   it('determinism: identical worlds and event sequences yield identical tutorial states', () => {

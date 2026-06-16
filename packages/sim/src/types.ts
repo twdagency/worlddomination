@@ -158,6 +158,8 @@ export interface Faction {
   policies?: Policies;
   diplomacy?: Record<Id, DiplomacyState>;
   tension?: Record<Id, number>;
+  /** Accumulated identity tags from dilemma resolutions. */
+  identityTags?: string[];
 }
 
 export type Order =
@@ -419,7 +421,37 @@ export type SimEvent =
   | { kind: 'procedural'; at: Millis; eventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
   | { kind: 'victory'; at: Millis; factionId: Id }
-  | { kind: 'espionage'; at: Millis; report: string; exposed: boolean };
+  | { kind: 'espionage'; at: Millis; report: string; exposed: boolean }
+  | {
+      kind: 'territoryCaptured';
+      at: Millis;
+      territoryId: Id;
+      previousOwnerId?: Id;
+      newOwnerId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'buildCompleted';
+      at: Millis;
+      ownerId: Id;
+      territoryId: Id;
+      buildType: 'infrastructure' | 'food-infrastructure' | 'unit';
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'dilemmaResolved';
+      at: Millis;
+      factionId: Id;
+      dilemmaId: Id;
+      optionId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tutorialHandoffReady';
+      at: Millis;
+      factionId: Id;
+      importance?: DispatchImportance;
+    };
 
 export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty';
 
@@ -489,6 +521,12 @@ export interface TutorialState {
   graduatedAt: Millis | null;
 }
 
+export interface PendingDilemma {
+  dilemmaId: Id;
+  factionId: Id;
+  offeredAt: Millis;
+}
+
 export interface WorldState {
   nowMs: Millis;
   day: number;
@@ -504,6 +542,7 @@ export interface WorldState {
   treaties: Treaty[];
   reputation: Reputation;
   pendingProposals: PendingProposal[];
+  pendingDilemmas?: PendingDilemma[];
   scenarioId: Id;
   victoryThreshold?: number;
   /** Undefined on non-tutorial worlds. Populated by tutorial scenario or migration backfill. */

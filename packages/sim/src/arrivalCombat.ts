@@ -87,6 +87,14 @@ export function resolveHostileArrival(
     if (territory.ownerId === undefined) {
       territories[territoryId] = { ...territory, ownerId: attackerId };
       events.push({
+        kind: 'territoryCaptured',
+        at,
+        territoryId,
+        previousOwnerId: undefined,
+        newOwnerId: attackerId,
+        importance: 'high',
+      });
+      events.push({
         kind: 'secured',
         at,
         territoryId,
@@ -182,6 +190,14 @@ export function resolveHostileArrival(
       units[arrivingUnit.id] = { ...survivor, locationId: territoryId };
     }
     events.push({
+      kind: 'territoryCaptured',
+      at,
+      territoryId,
+      previousOwnerId: defenderFactionId,
+      newOwnerId: attackerId,
+      importance: 'high',
+    });
+    events.push({
       kind: 'secured',
       at,
       territoryId,
@@ -250,6 +266,14 @@ export function resolveHostileArrival(
   });
 
   if (battle.winnerId === attackerId) {
+    events.push({
+      kind: 'territoryCaptured',
+      at,
+      territoryId,
+      previousOwnerId: defenderFactionId,
+      newOwnerId: attackerId,
+      importance: 'high',
+    });
     events.push({
       kind: 'secured',
       at,

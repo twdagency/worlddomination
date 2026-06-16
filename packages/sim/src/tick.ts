@@ -128,7 +128,9 @@ export function tick(
   // 3. recordTreatyObservations
   // 4. emitIntelReportEvents
   // 5. evaluateBeatProgression ← runs here
-  next = evaluateBeatProgression(next, events);
+  const progression = evaluateBeatProgression(next, events);
+  next = progression.world;
+  events.push(...progression.events);
 
   return { world: next, events, accrued: economy.accrued };
 }

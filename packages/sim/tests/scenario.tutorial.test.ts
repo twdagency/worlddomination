@@ -65,11 +65,11 @@ describe('scenario tutorial', () => {
 
   it('food pinch: London scarce, Burgundy surplus, Paris limited conquest gain', () => {
     const world = createTutorialWorld(START_MS);
-    expect(world.territories['territory-london-tutorial']?.resources.food).toBe(30);
+    expect(world.territories['territory-london-tutorial']?.resources.food).toBe(15);
     expect(world.territories['territory-burgundy-tutorial']?.resources.food).toBeGreaterThanOrEqual(
       100,
     );
-    expect(world.territories['territory-paris-tutorial']?.resources.food).toBeLessThanOrEqual(30);
+    expect(world.territories['territory-paris-tutorial']?.resources.food).toBeLessThanOrEqual(15);
   });
 
   it('Burgundy and Calais share owner for treaty path', () => {
