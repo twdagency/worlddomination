@@ -1,6 +1,11 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { ActionMenuScreen } from './tabConfig';
 
+export type HomeStackParamList = {
+  DashboardHome: undefined;
+  Dispatches: { dispatchId?: string; unreadOnly?: boolean } | undefined;
+};
+
 export type ActionStackParamList = {
   ActionMenu: undefined;
   Order: undefined;
@@ -10,8 +15,7 @@ export type ActionStackParamList = {
 };
 
 export type RootTabParamList = {
-  Dashboard: undefined;
-  Dispatches: undefined;
+  Dashboard: NavigatorScreenParams<HomeStackParamList> | undefined;
   World: undefined;
   Actions: NavigatorScreenParams<ActionStackParamList> | undefined;
 };

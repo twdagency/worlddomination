@@ -17,8 +17,13 @@ export function matchesTutorialNavTarget(
   target: DashboardScreenName,
   route: ActiveTutorialRoute,
 ): boolean {
+  if (target === 'Dispatches') {
+    return route.tab === 'Dashboard' && route.stackScreen === 'Dispatches';
+  }
+
   if (target === 'Order' || target === 'Territory' || target === 'Diplomacy' || target === 'Forces') {
     return route.tab === 'Actions' && route.stackScreen === target;
   }
+
   return route.tab === target;
 }

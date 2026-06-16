@@ -1,45 +1,71 @@
-import React, { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useRoute, type RouteProp } from '@react-navigation/native';
+import { resolveEventImportance } from 'sim';
 import { useGame } from '../game/GameContext';
-import { formatDispatchLine, buildDisplayDispatchFeed, isDispatchDetailEvent, isTimestampedDispatch } from '../game/actions';
+import {
+  buildDisplayDispatchFeed,
+  isDispatchDetailEvent,
+  isTimestampedDispatch,
+} from '../game/actions';
 import { showDevControls } from '../game/devFlag';
-import { BattleDetailCard } from '../components/BattleDetailCard';
-import { IntelSourceHint } from '../components/IntelSourceHint';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { DevScenarioSelector } from '../components/DevScenarioSelector';
+import { DispatchFeedRow } from '../components/dispatches/DispatchFeedRow';
+import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { ScrollFadeFooter } from '../components/ScrollFadeFooter';
 import { TerminalCard } from '../components/TerminalCard';
+import type { HomeStackParamList } from '../navigation/types';
 import { terminal } from '../theme/terminal';
-import { formatDateTime } from '../utils/format';
 
-function dispatchAccent(kind: string): string {
-  if (kind === 'battle') return terminal.danger;
-  if (kind === 'withdrawal') return terminal.warning;
-  if (kind === 'secured') return terminal.accent;
-  if (kind === 'income' || kind === 'production' || kind === 'buildStarted' || kind === 'infraUpgraded') return terminal.accent;
-  if (kind === 'intelReport') return terminal.text;
-  if (kind === 'buildBlocked') return terminal.warning;
-  return terminal.text;
-}
+type DispatchesRoute = RouteProp<HomeStackParamList, 'Dispatches'>;
 
 export function DispatchesScreen() {
   const { world, dispatches, awayMs } = useGame();
+  const route = useRoute<DispatchesRoute>();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const listRef = useRef<FlatList>(null);
+
   const recent = [...dispatches].filter(isTimestampedDispatch);
-  const feed = buildDisplayDispatchFeed(world, recent, awayMs).reverse();
+  const feed = useMemo(() => {
+    const items = buildDisplayDispatchFeed(world, recent, awayMs).reverse();
+    if (!route.params?.unreadOnly) return items;
+    return items.filter((item) => resolveEventImportance(world, item.event) === 'high');
+  }, [world, recent, awayMs, route.params?.unreadOnly]);
+
+  const highlightIndex = useMemo(() => {
+    const dispatchId = route.params?.dispatchId;
+    if (!dispatchId) return -1;
+    return feed.findIndex((item) => item.event.eventId === dispatchId);
+  }, [feed, route.params?.dispatchId]);
+
+  useEffect(() => {
+    if (highlightIndex < 0) return;
+    const timer = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index: highlightIndex, animated: true, viewPosition: 0.3 });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [highlightIndex]);
 
   return (
     <View style={styles.container}>
+      <ScreenBackButton label="Home" />
+      <Text style={styles.heading}>Dispatches</Text>
+
       {showDevControls && <DevScenarioSelector />}
       {showDevControls && <DevTimeSkip />}
 
       <View style={styles.listWrap}>
         <FlatList
+          ref={listRef}
           data={feed}
           keyExtractor={(item) => item.event.eventId}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator
           persistentScrollbar
+          onScrollToIndexFailed={() => {
+            // FlatList layout may not be ready on first paint.
+          }}
           ListEmptyComponent={
             <TerminalCard>
               <Text style={styles.empty}>No dispatches yet. Issue an assault order.</Text>
@@ -50,29 +76,15 @@ export function DispatchesScreen() {
             const showDetail = isDispatchDetailEvent(item.event) && item.event.kind === 'battle';
 
             return (
-              <Pressable
+              <DispatchFeedRow
+                item={item}
+                world={world}
+                expanded={isExpanded}
+                highlighted={index === highlightIndex}
                 onPress={() =>
                   setExpandedIndex(isExpanded ? null : showDetail ? index : null)
                 }
-              >
-                <TerminalCard>
-                  {item.header && <Text style={styles.beatHeader}>{item.header}</Text>}
-                  <Text style={styles.timestamp}>{formatDateTime(item.event.at)}</Text>
-                  <Text style={[styles.line, { color: dispatchAccent(item.event.kind) }]}>
-                    {item.line}
-                  </Text>
-                  {item.event.kind === 'intelReport' && (
-                    <IntelSourceHint sources={[item.event.source]} />
-                  )}
-                  {isExpanded && item.event.kind === 'battle' && (
-                    <BattleDetailCard
-                      report={item.event.report}
-                      territoryId={item.event.territoryId}
-                      world={world}
-                    />
-                  )}
-                </TerminalCard>
-              </Pressable>
+              />
             );
           }}
         />
@@ -88,6 +100,13 @@ const styles = StyleSheet.create({
     backgroundColor: terminal.bg,
     padding: 16,
   },
+  heading: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
   listWrap: {
     flex: 1,
     position: 'relative',
@@ -95,26 +114,6 @@ const styles = StyleSheet.create({
   list: {
     paddingTop: 12,
     paddingBottom: 24,
-  },
-  timestamp: {
-    color: terminal.muted,
-    fontFamily: terminal.mono,
-    fontSize: 11,
-    marginBottom: 6,
-  },
-  beatHeader: {
-    color: terminal.accent,
-    fontFamily: terminal.mono,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  line: {
-    fontFamily: terminal.mono,
-    fontSize: 14,
-    lineHeight: 20,
   },
   empty: {
     color: terminal.muted,

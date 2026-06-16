@@ -9,10 +9,9 @@ import { useGame } from '../game/GameContext';
 import { PersistentHeader } from '../components/PersistentHeader';
 import { TutorialBanner } from '../components/tutorial/TutorialBanner';
 import { ActionStackNavigator } from './ActionStackNavigator';
+import { HomeStackNavigator } from './HomeStackNavigator';
 import { maybeCollapseTutorialBannerOnNavigation } from './TutorialNavigationBridge';
 import { rootNavigationRef } from './navigationRef';
-import { DispatchesScreen } from '../screens/DispatchesScreen';
-import { DashboardScreen } from '../screens/DashboardScreen';
 import { WorldScreen } from '../screens/WorldScreen';
 import { PRIMARY_TAB_ICONS } from './tabConfig';
 import { terminal } from '../theme/terminal';
@@ -127,12 +126,18 @@ export function RootTabs() {
               key={tab.screen}
               name={tab.screen}
               component={
-                tab.screen === 'Actions' ? ActionStackNavigator : screenForTab(tab.screen)
+                tab.screen === 'Actions'
+                  ? ActionStackNavigator
+                  : tab.screen === 'Dashboard'
+                    ? HomeStackNavigator
+                    : WorldScreen
               }
               options={{
                 title: tab.label,
                 tabBarIcon: tabBarIcon(tab.iconName, tab.activeIconName),
                 tabBarLabel: tab.label,
+                tabBarButtonTestID: tab.testID,
+                tabBarAccessibilityLabel: tab.accessibilityLabel,
               }}
             />
           ))}
@@ -140,19 +145,6 @@ export function RootTabs() {
       </View>
     </NavigationContainer>
   );
-}
-
-function screenForTab(tab: Exclude<keyof RootTabParamList, 'Actions'>) {
-  switch (tab) {
-    case 'Dashboard':
-      return DashboardScreen;
-    case 'Dispatches':
-      return DispatchesScreen;
-    case 'World':
-      return WorldScreen;
-    default:
-      return DashboardScreen;
-  }
 }
 
 const styles = StyleSheet.create({

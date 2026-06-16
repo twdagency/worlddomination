@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest';
+import { createSprint4World, resolvePlayerFactionId } from 'shared';
+import { stampEvents } from 'sim';
+import {
+  DASHBOARD_DISPATCHES_DIGEST_LIMIT,
+  getDashboardDispatchesDigest,
+  getDashboardUnreadDispatchCount,
+} from '../game/playerView';
+import { testSimEvent } from '../test/simEventFixtures';
+
+const START_MS = 1_700_000_000_000;
+
+describe('dashboard dispatches digest', () => {
+  it('ranks high-importance dispatches ahead of routine traffic', () => {
+    const world = createSprint4World(START_MS);
+    const playerId = resolvePlayerFactionId(world)!;
+    const { events } = stampEvents(world, [
+      testSimEvent({
+        kind: 'production',
+        at: START_MS + 100,
+        territoryId: 'territory-london',
+        unitTypeId: 'levy-t1',
+        count: 1,
+        factionId: playerId,
+        importance: 'low',
+      }),
+      testSimEvent({
+        kind: 'battle',
+        at: START_MS,
+        territoryId: 'territory-paris',
+        report: {
+          narrative: 'Assault on Paris',
+          attackerId: playerId,
+          defenderId: 'faction-rome',
+          attackerLosses: 0,
+          defenderLosses: 1,
+          attackerPower: 10,
+          defenderPower: 8,
+          winnerId: playerId,
+        },
+        importance: 'high',
+      }),
+    ]);
+
+    const digest = getDashboardDispatchesDigest(world, events);
+    expect(digest[0]?.eventId).toBe(events[1]?.eventId);
+    expect(digest.length).toBeLessThanOrEqual(DASHBOARD_DISPATCHES_DIGEST_LIMIT);
+  });
+
+  it('counts high-importance crisis-window dispatches as unread', () => {
+    const world = createSprint4World(START_MS);
+    const playerId = resolvePlayerFactionId(world)!;
+    const { events } = stampEvents(world, [
+      testSimEvent({
+        kind: 'battle',
+        at: START_MS,
+        territoryId: 'territory-paris',
+        report: {
+          narrative: 'Assault on Paris',
+          attackerId: playerId,
+          defenderId: 'faction-rome',
+          attackerLosses: 0,
+          defenderLosses: 1,
+          attackerPower: 10,
+          defenderPower: 8,
+          winnerId: playerId,
+        },
+        importance: 'high',
+      }),
+    ]);
+
+    expect(getDashboardUnreadDispatchCount(world, events)).toBe(1);
+  });
+});

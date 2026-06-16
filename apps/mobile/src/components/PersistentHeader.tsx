@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
-import { getDashboardUrgentCount } from '../game/playerView';
+import { getDashboardUnreadDispatchCount } from '../game/playerView';
+import { navigateTo } from '../navigation/deepLinks';
 import { rootNavigationRef } from '../navigation/navigationRef';
 import { terminal } from '../theme/terminal';
 import { formatAwayDuration, formatGameClock, formatFunding } from '../utils/format';
@@ -26,7 +27,7 @@ export function PersistentHeader() {
 
   const playerId = resolvePlayerFactionId(world);
   const faction = playerId ? world.factions[playerId] : undefined;
-  const urgentCount = getDashboardUrgentCount(world, dispatches);
+  const urgentCount = getDashboardUnreadDispatchCount(world, dispatches);
   const showTutorialRestore = isTutorialActive && isBannerDismissed;
 
   const model = buildPersistentHeaderModel({
@@ -59,10 +60,14 @@ export function PersistentHeader() {
             style={styles.urgentTap}
             onPress={() => {
               if (rootNavigationRef.isReady()) {
-                rootNavigationRef.navigate('Dashboard');
+                navigateTo(rootNavigationRef as never, {
+                  tab: 'home',
+                  screen: 'dispatches',
+                  unreadOnly: true,
+                });
               }
             }}
-            accessibilityLabel="Open dashboard urgent queue"
+            accessibilityLabel="Open unread dispatches"
           >
             {badgeLabel.length > 0 && (
               <View style={styles.badge}>

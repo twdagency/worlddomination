@@ -2,8 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { resolveDashboardNavigation, resolveDashboardTarget } from './dashboardNavigation';
 
 describe('dashboard navigation resolution', () => {
-  it('maps primary tabs directly', () => {
-    expect(resolveDashboardNavigation('Dispatches')).toEqual({ tab: 'Dispatches' });
+  it('routes dispatches through the Home stack', () => {
+    expect(resolveDashboardNavigation('Dispatches')).toEqual({
+      tab: 'Dashboard',
+      stack: { screen: 'Dispatches' },
+    });
+    expect(
+      resolveDashboardNavigation('Dispatches', { dispatchId: 'evt-battle-1' }),
+    ).toEqual({
+      tab: 'Dashboard',
+      stack: { screen: 'Dispatches', params: { dispatchId: 'evt-battle-1' } },
+    });
+  });
+
+  it('maps World tab directly', () => {
     expect(resolveDashboardNavigation('World')).toEqual({ tab: 'World' });
   });
 

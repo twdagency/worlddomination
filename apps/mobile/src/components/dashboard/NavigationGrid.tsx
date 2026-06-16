@@ -4,8 +4,7 @@ import type { DashboardNavCard, DashboardScreenName } from '../../game/playerVie
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';
 
-const SCREEN_ICONS: Record<DashboardNavCard['screen'], string> = {
-  Dispatches: '✉',
+const SCREEN_ICONS: Partial<Record<DashboardNavCard['screen'], string>> = {
   World: '◎',
   Order: '⚔',
   Diplomacy: '⚖',
@@ -31,7 +30,7 @@ export function NavigationGrid({ cards, onNavigate }: NavigationGridProps) {
           >
             <TerminalCard style={styles.card}>
               <View style={styles.iconRow}>
-                <Text style={styles.icon}>{SCREEN_ICONS[card.screen]}</Text>
+                <Text style={styles.icon}>{SCREEN_ICONS[card.screen] ?? '•'}</Text>
                 {card.badgeCount > 0 && (
                   <View style={styles.badge}>
                     <Text style={styles.badgeText}>

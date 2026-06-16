@@ -148,8 +148,8 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
   });
 
   describe('navigation shell', () => {
-    it('exposes four primary tabs per design canon', () => {
-      expect(PRIMARY_TAB_COUNT).toBe(4);
+    it('exposes three primary tabs per design canon', () => {
+      expect(PRIMARY_TAB_COUNT).toBe(3);
     });
   });
 

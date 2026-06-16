@@ -10,6 +10,11 @@ vi.mock('@expo/vector-icons', () => ({
   Ionicons: () => React.createElement('Ionicons', null),
 }));
 
+vi.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ goBack: vi.fn() }),
+  useRoute: () => ({ params: undefined, key: 'dispatches', name: 'Dispatches' }),
+}));
+
 vi.mock('../src/game/devFlag', () => ({
   isDevBuild: false,
   showDevControls: false,

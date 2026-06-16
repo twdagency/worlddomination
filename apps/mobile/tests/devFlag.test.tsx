@@ -10,6 +10,13 @@ vi.mock('@expo/vector-icons', () => ({
 
 const showDevControlsRef = vi.hoisted(() => ({ value: true }));
 
+const goBackMock = vi.fn();
+
+vi.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ goBack: goBackMock }),
+  useRoute: () => ({ params: undefined, key: 'dispatches', name: 'Dispatches' }),
+}));
+
 vi.mock('../src/game/devFlag', () => ({
   get isDevBuild() {
     return showDevControlsRef.value;

@@ -1,18 +1,20 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { DashboardNavTarget, DashboardScreenName } from '../game/playerView';
 import { isActionMenuScreen, type ActionMenuScreen, type PrimaryTabScreen } from './tabConfig';
-import type { ActionStackParamList } from './types';
+import type { ActionStackParamList, HomeStackParamList } from './types';
 
 export type ResolvedNavigation =
-  | { tab: Exclude<PrimaryTabScreen, 'Actions'> }
+  | {
+      tab: 'Dashboard';
+      stack: NavigatorScreenParams<HomeStackParamList>;
+    }
+  | { tab: Exclude<PrimaryTabScreen, 'Actions' | 'Dashboard'> }
   | {
       tab: 'Actions';
       stack: NavigatorScreenParams<ActionStackParamList>;
     };
 
-const PRIMARY_ONLY: Record<string, Exclude<PrimaryTabScreen, 'Actions'>> = {
-  Dashboard: 'Dashboard',
-  Dispatches: 'Dispatches',
+const PRIMARY_ONLY: Record<string, Exclude<PrimaryTabScreen, 'Actions' | 'Dashboard'>> = {
   World: 'World',
 };
 
@@ -38,11 +40,25 @@ function actionStackTarget(
   }
 }
 
-/** Map dashboard / urgent-queue targets onto the Phase 2 tab + action-stack structure. */
+/** Map dashboard / urgent-queue targets onto the tab + stack structure. */
 export function resolveDashboardNavigation(
   screen: DashboardScreenName,
-  extras?: Pick<DashboardNavTarget, 'factionId' | 'territoryId'>,
+  extras?: Pick<DashboardNavTarget, 'factionId' | 'territoryId' | 'dispatchId'>,
 ): ResolvedNavigation {
+  if (screen === 'Dashboard') {
+    return { tab: 'Dashboard', stack: { screen: 'DashboardHome' } };
+  }
+
+  if (screen === 'Dispatches') {
+    return {
+      tab: 'Dashboard',
+      stack: {
+        screen: 'Dispatches',
+        params: extras?.dispatchId ? { dispatchId: extras.dispatchId } : undefined,
+      },
+    };
+  }
+
   const primary = PRIMARY_ONLY[screen];
   if (primary) {
     return { tab: primary };
@@ -55,7 +71,7 @@ export function resolveDashboardNavigation(
     };
   }
 
-  return { tab: 'Dashboard' };
+  return { tab: 'Dashboard', stack: { screen: 'DashboardHome' } };
 }
 
 export function resolveDashboardTarget(target: DashboardNavTarget): ResolvedNavigation {
