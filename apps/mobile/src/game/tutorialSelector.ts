@@ -11,6 +11,7 @@ export interface TutorialSelectorOutput {
   currentBeat: TutorialBeatId | null;
   currentBeatCopy: BeatCopy | null;
   shouldShowBanner: boolean;
+  isHandoffReady: boolean;
 }
 
 export function selectTutorialState(input: TutorialSelectorInput): TutorialSelectorOutput {
@@ -23,6 +24,17 @@ export function selectTutorialState(input: TutorialSelectorInput): TutorialSelec
       currentBeat: tutorial?.currentBeat ?? null,
       currentBeatCopy: null,
       shouldShowBanner: false,
+      isHandoffReady: false,
+    };
+  }
+
+  if (tutorial.completedBeats.includes('handoff')) {
+    return {
+      isActive: true,
+      currentBeat: null,
+      currentBeatCopy: TUTORIAL_BEAT_COPY.handoff,
+      shouldShowBanner: lastDismissedBeat !== 'handoff',
+      isHandoffReady: true,
     };
   }
 
@@ -33,6 +45,7 @@ export function selectTutorialState(input: TutorialSelectorInput): TutorialSelec
       currentBeat: null,
       currentBeatCopy: null,
       shouldShowBanner: false,
+      isHandoffReady: false,
     };
   }
 
@@ -44,5 +57,6 @@ export function selectTutorialState(input: TutorialSelectorInput): TutorialSelec
     currentBeat,
     currentBeatCopy,
     shouldShowBanner,
+    isHandoffReady: false,
   };
 }

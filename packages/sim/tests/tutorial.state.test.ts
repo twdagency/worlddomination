@@ -62,20 +62,24 @@ describe('tutorial state', () => {
 
   it('graduateTutorial atomically deactivates tutorial and resets time multiplier', () => {
     const world = worldWithTutorial();
-    const graduated = graduateTutorial(world, START_MS + 60_000);
+    const { world: graduated, events } = graduateTutorial(world, START_MS + 60_000);
     expect(graduated.tutorial?.active).toBe(false);
     expect(graduated.tutorial?.graduatedAt).toBe(START_MS + 60_000);
     expect(graduated.timeMultiplier).toBe(1);
     expect(graduated.tutorial?.currentBeat).toBeNull();
+    expect(events).toEqual([
+      expect.objectContaining({ kind: 'tutorialGraduated', at: START_MS + 60_000 }),
+    ]);
   });
 
   it('graduateTutorial is idempotent and preserves the first graduatedAt', () => {
     const world = worldWithTutorial();
     const first = graduateTutorial(world, START_MS + 60_000);
-    const second = graduateTutorial(first, START_MS + 120_000);
-    expect(second.tutorial?.graduatedAt).toBe(START_MS + 60_000);
-    expect(second.timeMultiplier).toBe(1);
-    expect(second.tutorial?.active).toBe(false);
+    const second = graduateTutorial(first.world, START_MS + 120_000);
+    expect(second.world.tutorial?.graduatedAt).toBe(START_MS + 60_000);
+    expect(second.world.timeMultiplier).toBe(1);
+    expect(second.world.tutorial?.active).toBe(false);
+    expect(second.events).toEqual([]);
   });
 
   it('getNextBeat returns the first uncompleted beat in order', () => {

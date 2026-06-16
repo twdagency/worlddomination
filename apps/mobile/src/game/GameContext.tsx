@@ -3,6 +3,9 @@ import { AppState, type AppStateStatus } from 'react-native';
 import type { BeatCopy } from 'shared';
 import type { SimEvent, TransitOrder, TutorialBeatId, WorldState } from 'sim';
 import {
+  evaluateBeatProgression,
+  getDilemmaById,
+  graduateTutorial,
   hasPendingProposalBetween,
   nextEventMs,
   playerAcceptProposal,
@@ -12,6 +15,7 @@ import {
   playerProposeAlliance,
   playerProposeTreaty,
   previewMoveEtaMs,
+  resolveDilemma,
 } from 'sim';
 import {
   catchUp,
@@ -31,9 +35,10 @@ import {
 import { useToast } from '../components/feedback/ToastProvider';
 import {
   createWorldForScenario,
-  DEFAULT_SCENARIO_ID,
-  isDevScenarioId,
+  FIRST_TIME_SCENARIO_ID,
+  resolveScenarioId,
   type DevScenarioId,
+  type ScenarioId,
 } from './scenarios';
 import {
   clearCampaignStorage,
@@ -44,6 +49,7 @@ import {
   saveDispatches,
   saveLastActiveMs,
   saveScenarioId,
+  saveTutorialOnboarded,
   saveWorld,
 } from '../storage/worldStorage';
 import { selectTutorialState } from './tutorialSelector';
@@ -54,8 +60,10 @@ export interface TutorialContextSlice {
   currentBeatCopy: BeatCopy | null;
   isBannerDismissed: boolean;
   shouldShowBanner: boolean;
+  isHandoffReady: boolean;
   dismissBanner: () => void;
   restoreBanner: () => void;
+  graduate: () => Promise<void>;
 }
 
 interface GameContextValue extends TutorialContextSlice {
@@ -63,10 +71,11 @@ interface GameContextValue extends TutorialContextSlice {
   world: WorldState;
   dispatches: SimEvent[];
   awayMs: number;
-  scenarioId: DevScenarioId;
+  scenarioId: ScenarioId;
   wallNowMs: number;
   actionFeedback: ActionFeedback | null;
   clearActionFeedback: () => void;
+  resolvePendingDilemma: (dilemmaId: string, optionId: string) => Promise<void>;
   confirmMove: (
     unitId: string,
     toTerritoryId: string,
@@ -93,16 +102,13 @@ async function persist(world: WorldState, dispatches: SimEvent[]): Promise<void>
   ]);
 }
 
-function resolveScenarioId(stored: string | null): DevScenarioId {
-  if (stored && isDevScenarioId(stored)) return stored;
-  return DEFAULT_SCENARIO_ID;
-}
-
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   const [ready, setReady] = useState(false);
-  const [scenarioId, setScenarioId] = useState<DevScenarioId>(DEFAULT_SCENARIO_ID);
-  const [world, setWorld] = useState<WorldState>(() => createWorldForScenario(DEFAULT_SCENARIO_ID));
+  const [scenarioId, setScenarioId] = useState<ScenarioId>(FIRST_TIME_SCENARIO_ID);
+  const [world, setWorld] = useState<WorldState>(() =>
+    createWorldForScenario(FIRST_TIME_SCENARIO_ID),
+  );
   const [dispatches, setDispatches] = useState<SimEvent[]>([]);
   const [awayMs, setAwayMs] = useState(0);
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
@@ -121,9 +127,52 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   );
 
   const dismissBanner = useCallback(() => {
-    const beat = worldRef.current.tutorial?.currentBeat;
+    const tutorial = worldRef.current.tutorial;
+    if (!tutorial?.active) return;
+    const beat =
+      tutorial.currentBeat ??
+      (tutorial.completedBeats.includes('handoff') ? ('handoff' as TutorialBeatId) : null);
     if (beat) setLastDismissedBeat(beat);
   }, []);
+
+  const graduate = useCallback(async () => {
+    const { world: nextWorld, events } = graduateTutorial(worldRef.current, Date.now());
+    const merged = mergeDispatches(nextWorld, dispatchesRef.current, events);
+    setWorld(nextWorld);
+    setDispatches(merged);
+    setLastDismissedBeat(null);
+    await saveTutorialOnboarded(true);
+    await persist(nextWorld, merged);
+    showToast('Your tutorial is complete. The campaign continues at standard speed.', 'success');
+  }, [showToast]);
+
+  const resolvePendingDilemma = useCallback(
+    async (dilemmaId: string, optionId: string) => {
+      const playerId = playerFactionId(worldRef.current);
+      if (!playerId) return;
+
+      const dilemma = getDilemmaById(dilemmaId);
+      const option = dilemma?.options.find((entry) => entry.id === optionId);
+      const resolved = resolveDilemma(
+        worldRef.current,
+        playerId,
+        dilemmaId,
+        optionId,
+        Date.now(),
+      );
+      const progressed = evaluateBeatProgression(resolved.world, resolved.events);
+      const allEvents = [...resolved.events, ...progressed.events];
+      const nextWorld = progressed.world;
+      const merged = mergeDispatches(nextWorld, dispatchesRef.current, allEvents);
+      setWorld(nextWorld);
+      setDispatches(merged);
+      await persist(nextWorld, merged);
+      if (option) {
+        showToast(`Decision made: ${option.label}`, 'success');
+      }
+    },
+    [showToast],
+  );
 
   const restoreBanner = useCallback(() => {
     setLastDismissedBeat(null);
@@ -194,12 +243,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       ]);
       if (cancelled) return;
 
-      const id = resolveScenarioId(storedScenarioId);
+      const hasStoredWorld = storedWorld !== null;
+      const id = resolveScenarioId(storedScenarioId, hasStoredWorld);
       setScenarioId(id);
 
-      const worldMatchesScenario = storedWorld?.scenarioId === id;
+      const worldMatchesScenario = hasStoredWorld && storedWorld!.scenarioId === id;
       const baseWorld = worldMatchesScenario ? storedWorld! : createWorldForScenario(id);
       const baseDispatches = worldMatchesScenario ? storedDispatches : [];
+
+      if (!hasStoredWorld) {
+        await saveScenarioId(id);
+      }
 
       await applyCatchUp(baseWorld, baseDispatches, worldMatchesScenario ? lastActive : null);
       if (!cancelled) setReady(true);
@@ -397,12 +451,16 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         isTutorialActive: tutorialState.isActive,
         currentBeat: tutorialState.currentBeat,
         currentBeatCopy: tutorialState.currentBeatCopy,
-        isBannerDismissed:
-          tutorialState.currentBeat !== null &&
-          tutorialState.currentBeat === lastDismissedBeat,
+        isBannerDismissed: tutorialState.isHandoffReady
+          ? lastDismissedBeat === 'handoff'
+          : tutorialState.currentBeat !== null &&
+            tutorialState.currentBeat === lastDismissedBeat,
         shouldShowBanner: tutorialState.shouldShowBanner,
+        isHandoffReady: tutorialState.isHandoffReady,
         dismissBanner,
         restoreBanner,
+        graduate,
+        resolvePendingDilemma,
         confirmMove,
         issueBuild: issueBuildOrder,
         issueUpgradeInfra: issueUpgrade,

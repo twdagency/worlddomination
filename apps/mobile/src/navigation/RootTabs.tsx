@@ -39,7 +39,14 @@ function tabBarIcon(iconName: string, activeIconName: string) {
 }
 
 export function RootTabs() {
-  const { ready, shouldShowBanner, currentBeatCopy, dismissBanner } = useGame();
+  const {
+    ready,
+    shouldShowBanner,
+    currentBeatCopy,
+    dismissBanner,
+    isHandoffReady,
+    graduate,
+  } = useGame();
 
   if (!ready) {
     return (
@@ -55,7 +62,12 @@ export function RootTabs() {
       <View style={styles.appShell}>
         <PersistentHeader />
         {shouldShowBanner && currentBeatCopy ? (
-          <TutorialBanner copy={currentBeatCopy} onDismiss={dismissBanner} />
+          <TutorialBanner
+            copy={currentBeatCopy}
+            onDismiss={dismissBanner}
+            isHandoffReady={isHandoffReady}
+            onGraduate={graduate}
+          />
         ) : null}
         <Tab.Navigator
           initialRouteName="Dashboard"

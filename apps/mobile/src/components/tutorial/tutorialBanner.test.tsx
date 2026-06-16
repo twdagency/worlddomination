@@ -9,10 +9,22 @@ vi.mock('@expo/vector-icons', () => ({
   Ionicons: () => React.createElement('Ionicons', null),
 }));
 
-function renderBanner(copy = TUTORIAL_BEAT_COPY.movement, onDismiss = () => undefined) {
+function renderBanner(
+  copy = TUTORIAL_BEAT_COPY.movement,
+  onDismiss = () => undefined,
+  isHandoffReady = false,
+  onGraduate = () => undefined,
+) {
   let tree!: TestRenderer.ReactTestRenderer;
   act(() => {
-    tree = TestRenderer.create(<TutorialBanner copy={copy} onDismiss={onDismiss} />);
+    tree = TestRenderer.create(
+      <TutorialBanner
+        copy={copy}
+        onDismiss={onDismiss}
+        isHandoffReady={isHandoffReady}
+        onGraduate={onGraduate}
+      />,
+    );
   });
   return tree;
 }
@@ -62,5 +74,21 @@ describe('TutorialBanner', () => {
     });
 
     expect(collectText(tree.root).join(' ')).toContain(copy.hint!);
+  });
+
+  it('shows Continue to Sandbox when handoff is ready', () => {
+    const tree = renderBanner(TUTORIAL_BEAT_COPY.handoff, () => undefined, true, () => undefined);
+    expect(tree.root.findByProps({ testID: 'tutorial-graduate' })).toBeTruthy();
+    expect(collectText(tree.root).join(' ')).toContain('Continue to Sandbox');
+  });
+
+  it('calls onGraduate when the graduate button is pressed', () => {
+    const onGraduate = vi.fn();
+    const tree = renderBanner(TUTORIAL_BEAT_COPY.handoff, () => undefined, true, onGraduate);
+    const graduate = tree.root.findByProps({ testID: 'tutorial-graduate' });
+    act(() => {
+      graduate.props.onPress();
+    });
+    expect(onGraduate).toHaveBeenCalledTimes(1);
   });
 });

@@ -45,6 +45,17 @@ export const SCENARIOS: readonly Scenario[] = [...DEV_SCENARIOS, TUTORIAL_SCENAR
 
 export const DEFAULT_SCENARIO_ID: DevScenarioId = 'sprint-4-ai-world';
 
+export const FIRST_TIME_SCENARIO_ID: ScenarioId = 'tutorial';
+
+export function resolveScenarioId(
+  storedScenarioId: string | null,
+  hasStoredWorld: boolean,
+): ScenarioId {
+  if (!hasStoredWorld) return FIRST_TIME_SCENARIO_ID;
+  if (storedScenarioId && isScenarioId(storedScenarioId)) return storedScenarioId;
+  return DEFAULT_SCENARIO_ID;
+}
+
 export function getScenarioFactory(id: ScenarioId): (nowMs?: number) => WorldState {
   const scenario = SCENARIOS.find((entry) => entry.id === id);
   if (!scenario) {
@@ -53,7 +64,7 @@ export function getScenarioFactory(id: ScenarioId): (nowMs?: number) => WorldSta
   return scenario.create;
 }
 
-export function createWorldForScenario(id: DevScenarioId, nowMs: number = Date.now()): WorldState {
+export function createWorldForScenario(id: ScenarioId, nowMs: number = Date.now()): WorldState {
   return getScenarioFactory(id)(nowMs);
 }
 

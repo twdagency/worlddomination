@@ -344,6 +344,8 @@ export function dispatchLineForEvent(
       return formatProductionNarrative(world, event);
     case 'buildBlocked':
       return `BLOCKED — ${event.reason}`;
+    case 'tutorialGraduated':
+      return 'Your tutorial is complete. Your full campaign begins now.';
     default:
       return `${event.kind} event`;
   }

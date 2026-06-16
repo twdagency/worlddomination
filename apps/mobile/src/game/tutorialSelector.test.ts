@@ -15,6 +15,7 @@ describe('tutorial selector', () => {
       currentBeat: null,
       currentBeatCopy: null,
       shouldShowBanner: false,
+      isHandoffReady: false,
     });
   });
 
@@ -74,7 +75,7 @@ describe('tutorial selector', () => {
     expect(result.shouldShowBanner).toBe(false);
   });
 
-  it('hides banner when all beats are complete but graduation has not fired', () => {
+  it('shows handoff copy and graduate readiness when all beats are complete', () => {
     const world = createTutorialWorld(START_MS);
     const preGraduation = {
       ...world,
@@ -86,8 +87,24 @@ describe('tutorial selector', () => {
     };
     const result = selectTutorialState({ world: preGraduation, lastDismissedBeat: null });
     expect(result.isActive).toBe(true);
+    expect(result.shouldShowBanner).toBe(true);
+    expect(result.currentBeatCopy).toEqual(TUTORIAL_BEAT_COPY.handoff);
+    expect(result.isHandoffReady).toBe(true);
+  });
+
+  it('hides handoff banner after dismiss until graduation', () => {
+    const world = createTutorialWorld(START_MS);
+    const preGraduation = {
+      ...world,
+      tutorial: {
+        ...world.tutorial!,
+        currentBeat: null,
+        completedBeats: [...TUTORIAL_BEAT_ORDER],
+      },
+    };
+    const result = selectTutorialState({ world: preGraduation, lastDismissedBeat: 'handoff' });
     expect(result.shouldShowBanner).toBe(false);
-    expect(result.currentBeatCopy).toBeNull();
+    expect(result.isHandoffReady).toBe(true);
   });
 
   it('defines copy for every tutorial beat', () => {

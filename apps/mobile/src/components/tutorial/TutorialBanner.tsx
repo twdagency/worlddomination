@@ -11,9 +11,16 @@ const WHY_ROW_ID = 'tutorial-why';
 export interface TutorialBannerProps {
   copy: BeatCopy;
   onDismiss: () => void;
+  isHandoffReady?: boolean;
+  onGraduate?: () => void;
 }
 
-export function TutorialBanner({ copy, onDismiss }: TutorialBannerProps) {
+export function TutorialBanner({
+  copy,
+  onDismiss,
+  isHandoffReady = false,
+  onGraduate,
+}: TutorialBannerProps) {
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
 
   return (
@@ -40,6 +47,17 @@ export function TutorialBanner({ copy, onDismiss }: TutorialBannerProps) {
           onToggle={(rowId) => setExpandedRowId(toggleExpandedRow(expandedRowId, rowId))}
           secondary={<Text style={styles.hint}>{copy.hint}</Text>}
         />
+      ) : null}
+      {isHandoffReady && onGraduate ? (
+        <Pressable
+          style={styles.graduateButton}
+          onPress={onGraduate}
+          accessibilityRole="button"
+          accessibilityLabel="Continue to Sandbox"
+          testID="tutorial-graduate"
+        >
+          <Text style={styles.graduateLabel}>Continue to Sandbox</Text>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -89,5 +107,19 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 12,
     lineHeight: 18,
+  },
+  graduateButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: terminal.tutorial,
+    borderRadius: 6,
+    marginTop: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  graduateLabel: {
+    color: terminal.bg,
+    fontFamily: terminal.mono,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

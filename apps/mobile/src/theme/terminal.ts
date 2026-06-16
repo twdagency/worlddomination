@@ -3,6 +3,7 @@ export const STORAGE_KEYS = {
   dispatches: '@worlddomination/dispatches',
   lastActiveMs: '@worlddomination/lastActiveMs',
   scenarioId: '@worlddomination/scenarioId',
+  tutorialOnboarded: '@worlddomination/tutorialOnboarded',
 } as const;
 
 export const terminal = {

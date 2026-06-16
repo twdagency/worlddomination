@@ -451,6 +451,12 @@ export type SimEvent =
       at: Millis;
       factionId: Id;
       importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tutorialGraduated';
+      at: Millis;
+      factionId: Id;
+      importance?: DispatchImportance;
     };
 
 export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty';

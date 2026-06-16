@@ -45,6 +45,15 @@ export async function saveScenarioId(id: string): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.scenarioId, id);
 }
 
+export async function loadTutorialOnboarded(): Promise<boolean> {
+  const raw = await AsyncStorage.getItem(STORAGE_KEYS.tutorialOnboarded);
+  return raw === 'true';
+}
+
+export async function saveTutorialOnboarded(onboarded: boolean): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEYS.tutorialOnboarded, onboarded ? 'true' : 'false');
+}
+
 export async function clearCampaignStorage(): Promise<void> {
   await AsyncStorage.multiRemove([
     STORAGE_KEYS.world,

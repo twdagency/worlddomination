@@ -1,4 +1,5 @@
-import type { Millis, TutorialBeatId, TutorialState, WorldState } from './types';
+import type { Millis, SimEvent, TutorialBeatId, TutorialState, WorldState } from './types';
+import { playerFactionId } from './dispatch';
 
 export const TUTORIAL_BEAT_ORDER: readonly TutorialBeatId[] = [
   'movement',
@@ -60,13 +61,19 @@ export function markBeatComplete(
 }
 
 /** Ends the tutorial in one atomic world update: inactive, standard time rate, graduation timestamp set. */
-export function graduateTutorial(world: WorldState, at: Millis): WorldState {
+export function graduateTutorial(
+  world: WorldState,
+  at: Millis,
+): { world: WorldState; events: SimEvent[] } {
   const existing = world.tutorial;
   if (existing && !existing.active && existing.graduatedAt !== null) {
     return {
-      ...world,
-      timeMultiplier: STANDARD_TIME_MULTIPLIER,
-      tutorial: existing,
+      world: {
+        ...world,
+        timeMultiplier: STANDARD_TIME_MULTIPLIER,
+        tutorial: existing,
+      },
+      events: [],
     };
   }
 
@@ -78,9 +85,22 @@ export function graduateTutorial(world: WorldState, at: Millis): WorldState {
     graduatedAt: existing?.graduatedAt ?? at,
   };
 
-  return {
+  const factionId = playerFactionId(world) ?? PLAYER_TUTORIAL_FACTION_ID;
+  const graduatedWorld: WorldState = {
     ...world,
     timeMultiplier: STANDARD_TIME_MULTIPLIER,
     tutorial,
+  };
+
+  return {
+    world: graduatedWorld,
+    events: [
+      {
+        kind: 'tutorialGraduated',
+        at,
+        factionId,
+        importance: 'high',
+      },
+    ],
   };
 }

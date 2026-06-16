@@ -33,3 +33,5 @@ export const Pressable = ({ children, onPress, testID, accessibilityLabel, ...pr
 export const ScrollView = mockComponent('ScrollView');
 export const FlatList = mockComponent('FlatList');
 export const ActivityIndicator = mockComponent('ActivityIndicator');
+export const Modal = ({ children, visible, testID }: MockProps & { visible?: boolean }) =>
+  visible ? React.createElement('Modal', { testID }, children) : null;

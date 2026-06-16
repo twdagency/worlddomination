@@ -124,6 +124,25 @@ Pure-logic selector stack on 24h-advanced `createSprint4World` — measured in `
 
 Component render cost is not instrumented in Sprint 7a; selector cost is the proxy for Dashboard data prep.
 
+## Tutorial integration (Sprint 7b)
+
+Re-measured on dev hardware after tutorial beat controller + dilemma wiring. Sprint-4
+`advanceTo` on the same machine shown for regression context (not comparable to Sprint
+7a absolute µs — compare ratios on this host only).
+
+| Operation | Median (this host) | Notes |
+|-----------|-------------------|-------|
+| `advanceTo` 24h tutorial world | 8.6 ms | 26 events; 4-territory map |
+| `advanceTo` 72h tutorial world | 7.2 ms | 65 events; full playthrough scale |
+| `advanceTo` 24h sprint4 world | 3.7 ms | sanity check — no tutorial-path regression on sandbox world |
+| `evaluateBeatProgression` per arrival event | 0.11 ms | beat predicate scan only |
+
+**Regression read:** sprint4 skip on this host remains sub-10 ms. Tutorial skips are
+single-digit ms despite beat evaluation hooks. No >10% regression vs Sprint 7a proxy
+(selectors unchanged in `sprint7a.coldPlay.test.ts`).
+
+Re-run: `npx tsx perf/tutorialQuick.bench.ts` from `packages/sim`.
+
 ## Review thresholds (guidance)
 
 | Check | Target | Rationale |
