@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme, type NavigationState } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGame } from '../game/GameContext';
 import { PersistentHeader } from '../components/PersistentHeader';
 import { TutorialBanner } from '../components/tutorial/TutorialBanner';
+import { DilemmaModalOverlay } from '../components/dilemma/DilemmaModalOverlay';
 import { ActionStackNavigator } from './ActionStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
 import { WorldStackNavigator } from './WorldStackNavigator';
@@ -66,19 +67,42 @@ export function RootTabs() {
     isHandoffReady,
     isTutorialActive,
     graduate,
+    dilemmaModalState,
+    dismissDilemmaModal,
+    resolvePendingDilemma,
   } = useGame();
 
   const tabBarStyle = useTabBarStyle();
+  const crisisModalOpen =
+    dilemmaModalState.visible && dilemmaModalState.urgency === 'crisis';
+  const skipNavDismissRef = useRef(true);
 
   const onNavigationStateChange = useCallback(
     (state: NavigationState | undefined) => {
+      if (skipNavDismissRef.current) {
+        skipNavDismissRef.current = false;
+      } else if (
+        dilemmaModalState.visible &&
+        dilemmaModalState.canDismiss &&
+        !dilemmaModalState.blocksNavigation
+      ) {
+        dismissDilemmaModal();
+      }
       maybeCollapseTutorialBannerOnNavigation(state, {
         isTutorialActive,
         currentBeat,
         collapseTutorialBanner,
       });
     },
-    [isTutorialActive, currentBeat, collapseTutorialBanner],
+    [
+      isTutorialActive,
+      currentBeat,
+      collapseTutorialBanner,
+      dilemmaModalState.visible,
+      dilemmaModalState.canDismiss,
+      dilemmaModalState.blocksNavigation,
+      dismissDilemmaModal,
+    ],
   );
 
   if (!ready) {
@@ -99,7 +123,7 @@ export function RootTabs() {
     >
       <View style={styles.appShell}>
         <PersistentHeader />
-        {bannerMode !== 'hidden' && currentBeatCopy ? (
+        {bannerMode !== 'hidden' && currentBeatCopy && !crisisModalOpen ? (
           <TutorialBanner
             copy={currentBeatCopy}
             mode={bannerMode}
@@ -112,9 +136,19 @@ export function RootTabs() {
         ) : null}
         <Tab.Navigator
           initialRouteName="Dashboard"
+          screenListeners={{
+            tabPress: (event) => {
+              if (dilemmaModalState.blocksNavigation) {
+                event.preventDefault();
+              }
+            },
+          }}
           screenOptions={{
             headerShown: false,
-            tabBarStyle,
+            tabBarStyle: [
+              tabBarStyle,
+              dilemmaModalState.blocksNavigation ? styles.tabBlocked : null,
+            ],
             tabBarActiveTintColor: terminal.accent,
             tabBarInactiveTintColor: terminal.muted,
             tabBarLabelStyle: styles.tabLabel,
@@ -144,6 +178,17 @@ export function RootTabs() {
             />
           ))}
         </Tab.Navigator>
+        <DilemmaModalOverlay
+          visible={dilemmaModalState.visible}
+          dilemma={dilemmaModalState.dilemmaSnapshot}
+          urgency={dilemmaModalState.urgency}
+          canDismiss={dilemmaModalState.canDismiss}
+          onDismiss={dismissDilemmaModal}
+          onResolve={(optionId) => {
+            if (!dilemmaModalState.dilemmaId) return;
+            void resolvePendingDilemma(dilemmaModalState.dilemmaId, optionId);
+          }}
+        />
       </View>
     </NavigationContainer>
   );
@@ -157,6 +202,9 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontFamily: terminal.mono,
     fontSize: 10,
+  },
+  tabBlocked: {
+    opacity: 0.35,
   },
   loading: {
     flex: 1,

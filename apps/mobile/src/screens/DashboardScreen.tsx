@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { getDilemmaById } from 'sim';
 import { useGame } from '../game/GameContext';
 import { selectPlayerCountry } from '../game/countrySelector';
 import { selectPendingDilemmaCards } from '../game/dilemmaSelector';
@@ -17,7 +16,6 @@ import { ActiveForcesCard } from '../components/dashboard/ActiveForcesCard';
 import { CountryStatusCard } from '../components/dashboard/CountryStatusCard';
 import { DispatchesCard } from '../components/dashboard/DispatchesCard';
 import { QuickActionsCard, type QuickActionId } from '../components/dashboard/QuickActionsCard';
-import { DilemmaModal } from '../components/dilemma/DilemmaModal';
 import { ScrollFadeFooter } from '../components/ScrollFadeFooter';
 import { terminal } from '../theme/terminal';
 
@@ -25,11 +23,9 @@ type DashboardNavigation = NativeStackNavigationProp<HomeStackParamList, 'Dashbo
 
 export function DashboardScreen() {
   const navigation = useNavigation<DashboardNavigation>();
-  const { world, dispatches, resolvePendingDilemma } = useGame();
-  const [activeDilemmaId, setActiveDilemmaId] = useState<string | null>(null);
+  const { world, dispatches, openDilemmaModal } = useGame();
 
   const pendingDilemmas = useMemo(() => selectPendingDilemmaCards(world), [world]);
-  const activeDilemma = activeDilemmaId ? getDilemmaById(activeDilemmaId) : undefined;
   const playerCountry = useMemo(() => selectPlayerCountry(world), [world]);
   const dispatchDigest = useMemo(
     () => getDashboardDispatchesDigest(world, dispatches),
@@ -89,7 +85,7 @@ export function DashboardScreen() {
               <Text style={styles.decisionTitle}>{pendingDilemmas[0].title}</Text>
               <Pressable
                 style={styles.decideButton}
-                onPress={() => setActiveDilemmaId(pendingDilemmas[0].dilemmaId)}
+                onPress={() => openDilemmaModal(pendingDilemmas[0].dilemmaId)}
                 accessibilityRole="button"
                 accessibilityLabel={`Decide: ${pendingDilemmas[0].title}`}
                 testID="pending-decision-open"
@@ -119,18 +115,6 @@ export function DashboardScreen() {
         <View style={styles.spacer} />
 
         <QuickActionsCard onAction={handleQuickAction} />
-
-        {activeDilemma ? (
-          <DilemmaModal
-            visible
-            dilemma={activeDilemma}
-            onClose={() => setActiveDilemmaId(null)}
-            onResolve={async (optionId) => {
-              await resolvePendingDilemma(activeDilemma.id, optionId);
-              setActiveDilemmaId(null);
-            }}
-          />
-        ) : null}
       </ScrollView>
       <ScrollFadeFooter testID="dashboard-scroll-fade" />
     </View>

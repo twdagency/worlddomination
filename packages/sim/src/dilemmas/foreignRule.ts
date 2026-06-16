@@ -3,6 +3,8 @@ import type { Dilemma } from 'shared';
 export const FOREIGN_RULE_DILEMMA: Dilemma = {
   id: 'foreign-rule',
   title: 'The fall of France',
+  // Campaign-defining conquest moment — must surface as a blocking crisis modal.
+  urgency: 'crisis',
   prompt:
     'Paris has fallen. Henry IV is defeated. The lands of France are yours — but the people are not. You must decide how to administer this conquered country.',
   options: [

@@ -54,6 +54,10 @@ import {
   saveWorld,
 } from '../storage/worldStorage';
 import { selectTutorialState, type TutorialBannerMode } from './tutorialSelector';
+import {
+  resolveDilemmaModalState,
+  type DilemmaModalState,
+} from './dilemmaModalController';
 
 export interface TutorialContextSlice {
   isTutorialActive: boolean;
@@ -94,6 +98,9 @@ interface GameContextValue extends TutorialContextSlice {
   proposeTreaty: (targetFactionId: string, territoryId: string) => Promise<void>;
   acceptProposal: (proposalId: string) => Promise<void>;
   declineProposal: (proposalId: string) => Promise<void>;
+  dilemmaModalState: DilemmaModalState;
+  dismissDilemmaModal: () => void;
+  openDilemmaModal: (dilemmaId: string) => void;
 }
 
 const GameContext = React.createContext<GameContextValue | null>(null);
@@ -118,6 +125,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [lastDismissedBeat, setLastDismissedBeat] = useState<TutorialBeatId | null>(null);
+  const [dismissedDilemmaIds, setDismissedDilemmaIds] = useState<Set<string>>(() => new Set());
+  const [manualDilemmaId, setManualDilemmaId] = useState<string | null>(null);
   const [bannerCollapsedBeat, setBannerCollapsedBeat] = useState<TutorialBeatId | null>(null);
   const worldRef = useRef(world);
   const dispatchesRef = useRef(dispatches);
@@ -161,6 +170,30 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     showToast('Your tutorial is complete. The campaign continues at standard speed.', 'success');
   }, [showToast]);
 
+  const dilemmaModalState = useMemo(
+    () =>
+      resolveDilemmaModalState({
+        world: ready ? world : null,
+        dismissedDilemmaIds,
+        manualDilemmaId,
+      }),
+    [ready, world, dismissedDilemmaIds, manualDilemmaId],
+  );
+
+  const dismissDilemmaModal = useCallback(() => {
+    if (!dilemmaModalState.dilemmaId || !dilemmaModalState.canDismiss) return;
+    setDismissedDilemmaIds((current) => {
+      const next = new Set(current);
+      next.add(dilemmaModalState.dilemmaId!);
+      return next;
+    });
+    setManualDilemmaId(null);
+  }, [dilemmaModalState.canDismiss, dilemmaModalState.dilemmaId]);
+
+  const openDilemmaModal = useCallback((dilemmaId: string) => {
+    setManualDilemmaId(dilemmaId);
+  }, []);
+
   const resolvePendingDilemma = useCallback(
     async (dilemmaId: string, optionId: string) => {
       const playerId = playerFactionId(worldRef.current);
@@ -182,6 +215,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const merged = mergeDispatches(nextWorld, dispatchesRef.current, allEvents);
       setWorld(nextWorld);
       setDispatches(merged);
+      setManualDilemmaId(null);
+      setDismissedDilemmaIds((current) => {
+        if (!current.has(dilemmaId)) return current;
+        const next = new Set(current);
+        next.delete(dilemmaId);
+        return next;
+      });
       await persist(nextWorld, merged);
       if (option) {
         showToast(`Decision made: ${option.label}`, 'success');
@@ -505,6 +545,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         proposeTreaty,
         acceptProposal,
         declineProposal,
+        dilemmaModalState,
+        dismissDilemmaModal,
+        openDilemmaModal,
       }}
     >
       {children}
