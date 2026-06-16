@@ -346,6 +346,15 @@ If a Sprint 6–8 feature genuinely needs an environmental hook to make sense,
 that is a signal to revisit the sprint scope, not to start building the
 environmental layer early.
 
+## Sim state migrations (Sprint 7+)
+
+Every new persisted `WorldState` field ships with:
+
+1. An additive migrator registered in `ensureWorldMigrations`.
+2. A legacy-save regression test (strip the field, migrate, confirm playable state).
+
+This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
+
 ## UI — Diplomacy identity axes (Sprint 8+)
 
 DiplomacyScreen tertiary disclosure (reputation score + stance today) is the

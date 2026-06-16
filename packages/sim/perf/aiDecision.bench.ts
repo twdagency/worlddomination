@@ -22,6 +22,7 @@ import { computeStance, STANCE_WINDOW_MS } from '../src/stance';
 import { buildBenchWorld } from './benchWorld';
 import { runIntelBenchmarks } from './intelStore.bench';
 import { runDiplomacyBenchmarks } from './diplomacy.bench';
+import { runMigrationBenchmarks } from './migrations.bench';
 
 const BENCH_START_MS = 1_700_000_000_000;
 const WARMUP = 25;
@@ -100,6 +101,7 @@ function runBenchmarks(): {
   legibility: BenchResult[];
   intel: ReturnType<typeof runIntelBenchmarks>;
   diplomacy: ReturnType<typeof runDiplomacyBenchmarks>;
+  migrations: ReturnType<typeof runMigrationBenchmarks>;
   legibilitySharePct: number;
 } {
   const decisionMs = BENCH_START_MS + AI_DECISION_INTERVAL_MS;
@@ -145,8 +147,9 @@ function runBenchmarks(): {
   const legibilitySharePct = advance24 > 0 ? (legibilityTotal / advance24) * 100 : 0;
   const intel = runIntelBenchmarks();
   const diplomacy = runDiplomacyBenchmarks();
+  const migrations = runMigrationBenchmarks();
 
-  return { decision, advance, legibility, intel, diplomacy, legibilitySharePct };
+  return { decision, advance, legibility, intel, diplomacy, migrations, legibilitySharePct };
 }
 
 function renderBaseline(results: ReturnType<typeof runBenchmarks>): string {
@@ -181,6 +184,10 @@ function renderBaseline(results: ReturnType<typeof runBenchmarks>): string {
     .join('\n');
 
   const diplomacyRows = results.diplomacy.diplomacy
+    .map((row) => `| ${row.label} | ${fmtMs(row.medianMs)} | ${fmtMs(row.p95Ms)} |`)
+    .join('\n');
+
+  const migrationRows = results.migrations
     .map((row) => `| ${row.label} | ${fmtMs(row.medianMs)} | ${fmtMs(row.p95Ms)} |`)
     .join('\n');
 
@@ -266,6 +273,30 @@ ${diplomacyRows}
 
 At four-faction sprint4 scale, diplomacy overhead per tick is negligible. Watch allied record growth if faction/alliance count scales in future sprints.
 
+## Save migration (\`ensureWorldMigrations\` — Sprint 7a)
+
+Additive merge on load — not on the \`advanceTo\` hot path.
+
+| Operation | Median | p95 |
+|-----------|--------|-----|
+${migrationRows}
+
+Legacy save fixture strips \`scout-t1\`, \`leader-philip\`, and pre-Sprint-6 diplomacy fields.
+
+## Mobile dashboard selectors (Sprint 7a)
+
+Pure-logic selector stack on 24h-advanced \`createSprint4World\` — measured in \`apps/mobile/src/game/sprint7a.coldPlay.test.ts\` (budget < 15 ms each, dev hardware).
+
+| Selector | Budget |
+|----------|--------|
+| getDashboardCatchUpSummary | < 15 ms |
+| getDashboardUrgentItems | < 15 ms |
+| getDashboardEmpireSummary | < 15 ms |
+| getDashboardNavCards | < 15 ms |
+| getDashboardUrgentCount | < 15 ms |
+
+Component render cost is not instrumented in Sprint 7a; selector cost is the proxy for Dashboard data prep.
+
 ## Review thresholds (guidance)
 
 | Check | Target | Rationale |
@@ -327,6 +358,11 @@ function main(): void {
   console.log(
     `Allied/treaty records (24h): ${results.diplomacy.alliedRecordCount24h} allied, ${results.diplomacy.treatyRecordCount24h} treaty`,
   );
+
+  console.log('\n=== Save migration (ensureWorldMigrations) ===');
+  for (const row of results.migrations) {
+    console.log(`${row.label}: median ${fmtMs(row.medianMs)}, p95 ${fmtMs(row.p95Ms)}`);
+  }
 
   if (writeBaseline) {
     const dir = dirname(fileURLToPath(import.meta.url));
