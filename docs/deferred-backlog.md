@@ -382,6 +382,10 @@ may reject quietly.
   picker for New Game (tutorial + sandbox scenarios) deferred.
 
 ### Sprint 9 candidates (content depth)
+- ~~**Issue #18 per-city infra cost**~~ — **Verified Sprint 8.5 Phase 4.** Sim and
+  `costPreview` both scale by target `territory.infraLevel`; cold-play same-cost
+  perception was not reproduced in tests. Regression guards in
+  `production.infraCost.test.ts` and `infraCost.perTerritory.test.ts`.
 - ~~**Dilemma triggers for treaty/infra pinch paths**~~ — **Resolved Sprint 8.5 Phase 1.**
   All pinch paths enqueue Foreign Rule per Option β; no separate Treaty Terms /
   Foreign Investment dilemmas for Beat 4 completion.

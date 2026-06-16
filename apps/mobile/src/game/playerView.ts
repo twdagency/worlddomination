@@ -144,6 +144,14 @@ export function playerMovableUnits(world: WorldState): Unit[] {
   );
 }
 
+/** Stationed at a player-owned territory and not in transit — eligible for a new move order. */
+export function isPlayerForceMovable(world: WorldState, unit: Unit): boolean {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId || unit.ownerId !== playerId) return false;
+  if (unit.transit || !unit.locationId) return false;
+  return world.territories[unit.locationId]?.ownerId === playerId;
+}
+
 /** All player stacks visible under fog (stationed or in transit). */
 export function playerForces(world: WorldState): Unit[] {
   const playerId = resolvePlayerFactionId(world);
