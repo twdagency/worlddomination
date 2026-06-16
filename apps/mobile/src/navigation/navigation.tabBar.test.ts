@@ -7,6 +7,7 @@ import {
   isActionMenuScreen,
   isPrimaryTabScreen,
 } from '../navigation/tabConfig';
+import { resolveTabBarBottomInset } from '../navigation/tabBarMetrics';
 
 describe('tab bar configuration', () => {
   it('exposes exactly four icon-led primary destinations', () => {
@@ -24,5 +25,13 @@ describe('tab bar configuration', () => {
     expect(isPrimaryTabScreen('Diplomacy')).toBe(false);
     expect(isActionMenuScreen('Diplomacy')).toBe(true);
     expect(isActionMenuScreen('Dispatches')).toBe(false);
+  });
+
+  it('uses device inset when larger than platform minimum', () => {
+    expect(resolveTabBarBottomInset(48)).toBe(48);
+  });
+
+  it('falls back to platform minimum when device inset is zero', () => {
+    expect(resolveTabBarBottomInset(0)).toBeGreaterThanOrEqual(12);
   });
 });

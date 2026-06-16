@@ -13,10 +13,12 @@ import {
   pruneExpiredTreaties,
 } from '../src/diplomacy';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
-import { makeWorld } from './fixtures';
+import { makeWorld, tagOrder } from './fixtures';
+import { applyMoveOrders, previewMoveEtaMs } from '../src';
 
 const START_MS = 1_700_000_000_000;
 const BERLIN = 'territory-berlin';
+const LONDON = 'territory-london';
 const CAESAR = 'faction-rome';
 const GENGHIS = 'faction-steppe';
 const ELIZABETH = 'faction-player';
@@ -26,14 +28,14 @@ describe('diplomacy state', () => {
     const world = createSprint4World(START_MS);
     const formed = formAlliance(world, GENGHIS, CAESAR, START_MS);
 
-    expect(areAllied(formed, GENGHIS, CAESAR)).toBe(true);
-    expect(formed.alliances).toEqual([
+    expect(areAllied(formed.world, GENGHIS, CAESAR)).toBe(true);
+    expect(formed.world.alliances).toEqual([
       { factionA: CAESAR, factionB: GENGHIS, formedAt: START_MS },
     ]);
   });
 
   it('breaking an alliance removes the pair', () => {
-    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
     const broken = breakAlliance(allied, CAESAR, GENGHIS);
 
     expect(areAllied(broken, GENGHIS, CAESAR)).toBe(false);
@@ -42,10 +44,10 @@ describe('diplomacy state', () => {
 
   it('formAlliance is idempotent for existing alliances', () => {
     const once = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
-    const twice = formAlliance(once, CAESAR, GENGHIS, START_MS + 1);
+    const twice = formAlliance(once.world, CAESAR, GENGHIS, START_MS + 1);
 
-    expect(twice).toBe(once);
-    expect(twice.alliances).toEqual(once.alliances);
+    expect(twice.world).toEqual(once.world);
+    expect(twice.events).toEqual([]);
   });
 
   it('breakAlliance is a no-op when no alliance exists', () => {
@@ -82,39 +84,62 @@ describe('diplomacy state', () => {
     const forward = formAlliance(world, GENGHIS, CAESAR, START_MS);
     const reverse = formAlliance(world, CAESAR, GENGHIS, START_MS);
 
-    expect(forward.alliances).toEqual(reverse.alliances);
+    expect(forward.world.alliances).toEqual(reverse.world.alliances);
     expect(normalizeFactionPair(GENGHIS, CAESAR)).toEqual([CAESAR, GENGHIS]);
   });
 
   it('forming alliances in different orders yields identical sorted state', () => {
     const world = createSprint4World(START_MS);
     const pathA = formAlliance(
-      formAlliance(world, CAESAR, GENGHIS, START_MS),
+      formAlliance(world, CAESAR, GENGHIS, START_MS).world,
       ELIZABETH,
       CAESAR,
       START_MS + 1,
-    );
+    ).world;
     const pathB = formAlliance(
-      formAlliance(world, ELIZABETH, CAESAR, START_MS + 1),
+      formAlliance(world, ELIZABETH, CAESAR, START_MS + 1).world,
       GENGHIS,
       CAESAR,
       START_MS,
-    );
+    ).world;
 
     expect(pathA.alliances).toEqual(pathB.alliances);
   });
 
   it('getAlliancesFor returns sorted ally ids', () => {
     const world = formAlliance(
-      formAlliance(createSprint4World(START_MS), CAESAR, GENGHIS, START_MS),
+      formAlliance(createSprint4World(START_MS), CAESAR, GENGHIS, START_MS).world,
       ELIZABETH,
       CAESAR,
       START_MS,
-    );
+    ).world;
 
     expect(getAlliancesFor(world, CAESAR).sort()).toEqual(
       [ELIZABETH, GENGHIS].sort(),
     );
+  });
+
+  it('formAlliance recalls in-flight assault orders between newly allied factions', () => {
+    const base = createSprint4World(START_MS);
+    const travelMs = previewMoveEtaMs(base, 'unit-steppe-mg', LONDON)!.travelMs;
+    const order = tagOrder(
+      base,
+      {
+        kind: 'move',
+        unitId: 'unit-steppe-mg',
+        toTerritoryId: LONDON,
+        stanceOnArrival: 'assault',
+      },
+      GENGHIS,
+    );
+    const { units } = applyMoveOrders(base, [order]);
+    const inTransit = { ...base, units };
+
+    const formed = formAlliance(inTransit, ELIZABETH, GENGHIS, START_MS + travelMs / 2);
+
+    expect(formed.events.some((event) => event.kind === 'dispatchCancelledByAlliance')).toBe(true);
+    expect(formed.world.units['unit-steppe-mg']?.transit).toBeUndefined();
+    expect(formed.world.units['unit-steppe-mg']?.locationId).toBeDefined();
   });
 
   it('treaties respect expiresAt and getActiveTreaties filters by game time', () => {

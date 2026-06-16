@@ -17,10 +17,11 @@ import {
   type Unit,
   type WorldState,
 } from 'sim';
+import { resolvePlayerFactionId } from 'shared';
 import { formatDateTime } from '../utils/format';
 import { formatFactionIdentityLine, getFactionIdentity } from './factionDisplay';
 
-export const PLAYER_FACTION_ID = 'faction-player';
+export { resolvePlayerFactionId } from 'shared';
 
 /**
  * When true, map/order views show all territories and units (fog off).
@@ -66,7 +67,11 @@ export function playerVisibility(world: WorldState): FactionVisibility {
   if (DEV_REVEAL) {
     return revealAll(world);
   }
-  return computeVisibility(world, PLAYER_FACTION_ID);
+  const factionId = resolvePlayerFactionId(world);
+  if (!factionId) {
+    return { territoryStates: {}, territoryIds: new Set(), unitIds: new Set() };
+  }
+  return computeVisibility(world, factionId);
 }
 
 function territoryName(world: WorldState, territoryId: string): string {
@@ -118,17 +123,21 @@ export function playerVisibleTerritories(world: WorldState): Territory[] {
 }
 
 export function playerOwnedTerritories(world: WorldState): Territory[] {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return [];
   return Object.values(world.territories).filter(
-    (territory) => territory.ownerId === PLAYER_FACTION_ID,
+    (territory) => territory.ownerId === playerId,
   );
 }
 
 export function playerMovableUnits(world: WorldState): Unit[] {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return [];
   const { unitIds } = playerVisibility(world);
   return Object.values(world.units).filter(
     (unit) =>
       unitIds.has(unit.id) &&
-      unit.ownerId === PLAYER_FACTION_ID &&
+      unit.ownerId === playerId &&
       !unit.transit &&
       unit.locationId,
   );
@@ -136,10 +145,31 @@ export function playerMovableUnits(world: WorldState): Unit[] {
 
 /** All player stacks visible under fog (stationed or in transit). */
 export function playerForces(world: WorldState): Unit[] {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return [];
   const { unitIds } = playerVisibility(world);
   return Object.values(world.units).filter(
-    (unit) => unit.ownerId === PLAYER_FACTION_ID && unitIds.has(unit.id),
+    (unit) => unit.ownerId === playerId && unitIds.has(unit.id),
   );
+}
+
+/** In-flight hostile assault orders — clears when recalled or redirected. */
+export function playerHostileAssaultsInTransit(world: WorldState): number {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return 0;
+
+  return playerForces(world).filter((unit) => {
+    const transit = unit.transit;
+    if (!transit || transit.stanceOnArrival !== 'assault') return false;
+
+    const destId = transit.toTerritoryId;
+    if (!destId) return false;
+
+    const destOwner = world.territories[destId]?.ownerId;
+    if (!destOwner || destOwner === playerId) return false;
+    if (areAllied(world, playerId, destOwner)) return false;
+    return true;
+  }).length;
 }
 
 /** Live sight only — binary fog gate for detail that must reflect current ground truth. */
@@ -301,8 +331,19 @@ export function getDashboardCatchUpSummary(
   world: WorldState,
   events: SimEvent[],
   awayMs: number,
-  factionId: Id = PLAYER_FACTION_ID,
+  factionId?: Id,
 ): DashboardCatchUpSummary {
+  const resolvedFactionId = factionId ?? resolvePlayerFactionId(world);
+  if (!resolvedFactionId) {
+    return {
+      mode: 'current',
+      awayMs,
+      critical: [],
+      notableCount: 0,
+      routineCount: 0,
+      totalCount: 0,
+    };
+  }
   if (awayMs < DASHBOARD_AWAY_COLLAPSE_MS) {
     return {
       mode: 'current',
@@ -315,7 +356,7 @@ export function getDashboardCatchUpSummary(
   }
 
   const sinceMs = world.nowMs - awayMs;
-  const visible = filterDispatchesForFaction(world, events, factionId).filter(
+  const visible = filterDispatchesForFaction(world, events, resolvedFactionId).filter(
     (event): event is SimEvent & { at: number } =>
       isTimestampedEvent(event) && event.at > sinceMs,
   );
@@ -329,7 +370,7 @@ export function getDashboardCatchUpSummary(
     if (importance === 'high') {
       critical.push({
         id: `${event.kind}-${event.at}`,
-        label: dispatchLineForEvent(world, event, factionId),
+        label: dispatchLineForEvent(world, event, resolvedFactionId),
         atMs: event.at,
       });
     } else if (importance === 'medium') {
@@ -353,11 +394,14 @@ export function getDashboardCatchUpSummary(
 export function getDashboardUrgentItems(
   world: WorldState,
   events: SimEvent[],
-  factionId: Id = PLAYER_FACTION_ID,
+  factionId?: Id,
 ): DashboardUrgentItem[] {
+  const resolvedFactionId = factionId ?? resolvePlayerFactionId(world);
+  if (!resolvedFactionId) return [];
+
   const items: DashboardUrgentItem[] = [];
 
-  for (const proposal of pendingProposalsForFaction(world, factionId)) {
+  for (const proposal of pendingProposalsForFaction(world, resolvedFactionId)) {
     const fromLeaderId = world.factions[proposal.from]?.leaderId;
     const fromName = world.leaders[fromLeaderId ?? '']?.name ?? proposal.from;
     const hoursLeft = Math.max(0, Math.ceil((proposal.expiresAt - world.nowMs) / 3_600_000));
@@ -373,7 +417,7 @@ export function getDashboardUrgentItems(
     });
   }
 
-  const visible = filterDispatchesForFaction(world, events, factionId);
+  const visible = filterDispatchesForFaction(world, events, resolvedFactionId);
   const crisisSinceMs = world.nowMs - CRISIS_WINDOW_MS;
   for (const event of visible) {
     if (!isTimestampedEvent(event) || event.at < crisisSinceMs) continue;
@@ -383,7 +427,7 @@ export function getDashboardUrgentItems(
     items.push({
       id: `crisis-${event.kind}-${event.at}`,
       kind: 'crisis',
-      label: dispatchLineForEvent(world, event, factionId),
+      label: dispatchLineForEvent(world, event, resolvedFactionId),
       urgencyScore: 800 - (world.nowMs - event.at) / 3_600_000,
       deadlineMs: event.at,
       navigation: { screen: 'Dispatches' },
@@ -413,13 +457,16 @@ export function getDashboardUrgentItems(
 /** Glance-readable empire snapshot for the dashboard header block. */
 export function getDashboardEmpireSummary(
   world: WorldState,
-  factionId: Id = PLAYER_FACTION_ID,
+  factionId?: Id,
 ): DashboardEmpireSummary | null {
-  const faction = world.factions[factionId];
+  const resolvedFactionId = factionId ?? resolvePlayerFactionId(world);
+  if (!resolvedFactionId) return null;
+
+  const faction = world.factions[resolvedFactionId];
   if (!faction) return null;
 
   const leader = world.leaders[faction.leaderId];
-  const identity = getFactionIdentity(world, factionId);
+  const identity = getFactionIdentity(world, resolvedFactionId);
   const territories = playerOwnedTerritories(world).sort((a, b) =>
     a.name.localeCompare(b.name),
   );
@@ -433,13 +480,13 @@ export function getDashboardEmpireSummary(
 
   let allianceCount = 0;
   for (const other of Object.values(world.factions)) {
-    if (other.id !== factionId && areAllied(world, factionId, other.id)) {
+    if (other.id !== resolvedFactionId && areAllied(world, resolvedFactionId, other.id)) {
       allianceCount += 1;
     }
   }
 
   return {
-    factionId,
+    factionId: resolvedFactionId,
     leaderName: identity.leaderName,
     regionName: identity.countryName,
     territoryNames: identity.territoryNames,
@@ -472,7 +519,7 @@ export function getDashboardEmpireSummary(
 export function getDashboardNavCards(
   world: WorldState,
   events: SimEvent[],
-  factionId: Id = PLAYER_FACTION_ID,
+  factionId?: Id,
 ): DashboardNavCard[] {
   const urgent = getDashboardUrgentItems(world, events, factionId);
   const diplomacyBadge = urgent.filter(
@@ -481,12 +528,12 @@ export function getDashboardNavCards(
   const territoryBadge = urgent.filter((item) => item.kind === 'build-blocker').length;
   const staleIntel = playerWorldIntel(world).filter((entry) => entry.state === 'stale').length;
   const forcesInTransit = playerForces(world).filter((unit) => unit.transit).length;
-  const movableForces = playerMovableUnits(world).length;
+  const hostileAssaultsInTransit = playerHostileAssaultsInTransit(world);
 
   return [
     { screen: 'Dispatches', label: 'Dispatches', badgeCount: 0 },
     { screen: 'World', label: 'World', badgeCount: staleIntel > 0 ? staleIntel : 0 },
-    { screen: 'Order', label: 'Order', badgeCount: movableForces > 0 ? 1 : 0 },
+    { screen: 'Order', label: 'Order', badgeCount: hostileAssaultsInTransit > 0 ? 1 : 0 },
     { screen: 'Diplomacy', label: 'Diplomacy', badgeCount: diplomacyBadge },
     { screen: 'Territory', label: 'Territory', badgeCount: territoryBadge },
     { screen: 'Forces', label: 'Forces', badgeCount: forcesInTransit },
@@ -497,7 +544,7 @@ export function getDashboardNavCards(
 export function getDashboardUrgentCount(
   world: WorldState,
   events: SimEvent[],
-  factionId: Id = PLAYER_FACTION_ID,
+  factionId?: Id,
 ): number {
   return getDashboardUrgentItems(world, events, factionId).length;
 }

@@ -181,7 +181,7 @@ describe('dispatch diplomacy', () => {
   });
 
   it('emits allied intel dispatch lines to the allied receiver after tick', () => {
-    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, BRITAIN, START_MS);
+    const allied = formAlliance(createSprint4World(START_MS), GENGHIS, BRITAIN, START_MS).world;
     const observedAt = START_MS + 2_000;
     const withIntel = {
       ...allied,
@@ -206,6 +206,25 @@ describe('dispatch diplomacy', () => {
     );
     expect(alliedLines.length).toBeGreaterThan(0);
     expect(dispatchLineForEvent(withIntel, alliedLines[0]!)).toContain("Genghis's forces report");
+  });
+
+  it('formats order redirected to ally when assault target is ally-held on arrival', () => {
+    const world = createSprint4World(START_MS);
+    const event = {
+      kind: 'orderRedirectedToAlly' as const,
+      eventId: 'evt-redirect-test',
+      at: START_MS,
+      orderingFactionId: PLAYER,
+      territoryId: BERLIN,
+      newOwnerId: GENGHIS,
+      unitId: 'unit-player-mg',
+      fromTerritoryId: 'territory-london',
+    };
+
+    const line = dispatchLineForEvent(world, event, PLAYER);
+    expect(line).toContain('Assault cancelled');
+    expect(line).toContain('Berlin');
+    expect(line).toContain('Genghis');
   });
 });
 

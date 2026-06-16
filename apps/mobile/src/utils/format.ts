@@ -29,6 +29,19 @@ export function formatDateTime(epochMs: number): string {
   });
 }
 
+/** Compact game-clock label for the persistent header (no weekday). */
+export function formatGameClock(epochMs: number): string {
+  const date = new Date(epochMs).toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  });
+  const time = new Date(epochMs).toLocaleString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return `${date} · ${time}`;
+}
+
 export function formatFunding(amount: number): string {
   return `$${Math.floor(amount).toLocaleString()}`;
 }

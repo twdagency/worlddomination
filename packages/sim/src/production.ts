@@ -14,7 +14,7 @@ import type {
   Millis,
   Order,
   ResourceId,
-  SimEvent,
+  SimEventDraft,
   Territory,
   Unit,
   UnitType,
@@ -225,11 +225,11 @@ export function applyBuildOrders(
 ): {
   factions: WorldState['factions'];
   territories: WorldState['territories'];
-  events: SimEvent[];
+  events: SimEventDraft[];
 } {
   let factions = { ...world.factions };
   let territories = { ...world.territories };
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   for (const order of orders) {
     if (order.kind === 'build') {
@@ -357,11 +357,11 @@ export function resolveProductionCompletions(
 ): {
   units: WorldState['units'];
   territories: WorldState['territories'];
-  events: SimEvent[];
+  events: SimEventDraft[];
 } {
   let units = { ...world.units };
   let territories = { ...world.territories };
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   for (const territory of Object.values(world.territories)) {
     const queue = territory.buildQueue ?? [];

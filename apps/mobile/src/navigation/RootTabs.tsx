@@ -1,11 +1,16 @@
-import React from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, type NavigationState } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { resolveTabBarBottomInset } from './tabBarMetrics';
 import { Ionicons } from '@expo/vector-icons';
 import { useGame } from '../game/GameContext';
 import { PersistentHeader } from '../components/PersistentHeader';
+import { TutorialBanner } from '../components/tutorial/TutorialBanner';
 import { ActionStackNavigator } from './ActionStackNavigator';
+import { maybeCollapseTutorialBannerOnNavigation } from './TutorialNavigationBridge';
+import { rootNavigationRef } from './navigationRef';
 import { DispatchesScreen } from '../screens/DispatchesScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { WorldScreen } from '../screens/WorldScreen';
@@ -37,8 +42,45 @@ function tabBarIcon(iconName: string, activeIconName: string) {
   );
 }
 
+function useTabBarStyle() {
+  const insets = useSafeAreaInsets();
+  return useMemo(() => {
+    const bottomInset = resolveTabBarBottomInset(insets.bottom);
+    return {
+      backgroundColor: terminal.card,
+      borderTopColor: terminal.border,
+      paddingTop: 6,
+      paddingBottom: bottomInset,
+    };
+  }, [insets.bottom]);
+}
+
 export function RootTabs() {
-  const { ready } = useGame();
+  const {
+    ready,
+    bannerMode,
+    currentBeatCopy,
+    currentBeat,
+    dismissBanner,
+    expandTutorialBanner,
+    collapseTutorialBanner,
+    isHandoffReady,
+    isTutorialActive,
+    graduate,
+  } = useGame();
+
+  const tabBarStyle = useTabBarStyle();
+
+  const onNavigationStateChange = useCallback(
+    (state: NavigationState | undefined) => {
+      maybeCollapseTutorialBannerOnNavigation(state, {
+        isTutorialActive,
+        currentBeat,
+        collapseTutorialBanner,
+      });
+    },
+    [isTutorialActive, currentBeat, collapseTutorialBanner],
+  );
 
   if (!ready) {
     return (
@@ -50,14 +92,30 @@ export function RootTabs() {
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer
+      ref={rootNavigationRef}
+      theme={navTheme}
+      onReady={() => onNavigationStateChange(rootNavigationRef.getRootState())}
+      onStateChange={onNavigationStateChange}
+    >
       <View style={styles.appShell}>
         <PersistentHeader />
+        {bannerMode !== 'hidden' && currentBeatCopy ? (
+          <TutorialBanner
+            copy={currentBeatCopy}
+            mode={bannerMode}
+            onDismiss={dismissBanner}
+            onExpand={expandTutorialBanner}
+            onCollapse={collapseTutorialBanner}
+            isHandoffReady={isHandoffReady}
+            onGraduate={graduate}
+          />
+        ) : null}
         <Tab.Navigator
           initialRouteName="Dashboard"
           screenOptions={{
             headerShown: false,
-            tabBarStyle: styles.tabBar,
+            tabBarStyle,
             tabBarActiveTintColor: terminal.accent,
             tabBarInactiveTintColor: terminal.muted,
             tabBarLabelStyle: styles.tabLabel,
@@ -101,13 +159,6 @@ const styles = StyleSheet.create({
   appShell: {
     flex: 1,
     backgroundColor: terminal.bg,
-  },
-  tabBar: {
-    backgroundColor: terminal.card,
-    borderTopColor: terminal.border,
-    height: Platform.OS === 'ios' ? 84 : 64,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-    paddingTop: 6,
   },
   tabLabel: {
     fontFamily: terminal.mono,

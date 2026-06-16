@@ -43,7 +43,7 @@ export function runDiplomacyBenchmarks(): {
 } {
   const world = createSprint4World(BENCH_START_MS);
   const decisionMs = BENCH_START_MS + AI_DECISION_INTERVAL_MS;
-  const alliedWorld = formAlliance(world, 'faction-steppe', 'faction-britain', BENCH_START_MS);
+  const alliedWorld = formAlliance(world, 'faction-steppe', 'faction-britain', BENCH_START_MS).world;
   const { world: advanced24 } = advanceTo(alliedWorld, BENCH_START_MS + 24 * 3_600_000);
 
   let alliedCount = 0;

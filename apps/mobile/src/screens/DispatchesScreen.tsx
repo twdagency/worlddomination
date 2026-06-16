@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useGame } from '../game/GameContext';
 import { formatDispatchLine, buildDisplayDispatchFeed, isDispatchDetailEvent, isTimestampedDispatch } from '../game/actions';
+import { showDevControls } from '../game/devFlag';
 import { BattleDetailCard } from '../components/BattleDetailCard';
 import { IntelSourceHint } from '../components/IntelSourceHint';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { DevScenarioSelector } from '../components/DevScenarioSelector';
+import { ScrollFadeFooter } from '../components/ScrollFadeFooter';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import { formatDateTime } from '../utils/format';
@@ -28,49 +30,54 @@ export function DispatchesScreen() {
 
   return (
     <View style={styles.container}>
-      {__DEV__ && <DevScenarioSelector />}
-      {__DEV__ && <DevTimeSkip />}
+      {showDevControls && <DevScenarioSelector />}
+      {showDevControls && <DevTimeSkip />}
 
-      <FlatList
-        data={feed}
-        keyExtractor={(item) => item.key}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <TerminalCard>
-            <Text style={styles.empty}>No dispatches yet. Issue an assault order.</Text>
-          </TerminalCard>
-        }
-        renderItem={({ item, index }) => {
-          const isExpanded = expandedIndex === index;
-          const showDetail = isDispatchDetailEvent(item.event) && item.event.kind === 'battle';
+      <View style={styles.listWrap}>
+        <FlatList
+          data={feed}
+          keyExtractor={(item) => item.event.eventId}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator
+          persistentScrollbar
+          ListEmptyComponent={
+            <TerminalCard>
+              <Text style={styles.empty}>No dispatches yet. Issue an assault order.</Text>
+            </TerminalCard>
+          }
+          renderItem={({ item, index }) => {
+            const isExpanded = expandedIndex === index;
+            const showDetail = isDispatchDetailEvent(item.event) && item.event.kind === 'battle';
 
-          return (
-            <Pressable
-              onPress={() =>
-                setExpandedIndex(isExpanded ? null : showDetail ? index : null)
-              }
-            >
-              <TerminalCard>
-                {item.header && <Text style={styles.beatHeader}>{item.header}</Text>}
-                <Text style={styles.timestamp}>{formatDateTime(item.event.at)}</Text>
-                <Text style={[styles.line, { color: dispatchAccent(item.event.kind) }]}>
-                  {item.line}
-                </Text>
-                {item.event.kind === 'intelReport' && (
-                  <IntelSourceHint sources={[item.event.source]} />
-                )}
-                {isExpanded && item.event.kind === 'battle' && (
-                  <BattleDetailCard
-                    report={item.event.report}
-                    territoryId={item.event.territoryId}
-                    world={world}
-                  />
-                )}
-              </TerminalCard>
-            </Pressable>
-          );
-        }}
-      />
+            return (
+              <Pressable
+                onPress={() =>
+                  setExpandedIndex(isExpanded ? null : showDetail ? index : null)
+                }
+              >
+                <TerminalCard>
+                  {item.header && <Text style={styles.beatHeader}>{item.header}</Text>}
+                  <Text style={styles.timestamp}>{formatDateTime(item.event.at)}</Text>
+                  <Text style={[styles.line, { color: dispatchAccent(item.event.kind) }]}>
+                    {item.line}
+                  </Text>
+                  {item.event.kind === 'intelReport' && (
+                    <IntelSourceHint sources={[item.event.source]} />
+                  )}
+                  {isExpanded && item.event.kind === 'battle' && (
+                    <BattleDetailCard
+                      report={item.event.report}
+                      territoryId={item.event.territoryId}
+                      world={world}
+                    />
+                  )}
+                </TerminalCard>
+              </Pressable>
+            );
+          }}
+        />
+        <ScrollFadeFooter testID="dispatches-scroll-fade" />
+      </View>
     </View>
   );
 }
@@ -80,6 +87,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: terminal.bg,
     padding: 16,
+  },
+  listWrap: {
+    flex: 1,
+    position: 'relative',
   },
   list: {
     paddingTop: 12,

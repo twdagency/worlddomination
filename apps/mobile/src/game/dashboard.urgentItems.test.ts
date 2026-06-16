@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createSprint4World } from 'shared';
+import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import type { SimEvent } from 'sim';
-import { getDashboardUrgentItems, PLAYER_FACTION_ID } from '../game/playerView';
+import { testSimEvent } from '../test/simEventFixtures';
+import { getDashboardUrgentItems } from '../game/playerView';
 
 const START_MS = 1_700_000_000_000;
+const playerId = () => resolvePlayerFactionId(createSprint4World(START_MS))!;
 
 describe('dashboard urgent item prioritization', () => {
   it('ranks incoming proposals above build blockers', () => {
@@ -28,7 +30,7 @@ describe('dashboard urgent item prioritization', () => {
         {
           id: 'proposal-urgent',
           from: 'faction-rome',
-          to: PLAYER_FACTION_ID,
+          to: playerId(),
           type: 'alliance' as const,
           proposedAt: START_MS,
           expiresAt: START_MS + 4 * 3_600_000,
@@ -46,22 +48,22 @@ describe('dashboard urgent item prioritization', () => {
   it('includes crisis events within the recent window', () => {
     const world = createSprint4World(START_MS + 3_600_000);
     const events: SimEvent[] = [
-      {
+      testSimEvent({
         kind: 'battle',
         at: START_MS + 2 * 3_600_000,
         territoryId: 'territory-paris',
         report: {
           narrative: 'Heavy fighting at Paris',
-          attackerId: PLAYER_FACTION_ID,
+          attackerId: playerId(),
           defenderId: 'faction-rome',
           attackerLosses: 1,
           defenderLosses: 2,
           attackerPower: 10,
           defenderPower: 8,
-          winnerId: PLAYER_FACTION_ID,
+          winnerId: playerId(),
         },
         importance: 'high',
-      },
+      }),
     ];
 
     const items = getDashboardUrgentItems(world, events);
@@ -76,7 +78,7 @@ describe('dashboard urgent item prioritization', () => {
         {
           id: 'proposal-nav',
           from: 'faction-steppe',
-          to: PLAYER_FACTION_ID,
+          to: playerId(),
           type: 'treaty' as const,
           scope: { territoryIds: ['territory-berlin'] },
           proposedAt: START_MS,

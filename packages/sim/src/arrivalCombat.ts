@@ -7,20 +7,21 @@ import {
   resolveBattle,
   sidePower,
 } from './combat';
+import { areAllied } from './diplomacy';
 import { recordDestroyedScoutIntel, ensureIntelStore } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import {
   formatBattleNarrative,
   formatSecuredNarrative,
 } from './reports';
-import type { Id, IntelStore, Millis, SimEvent, Unit, WorldState } from './types';
+import type { Id, IntelStore, Millis, SimEventDraft, Unit, WorldState } from './types';
 
 export interface ArrivalResolution {
   units: WorldState['units'];
   territories: WorldState['territories'];
   rng: WorldState['rng'];
   intel: IntelStore;
-  events: SimEvent[];
+  events: SimEventDraft[];
 }
 
 function relocateFleeingDefenders(
@@ -55,6 +56,64 @@ function relocateFleeingDefenders(
   return { units: next, fallbackId, destroyed };
 }
 
+function resolvePeacefulAllyArrival(
+  world: WorldState,
+  arrivingUnit: Unit,
+  territoryId: Id,
+  fromTerritoryId: Id | undefined,
+  at: Millis,
+  stanceOnArrival: 'assault' | 'secure' | 'hold',
+): ArrivalResolution {
+  const events: SimEventDraft[] = [];
+  const units = { ...world.units };
+  const allyFactionId = world.territories[territoryId]?.ownerId;
+  const originId = fromTerritoryId ?? arrivingUnit.locationId;
+
+  if (originId) {
+    units[arrivingUnit.id] = {
+      ...arrivingUnit,
+      locationId: originId,
+      transit: undefined,
+    };
+  } else {
+    delete units[arrivingUnit.id];
+  }
+
+  if (allyFactionId) {
+    events.push({
+      kind: 'allyArrivalPeaceful',
+      at,
+      factionId: arrivingUnit.ownerId,
+      allyFactionId,
+      territoryId,
+      fromTerritoryId: originId ?? territoryId,
+      unitId: arrivingUnit.id,
+      importance: 'medium',
+    });
+
+    if (stanceOnArrival === 'assault') {
+      events.push({
+        kind: 'orderRedirectedToAlly',
+        at,
+        orderingFactionId: arrivingUnit.ownerId,
+        territoryId,
+        newOwnerId: allyFactionId,
+        unitId: arrivingUnit.id,
+        fromTerritoryId: originId ?? territoryId,
+        importance: 'medium',
+      });
+    }
+  }
+
+  return {
+    units,
+    territories: { ...world.territories },
+    rng: world.rng,
+    intel: ensureIntelStore(world),
+    events,
+  };
+}
+
 /**
  * After a unit arrives at `territoryId`, resolve hostile confrontation,
  * retreat, or peaceful occupation. Pure.
@@ -65,8 +124,9 @@ export function resolveHostileArrival(
   territoryId: Id,
   at: Millis,
   stanceOnArrival: 'assault' | 'secure' | 'hold',
+  fromTerritoryId?: Id,
 ): ArrivalResolution {
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
   let units = { ...world.units, [arrivingUnit.id]: arrivingUnit };
   let territories = { ...world.territories };
   let rng = world.rng;
@@ -83,9 +143,32 @@ export function resolveHostileArrival(
   const isEnemyTerritory =
     defenderFactionId !== undefined && defenderFactionId !== attackerId;
 
+  if (
+    isEnemyTerritory &&
+    defenderFactionId &&
+    areAllied(world, attackerId, defenderFactionId)
+  ) {
+    return resolvePeacefulAllyArrival(
+      world,
+      arrivingUnit,
+      territoryId,
+      fromTerritoryId,
+      at,
+      stanceOnArrival,
+    );
+  }
+
   if (!isEnemyTerritory) {
     if (territory.ownerId === undefined) {
       territories[territoryId] = { ...territory, ownerId: attackerId };
+      events.push({
+        kind: 'territoryCaptured',
+        at,
+        territoryId,
+        previousOwnerId: undefined,
+        newOwnerId: attackerId,
+        importance: 'high',
+      });
       events.push({
         kind: 'secured',
         at,
@@ -182,6 +265,14 @@ export function resolveHostileArrival(
       units[arrivingUnit.id] = { ...survivor, locationId: territoryId };
     }
     events.push({
+      kind: 'territoryCaptured',
+      at,
+      territoryId,
+      previousOwnerId: defenderFactionId,
+      newOwnerId: attackerId,
+      importance: 'high',
+    });
+    events.push({
       kind: 'secured',
       at,
       territoryId,
@@ -250,6 +341,14 @@ export function resolveHostileArrival(
   });
 
   if (battle.winnerId === attackerId) {
+    events.push({
+      kind: 'territoryCaptured',
+      at,
+      territoryId,
+      previousOwnerId: defenderFactionId,
+      newOwnerId: attackerId,
+      importance: 'high',
+    });
     events.push({
       kind: 'secured',
       at,

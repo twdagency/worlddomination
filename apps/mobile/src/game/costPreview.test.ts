@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSprint4World } from 'shared';
+import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import {
   evaluateCostLines,
   infraUpgradeCostPreview,
@@ -9,7 +9,7 @@ import {
 
 const START_MS = 1_700_000_000_000;
 const LONDON = 'territory-london';
-const PLAYER = 'faction-player';
+const playerId = () => resolvePlayerFactionId(createSprint4World(START_MS))!;
 
 describe('costPreview', () => {
   it('marks affordable when all lines meet requirements', () => {
@@ -31,7 +31,7 @@ describe('costPreview', () => {
 
   it('computes infra upgrade cost from territory level', () => {
     const world = createSprint4World(START_MS);
-    const preview = infraUpgradeCostPreview(world, LONDON, PLAYER);
+    const preview = infraUpgradeCostPreview(world, LONDON, playerId());
     expect(preview.lines).toHaveLength(1);
     expect(preview.lines[0]?.required).toBeGreaterThan(0);
   });
@@ -40,7 +40,7 @@ describe('costPreview', () => {
     const world = createSprint4World(START_MS);
     const infantry = world.unitTypes['infantry-t2'];
     expect(infantry).toBeDefined();
-    const preview = unitBuildCostPreview(world, LONDON, infantry!, PLAYER);
+    const preview = unitBuildCostPreview(world, LONDON, infantry!, playerId());
     expect(preview.lines.some((line) => line.id === 'funding')).toBe(true);
     expect(preview.lines.some((line) => line.id === 'manpower')).toBe(true);
   });

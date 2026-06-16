@@ -42,7 +42,7 @@ function directRecord(
 describe('allied intel emission', () => {
   it("copies ally direct records into the partner store as 'allied'", () => {
     const base = createSprint4World(START_MS);
-    const allied = formAlliance(base, GENGHIS, CAESAR, START_MS);
+    const allied = formAlliance(base, GENGHIS, CAESAR, START_MS).world;
     const observedAt = START_MS + 3_600_000;
     const snapshot = {
       ownerId: GENGHIS,
@@ -72,7 +72,7 @@ describe('allied intel emission', () => {
   });
 
   it('preserves observerFaction as the original observer, not the receiver', () => {
-    const base = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const base = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
     const observedAt = START_MS + 1_000;
     const world: WorldState = {
       ...base,
@@ -100,8 +100,8 @@ describe('allied intel emission', () => {
 
   it('does not re-share allied records (non-transitive)', () => {
     const base = createSprint4World(START_MS);
-    let world = formAlliance(base, GENGHIS, CAESAR, START_MS);
-    world = formAlliance(world, GENGHIS, BRITAIN, START_MS);
+    let world = formAlliance(base, GENGHIS, CAESAR, START_MS).world;
+    world = formAlliance(world, GENGHIS, BRITAIN, START_MS).world;
     const observedAt = START_MS + 2_000;
 
     world = {
@@ -145,7 +145,7 @@ describe('allied intel emission', () => {
   });
 
   it('breakAlliance immediately prunes allied records from both factions', () => {
-    const base = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const base = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
     const observedAt = START_MS + 4_000;
     const withIntel: WorldState = {
       ...base,
@@ -212,7 +212,7 @@ describe('allied intel emission', () => {
   });
 
   it('tick records direct/scout first, then emits allied shares at the boundary', () => {
-    const world = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const world = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
     const withScouts: WorldState = {
       ...world,
       units: {
@@ -278,7 +278,7 @@ describe('allied intel emission', () => {
   });
 
   it('production code emits allied records when alliances exist', () => {
-    const world = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const world = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
     const withDirect = recordIntelObservations(world);
     const withAllied = recordAlliedObservations({ ...world, intel: withDirect });
 
@@ -289,7 +289,7 @@ describe('allied intel emission', () => {
   });
 
   it('shared allied intel can make foreign territory live for the receiver', () => {
-    const base = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS);
+    const base = formAlliance(createSprint4World(START_MS), GENGHIS, CAESAR, START_MS).world;
     const observedAt = START_MS + 5_000;
     const world: WorldState = {
       ...base,

@@ -239,6 +239,33 @@ function hoursUntil(expiresAt: Millis, at: Millis): number {
   return Math.max(1, Math.round((expiresAt - at) / 3_600_000));
 }
 
+function formatAllyArrivalPeacefulLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'allyArrivalPeaceful' }>,
+): string {
+  const allyName = factionName(world, event.allyFactionId);
+  const place = territoryName(world, event.territoryId);
+  const origin = territoryName(world, event.fromTerritoryId);
+  return `DIPLOMACY — Forces from ${allyName} arrived at ${place} — peaceful, returned to ${origin}.`;
+}
+
+function formatDispatchCancelledByAllianceLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'dispatchCancelledByAlliance' }>,
+): string {
+  const allyName = factionName(world, event.allyFactionId);
+  return `DIPLOMACY — Order cancelled — alliance with ${allyName} formed mid-transit.`;
+}
+
+function formatOrderRedirectedToAllyLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'orderRedirectedToAlly' }>,
+): string {
+  const allyName = factionName(world, event.newOwnerId);
+  const place = territoryName(world, event.territoryId);
+  return `DIPLOMACY — Assault cancelled — ${place} now held by allied ${allyName}.`;
+}
+
 export function formatAllianceProposedLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'allianceProposed' }>,
@@ -344,6 +371,14 @@ export function dispatchLineForEvent(
       return formatProductionNarrative(world, event);
     case 'buildBlocked':
       return `BLOCKED — ${event.reason}`;
+    case 'tutorialGraduated':
+      return 'Your tutorial is complete. Your full campaign begins now.';
+    case 'allyArrivalPeaceful':
+      return formatAllyArrivalPeacefulLine(world, event);
+    case 'dispatchCancelledByAlliance':
+      return formatDispatchCancelledByAllianceLine(world, event);
+    case 'orderRedirectedToAlly':
+      return formatOrderRedirectedToAllyLine(world, event);
     default:
       return `${event.kind} event`;
   }
@@ -379,7 +414,7 @@ export function buildDispatchFeed(
     }
 
     items.push({
-      key: `${i}-${event.kind}-${'at' in event ? event.at : i}`,
+      key: event.eventId,
       header,
       event,
       line,
@@ -535,6 +570,13 @@ export function isDispatchVisibleToFaction(
     case 'withdrawal':
     case 'secured':
       return isTerritoryVisible(world, factionId, event.territoryId);
+
+    case 'allyArrivalPeaceful':
+    case 'dispatchCancelledByAlliance':
+      return event.factionId === factionId;
+
+    case 'orderRedirectedToAlly':
+      return event.orderingFactionId === factionId;
 
     default:
       return true;

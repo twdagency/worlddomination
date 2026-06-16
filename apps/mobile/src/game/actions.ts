@@ -21,14 +21,16 @@ import {
 } from 'sim';
 import type { DispatchFeedItem, SimEvent, WorldState } from 'sim';
 import type { TransitOrder } from 'sim';
-import { PLAYER_FACTION_ID } from './playerView';
+import { resolvePlayerFactionId } from 'shared';
 
 export function mergeDispatches(
   world: WorldState,
   existing: SimEvent[],
   incoming: SimEvent[],
 ): SimEvent[] {
-  const visible = filterDispatchesForFaction(world, incoming, PLAYER_FACTION_ID);
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return existing;
+  const visible = filterDispatchesForFaction(world, incoming, playerId);
   return [...existing, ...visible].slice(-100);
 }
 
@@ -39,18 +41,19 @@ export function catchUp(world: WorldState, targetMs: number = Date.now()): {
   return advanceTo(world, targetMs);
 }
 
-const PLAYER_FACTION = 'faction-player';
-
 export function issueMove(
   world: WorldState,
   unitId: string,
   toTerritoryId: string,
   stanceOnArrival: TransitOrder['stanceOnArrival'] = 'assault',
 ): { world: WorldState; events: SimEvent[] } {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return { world, events: [] };
+
   const unit = world.units[unitId];
   const intent = intentFromMoveStance(
     stanceOnArrival,
-    unit?.ownerId ?? PLAYER_FACTION,
+    unit?.ownerId ?? playerId,
     toTerritoryId,
     world,
   );
@@ -62,7 +65,7 @@ export function issueMove(
         unitId,
         toTerritoryId,
         stanceOnArrival,
-        ...taggedOrderFields(PLAYER_FACTION, world.nowMs, intent),
+        ...taggedOrderFields(playerId, world.nowMs, intent),
       },
     ],
     0,
@@ -75,6 +78,9 @@ export function issueBuild(
   unitTypeId: string,
   count: number = 1,
 ): { world: WorldState; events: SimEvent[] } {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return { world, events: [] };
+
   return tick(
     world,
     [
@@ -83,7 +89,7 @@ export function issueBuild(
         territoryId,
         unitTypeId,
         count,
-        ...taggedOrderFields(PLAYER_FACTION, world.nowMs, 'build'),
+        ...taggedOrderFields(playerId, world.nowMs, 'build'),
       },
     ],
     0,
@@ -94,13 +100,16 @@ export function issueUpgradeInfra(
   world: WorldState,
   territoryId: string,
 ): { world: WorldState; events: SimEvent[] } {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return { world, events: [] };
+
   return tick(
     world,
     [
       {
         kind: 'upgradeInfra',
         territoryId,
-        ...taggedOrderFields(PLAYER_FACTION, world.nowMs, 'build'),
+        ...taggedOrderFields(playerId, world.nowMs, 'build'),
       },
     ],
     0,
@@ -142,9 +151,7 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
     event.kind === 'treatyProposed' ||
     event.kind === 'treatyDeclined'
   ) {
-    const playerId = world.factions['faction-player']?.isPlayer
-      ? 'faction-player'
-      : Object.values(world.factions).find((faction) => faction.isPlayer)?.id;
+    const playerId = resolvePlayerFactionId(world);
     return dispatchLineForEvent(world, event, playerId);
   }
 
@@ -212,7 +219,9 @@ export function buildDisplayDispatchFeed(
   events: SimEvent[],
   awayMs: number,
 ): DispatchFeedItem[] {
-  const visible = filterDispatchesForFaction(world, events, PLAYER_FACTION_ID);
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return [];
+  const visible = filterDispatchesForFaction(world, events, playerId);
   if (awayMs > COMPACTION_THRESHOLD_MS) {
     return compactDispatchFeed(world, visible, awayMs, formatDispatchLine);
   }

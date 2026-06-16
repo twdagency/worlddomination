@@ -81,7 +81,7 @@ export function createSprint5World(nowMs: number = Date.now()): WorldState {
     },
     'faction-britain': {
       id: 'faction-britain',
-      leaderId: 'leader-elizabeth',
+      leaderId: 'leader-suleiman',
       isPlayer: false,
       funding: 24_000,
       manpower: 8_500,

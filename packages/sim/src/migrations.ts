@@ -1,5 +1,7 @@
-import type { Leader, UnitType, WorldState } from './types';
+import type { Leader, TutorialState, UnitType, WorldState } from './types';
 import { ensureWorldDiplomacy } from './diplomacy';
+import { ensureWorldEventCounter } from './events';
+import { STANDARD_TIME_MULTIPLIER } from './tutorial';
 
 export interface WorldMigrationCatalog {
   /** Canonical unit types merged into saves missing newer entries (e.g. scout-t1). */
@@ -21,6 +23,44 @@ function mergeMissingById<T>(
   return merged;
 }
 
+function normalizeTutorialState(tutorial: Partial<TutorialState>): TutorialState {
+  return {
+    active: tutorial.active ?? false,
+    currentBeat: tutorial.currentBeat ?? null,
+    completedBeats: tutorial.completedBeats ?? [],
+    startedAt: tutorial.startedAt ?? 0,
+    graduatedAt: tutorial.graduatedAt ?? null,
+  };
+}
+
+/** Backfill time multiplier and partial tutorial objects on older saves. */
+export function ensureWorldTimeMultiplier(world: WorldState): WorldState {
+  const timeMultiplier = world.timeMultiplier ?? STANDARD_TIME_MULTIPLIER;
+  if (world.tutorial === undefined) {
+    return { ...world, timeMultiplier };
+  }
+  return {
+    ...world,
+    timeMultiplier,
+    tutorial: normalizeTutorialState(world.tutorial),
+  };
+}
+
+function ensureFactionFields(world: WorldState): WorldState {
+  const factions: WorldState['factions'] = {};
+  for (const [id, faction] of Object.entries(world.factions)) {
+    factions[id] = {
+      ...faction,
+      identityTags: faction.identityTags ?? [],
+    };
+  }
+  return {
+    ...world,
+    factions,
+    pendingDilemmas: world.pendingDilemmas ?? [],
+  };
+}
+
 /**
  * Additive world-state migrations for saves created before newer sim fields ship.
  * Diplomacy backfill, missing unit types, missing leaders — each field follows the
@@ -31,6 +71,8 @@ export function ensureWorldMigrations(
   catalog: WorldMigrationCatalog = {},
 ): WorldState {
   let next = ensureWorldDiplomacy(world);
+
+  next = ensureWorldTimeMultiplier(next);
 
   if (catalog.unitTypes) {
     next = {
@@ -45,6 +87,10 @@ export function ensureWorldMigrations(
       leaders: mergeMissingById(next.leaders, catalog.leaders),
     };
   }
+
+  next = ensureFactionFields(next);
+
+  next = ensureWorldEventCounter(next);
 
   return next;
 }

@@ -85,5 +85,6 @@ export function createSprint1World(nowMs: number = Date.now()): WorldState {
     intel: {},
     ...diplomacyDefaults(factions),
     scenarioId: 'sprint-1-demo',
+    nextEventId: 0,
   };
 }

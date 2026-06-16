@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { createSprint4World } from 'shared';
+import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import { buildWhyExplanation, infraWhyExplanation } from './whyBlockText';
 
 const START_MS = 1_700_000_000_000;
 const LONDON = 'territory-london';
-const PLAYER = 'faction-player';
+const playerId = () => resolvePlayerFactionId(createSprint4World(START_MS))!;
 
 describe('whyBlockText', () => {
   it('explains missing resources with acquire hints', () => {
@@ -12,7 +12,7 @@ describe('whyBlockText', () => {
     const infantry = world.unitTypes['infantry-t2']!;
     const text = buildWhyExplanation(
       world,
-      PLAYER,
+      playerId(),
       LONDON,
       infantry,
       { code: 'missing-resource', missing: 'food' },
@@ -27,7 +27,7 @@ describe('whyBlockText', () => {
     const infantry = world.unitTypes['infantry-t2']!;
     const text = buildWhyExplanation(
       world,
-      PLAYER,
+      playerId(),
       LONDON,
       infantry,
       { code: 'insufficient-funding' },

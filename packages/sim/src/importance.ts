@@ -31,6 +31,7 @@ const HIGH_KINDS = new Set<SimEvent['kind']>([
   'allianceBroken',
   'allianceProposed',
   'treatyProposed',
+  'tutorialGraduated',
 ]);
 
 const MEDIUM_KINDS = new Set<SimEvent['kind']>([

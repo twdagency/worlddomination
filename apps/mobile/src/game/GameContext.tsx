@@ -1,7 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import type { SimEvent, TransitOrder, WorldState } from 'sim';
+import type { BeatCopy } from 'shared';
+import type { SimEvent, TransitOrder, TutorialBeatId, WorldState } from 'sim';
 import {
+  evaluateBeatProgression,
+  getDilemmaById,
+  graduateTutorial,
   hasPendingProposalBetween,
   nextEventMs,
   playerAcceptProposal,
@@ -11,6 +15,8 @@ import {
   playerProposeAlliance,
   playerProposeTreaty,
   previewMoveEtaMs,
+  resolveDilemma,
+  stampEvents,
 } from 'sim';
 import {
   catchUp,
@@ -30,9 +36,10 @@ import {
 import { useToast } from '../components/feedback/ToastProvider';
 import {
   createWorldForScenario,
-  DEFAULT_SCENARIO_ID,
-  isDevScenarioId,
+  FIRST_TIME_SCENARIO_ID,
+  resolveScenarioId,
   type DevScenarioId,
+  type ScenarioId,
 } from './scenarios';
 import {
   clearCampaignStorage,
@@ -43,18 +50,36 @@ import {
   saveDispatches,
   saveLastActiveMs,
   saveScenarioId,
+  saveTutorialOnboarded,
   saveWorld,
 } from '../storage/worldStorage';
+import { selectTutorialState, type TutorialBannerMode } from './tutorialSelector';
 
-interface GameContextValue {
+export interface TutorialContextSlice {
+  isTutorialActive: boolean;
+  currentBeat: TutorialBeatId | null;
+  currentBeatCopy: BeatCopy | null;
+  isBannerDismissed: boolean;
+  shouldShowBanner: boolean;
+  bannerMode: TutorialBannerMode;
+  isHandoffReady: boolean;
+  dismissBanner: () => void;
+  restoreBanner: () => void;
+  collapseTutorialBanner: () => void;
+  expandTutorialBanner: () => void;
+  graduate: () => Promise<void>;
+}
+
+interface GameContextValue extends TutorialContextSlice {
   ready: boolean;
   world: WorldState;
   dispatches: SimEvent[];
   awayMs: number;
-  scenarioId: DevScenarioId;
+  scenarioId: ScenarioId;
   wallNowMs: number;
   actionFeedback: ActionFeedback | null;
   clearActionFeedback: () => void;
+  resolvePendingDilemma: (dilemmaId: string, optionId: string) => Promise<void>;
   confirmMove: (
     unitId: string,
     toTerritoryId: string,
@@ -81,26 +106,107 @@ async function persist(world: WorldState, dispatches: SimEvent[]): Promise<void>
   ]);
 }
 
-function resolveScenarioId(stored: string | null): DevScenarioId {
-  if (stored && isDevScenarioId(stored)) return stored;
-  return DEFAULT_SCENARIO_ID;
-}
-
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   const [ready, setReady] = useState(false);
-  const [scenarioId, setScenarioId] = useState<DevScenarioId>(DEFAULT_SCENARIO_ID);
-  const [world, setWorld] = useState<WorldState>(() => createWorldForScenario(DEFAULT_SCENARIO_ID));
+  const [scenarioId, setScenarioId] = useState<ScenarioId>(FIRST_TIME_SCENARIO_ID);
+  const [world, setWorld] = useState<WorldState>(() =>
+    createWorldForScenario(FIRST_TIME_SCENARIO_ID),
+  );
   const [dispatches, setDispatches] = useState<SimEvent[]>([]);
   const [awayMs, setAwayMs] = useState(0);
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
+  const [lastDismissedBeat, setLastDismissedBeat] = useState<TutorialBeatId | null>(null);
+  const [bannerCollapsedBeat, setBannerCollapsedBeat] = useState<TutorialBeatId | null>(null);
   const worldRef = useRef(world);
   const dispatchesRef = useRef(dispatches);
   worldRef.current = world;
   dispatchesRef.current = dispatches;
 
   const hasPendingEvents = nextEventMs(world) !== null;
+
+  const tutorialState = useMemo(
+    () => selectTutorialState({ world, lastDismissedBeat, bannerCollapsedBeat }),
+    [world, lastDismissedBeat, bannerCollapsedBeat],
+  );
+
+  const tutorialBeatKey = useMemo((): TutorialBeatId | null => {
+    if (tutorialState.currentBeat) return tutorialState.currentBeat;
+    return tutorialState.isHandoffReady ? 'handoff' : null;
+  }, [tutorialState.currentBeat, tutorialState.isHandoffReady]);
+
+  useEffect(() => {
+    setBannerCollapsedBeat(null);
+  }, [tutorialBeatKey]);
+
+  const dismissBanner = useCallback(() => {
+    const tutorial = worldRef.current.tutorial;
+    if (!tutorial?.active) return;
+    const beat =
+      tutorial.currentBeat ??
+      (tutorial.completedBeats.includes('handoff') ? ('handoff' as TutorialBeatId) : null);
+    if (beat) setLastDismissedBeat(beat);
+  }, []);
+
+  const graduate = useCallback(async () => {
+    const { world: nextWorld, events } = graduateTutorial(worldRef.current, Date.now());
+    const merged = mergeDispatches(nextWorld, dispatchesRef.current, events);
+    setWorld(nextWorld);
+    setDispatches(merged);
+    setLastDismissedBeat(null);
+    setBannerCollapsedBeat(null);
+    await saveTutorialOnboarded(true);
+    await persist(nextWorld, merged);
+    showToast('Your tutorial is complete. The campaign continues at standard speed.', 'success');
+  }, [showToast]);
+
+  const resolvePendingDilemma = useCallback(
+    async (dilemmaId: string, optionId: string) => {
+      const playerId = playerFactionId(worldRef.current);
+      if (!playerId) return;
+
+      const dilemma = getDilemmaById(dilemmaId);
+      const option = dilemma?.options.find((entry) => entry.id === optionId);
+      const resolved = resolveDilemma(
+        worldRef.current,
+        playerId,
+        dilemmaId,
+        optionId,
+        Date.now(),
+      );
+      const progressed = evaluateBeatProgression(resolved.world, resolved.events);
+      const handoffStamped = stampEvents(progressed.world, progressed.events);
+      const allEvents = [...resolved.events, ...handoffStamped.events];
+      const nextWorld = handoffStamped.world;
+      const merged = mergeDispatches(nextWorld, dispatchesRef.current, allEvents);
+      setWorld(nextWorld);
+      setDispatches(merged);
+      await persist(nextWorld, merged);
+      if (option) {
+        showToast(`Decision made: ${option.label}`, 'success');
+      }
+    },
+    [showToast],
+  );
+
+  const restoreBanner = useCallback(() => {
+    setLastDismissedBeat(null);
+    const tutorial = worldRef.current.tutorial;
+    const beat =
+      tutorial?.currentBeat ??
+      (tutorial?.completedBeats.includes('handoff') ? ('handoff' as TutorialBeatId) : null);
+    if (beat) setBannerCollapsedBeat(beat);
+  }, []);
+
+  const collapseTutorialBanner = useCallback(() => {
+    if (!tutorialBeatKey) return;
+    setBannerCollapsedBeat(tutorialBeatKey);
+  }, [tutorialBeatKey]);
+
+  const expandTutorialBanner = useCallback(() => {
+    setBannerCollapsedBeat(null);
+  }, []);
 
   const clearActionFeedback = useCallback(() => {
     setActionFeedback(null);
@@ -167,12 +273,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       ]);
       if (cancelled) return;
 
-      const id = resolveScenarioId(storedScenarioId);
+      const hasStoredWorld = storedWorld !== null;
+      const id = resolveScenarioId(storedScenarioId, hasStoredWorld);
       setScenarioId(id);
 
-      const worldMatchesScenario = storedWorld?.scenarioId === id;
+      const worldMatchesScenario = hasStoredWorld && storedWorld!.scenarioId === id;
       const baseWorld = worldMatchesScenario ? storedWorld! : createWorldForScenario(id);
       const baseDispatches = worldMatchesScenario ? storedDispatches : [];
+
+      if (!hasStoredWorld) {
+        await saveScenarioId(id);
+      }
 
       await applyCatchUp(baseWorld, baseDispatches, worldMatchesScenario ? lastActive : null);
       if (!cancelled) setReady(true);
@@ -278,6 +389,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setAwayMs(0);
     setDispatches([]);
     setActionFeedback(null);
+    setLastDismissedBeat(null);
+    setBannerCollapsedBeat(null);
     setWorld(fresh);
     await clearCampaignStorage();
     await Promise.all([
@@ -366,6 +479,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         wallNowMs,
         actionFeedback,
         clearActionFeedback,
+        isTutorialActive: tutorialState.isActive,
+        currentBeat: tutorialState.currentBeat,
+        currentBeatCopy: tutorialState.currentBeatCopy,
+        isBannerDismissed: tutorialState.isHandoffReady
+          ? lastDismissedBeat === 'handoff'
+          : tutorialState.currentBeat !== null &&
+            tutorialState.currentBeat === lastDismissedBeat,
+        shouldShowBanner: tutorialState.shouldShowBanner,
+        bannerMode: tutorialState.bannerMode,
+        isHandoffReady: tutorialState.isHandoffReady,
+        dismissBanner,
+        restoreBanner,
+        collapseTutorialBanner,
+        expandTutorialBanner,
+        graduate,
+        resolvePendingDilemma,
         confirmMove,
         issueBuild: issueBuildOrder,
         issueUpgradeInfra: issueUpgrade,

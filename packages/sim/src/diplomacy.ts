@@ -4,6 +4,8 @@ import type {
   Id,
   Millis,
   Reputation,
+  SimEvent,
+  SimEventDraft,
   Treaty,
   WorldState,
 } from './types';
@@ -123,19 +125,82 @@ export function formAlliance(
   factionA: Id,
   factionB: Id,
   gameTime: Millis,
-): WorldState {
-  if (factionA === factionB) return world;
+): { world: WorldState; events: SimEventDraft[] } {
+  if (factionA === factionB) return { world, events: [] };
 
   const [a, b] = normalizeFactionPair(factionA, factionB);
-  if (areAllied(world, a, b)) return world;
+  if (areAllied(world, a, b)) return { world, events: [] };
 
-  return {
+  const withAlliance: WorldState = {
     ...world,
     alliances: sortAlliances([
       ...world.alliances,
       { factionA: a, factionB: b, formedAt: gameTime },
     ]),
   };
+
+  const recalled = recallHostileAssaultsBetweenAllies(withAlliance, a, b, gameTime);
+  return {
+    world: { ...withAlliance, units: recalled.units },
+    events: recalled.events,
+  };
+}
+
+function isAssaultTransitBetween(
+  moverId: Id,
+  destinationOwnerId: Id,
+  factionA: Id,
+  factionB: Id,
+): boolean {
+  if (moverId === destinationOwnerId) return false;
+  return (
+    (moverId === factionA && destinationOwnerId === factionB) ||
+    (moverId === factionB && destinationOwnerId === factionA)
+  );
+}
+
+/** Recall in-flight assault orders between newly allied factions. */
+export function recallHostileAssaultsBetweenAllies(
+  world: WorldState,
+  factionA: Id,
+  factionB: Id,
+  at: Millis,
+): { units: WorldState['units']; events: SimEventDraft[] } {
+  const units = { ...world.units };
+  const events: SimEventDraft[] = [];
+
+  for (const [unitId, unit] of Object.entries(units)) {
+    const transit = unit.transit;
+    if (!transit || transit.stanceOnArrival !== 'assault') continue;
+
+    const destinationId = transit.toTerritoryId;
+    if (!destinationId) continue;
+
+    const destinationOwnerId = world.territories[destinationId]?.ownerId;
+    if (!destinationOwnerId) continue;
+    if (!isAssaultTransitBetween(unit.ownerId, destinationOwnerId, factionA, factionB)) {
+      continue;
+    }
+
+    units[unitId] = {
+      ...unit,
+      locationId: transit.fromId,
+      transit: undefined,
+    };
+
+    events.push({
+      kind: 'dispatchCancelledByAlliance',
+      at,
+      factionId: unit.ownerId,
+      allyFactionId: destinationOwnerId,
+      unitId,
+      fromTerritoryId: transit.fromId,
+      toTerritoryId: destinationId,
+      importance: 'medium',
+    });
+  }
+
+  return { units, events };
 }
 
 /**

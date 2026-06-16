@@ -24,9 +24,11 @@ import { getFactionIdentity } from '../game/factionDisplay';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { evaluateCostLines, treatyOfferLine } from '../game/costPreview';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
+import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
-import { PLAYER_FACTION_ID } from '../game/playerView';
+import { resolvePlayerFactionId } from 'shared';
+import { diplomacyTargetFactions } from '../game/diplomacySelector';
 import type { ActionStackParamList } from '../navigation/types';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -67,8 +69,8 @@ export function DiplomacyScreen() {
   const [treatyTarget, setTreatyTarget] = useState<string | null>(null);
   const [expandedFactionId, setExpandedFactionId] = useState<string | null>(null);
 
-  const playerId = playerFactionId(world) ?? PLAYER_FACTION_ID;
-  const incoming = pendingProposalsForFaction(world, playerId);
+  const playerId = resolvePlayerFactionId(world) ?? playerFactionId(world);
+  const incoming = playerId ? pendingProposalsForFaction(world, playerId) : [];
   const timestampedDispatches = dispatches.filter(isTimestampedDispatch);
 
   useEffect(() => {
@@ -79,10 +81,9 @@ export function DiplomacyScreen() {
 
   const factions = useMemo(
     () =>
-      Object.values(world.factions)
-        .filter((faction) => faction.id !== playerId)
+      diplomacyTargetFactions(world)
         .map((faction) => {
-          const reputation = world.reputation[playerId]?.[faction.id] ?? 0;
+          const reputation = playerId ? (world.reputation[playerId]?.[faction.id] ?? 0) : 0;
           const stance = computeStance(
             world,
             faction.id,
@@ -93,7 +94,9 @@ export function DiplomacyScreen() {
           return {
             id: faction.id,
             identity: getFactionIdentity(world, faction.id),
-            status: diplomaticRelationshipStatus(world, playerId, faction.id),
+            status: playerId
+              ? diplomaticRelationshipStatus(world, playerId, faction.id)
+              : ('neutral' as const),
             reputationLabel: reputationCategory(reputation),
             reputation,
             stance,
@@ -106,11 +109,19 @@ export function DiplomacyScreen() {
     [world, playerId, timestampedDispatches],
   );
 
-  const activeTreaties = getActiveTreaties(world, playerId, world.nowMs);
+  const activeTreaties = playerId ? getActiveTreaties(world, playerId, world.nowMs) : [];
 
   const treatyTerritories = Object.values(world.territories)
     .filter((territory) => territory.ownerId !== playerId)
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (!playerId) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.muted}>No player faction in this campaign.</Text>
+      </View>
+    );
+  }
 
   return (
     <FlatList
@@ -120,13 +131,14 @@ export function DiplomacyScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View>
+          <ScreenBackButton />
           <Text style={styles.title}>Diplomacy</Text>
           <ActionFeedbackBanner
             action={['proposeAlliance', 'proposeTreaty', 'breakAlliance', 'acceptProposal', 'declineProposal']}
             feedback={actionFeedback}
           />
           <Text style={styles.hint}>
-            Player actions are unconditional. AI acceptance uses reputation and posture only.
+            Propose alliances and treaties to other leaders. Your standing and their disposition affect their decisions.
           </Text>
           {incoming.length > 0 && (
             <TerminalCard style={styles.incomingCard}>

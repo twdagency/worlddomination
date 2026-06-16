@@ -1,5 +1,5 @@
 import type { AccruedIncome } from './economy';
-import type { Order, SimEvent, WorldState } from './types';
+import type { Order, SimEvent, SimEventDraft, WorldState } from './types';
 import { MS_PER_DAY } from './constants';
 import { accrueEconomy } from './economy';
 import { pruneExpiredTreaties } from './diplomacy';
@@ -11,9 +11,11 @@ import {
   recordTreatyObservations,
 } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
+import { evaluateBeatProgression } from './beatController';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
+import { stampEvents } from './events';
 
 /**
  * Pure. Advances the world by `elapsedMs`, applies `orders`, resolves events in
@@ -24,7 +26,7 @@ export function tick(
   orders: Order[],
   elapsedMs: number,
 ): { world: WorldState; events: SimEvent[]; accrued: AccruedIncome } {
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   const { units: unitsAfterMoves, events: departureEvents } = applyMoveOrders(world, orders);
   events.push(...departureEvents);
@@ -113,7 +115,7 @@ export function tick(
   });
   events.push(...emitIntelReportEvents(afterDiplomacy, priorIntel, nextIntel));
 
-  const next: WorldState = {
+  let next: WorldState = {
     ...afterDiplomacy,
     units: unitsAfterArrivals,
     territories,
@@ -121,5 +123,16 @@ export function tick(
     intel: nextIntel,
   };
 
-  return { world: next, events, accrued: economy.accrued };
+  // Tutorial beat progression (after intel emission; last step before tick return):
+  // 1. recordIntelObservations
+  // 2. recordAlliedObservations
+  // 3. recordTreatyObservations
+  // 4. emitIntelReportEvents
+  // 5. evaluateBeatProgression ← runs here
+  const progression = evaluateBeatProgression(next, events);
+  next = progression.world;
+  events.push(...progression.events);
+
+  const stamped = stampEvents(next, events);
+  return { world: stamped.world, events: stamped.events, accrued: economy.accrued };
 }

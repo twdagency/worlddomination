@@ -9,9 +9,10 @@ import {
 } from 'sim';
 import type { ResourceId, UnitType, WorldState } from 'sim';
 import { UNIT_TYPES } from 'shared';
+import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
 import { getFactionIdentity } from '../game/factionDisplay';
-import { playerOwnedTerritories, PLAYER_FACTION_ID } from '../game/playerView';
+import { playerOwnedTerritories } from '../game/playerView';
 import {
   collectActiveBuilds,
   sortTerritoriesForDisplay,
@@ -26,10 +27,12 @@ import {
 import { buildWhyExplanation, infraWhyExplanation } from '../game/whyBlockText';
 import type { ActionStackParamList } from '../navigation/types';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
+import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { WhyBlock } from '../components/disclosure/WhyBlock';
 import { DevTimeSkip } from '../components/DevTimeSkip';
+import { showDevControls } from '../game/devFlag';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import {
@@ -39,7 +42,6 @@ import {
   formatResource,
 } from '../utils/format';
 
-const PLAYER_FACTION = PLAYER_FACTION_ID;
 const BUILDABLE_UNITS = UNIT_TYPES.filter((u) => u.domain === 'land' || u.domain === 'sea');
 
 function resourceLabel(id: ResourceId): string {
@@ -57,7 +59,8 @@ type TerritoryRoute = RouteProp<ActionStackParamList, 'Territory'>;
 export function TerritoryScreen() {
   const route = useRoute<TerritoryRoute>();
   const { world, issueBuild, issueUpgradeInfra, actionFeedback } = useGame();
-  const faction = world.factions[PLAYER_FACTION];
+  const playerId = resolvePlayerFactionId(world);
+  const faction = playerId ? world.factions[playerId] : undefined;
 
   const playerTerritories = useMemo(
     () => sortTerritoriesForDisplay(playerOwnedTerritories(world)),
@@ -95,7 +98,7 @@ export function TerritoryScreen() {
     return Object.fromEntries(
       BUILDABLE_UNITS.map((u) => [
         u.id,
-        canBuild(world, territoryId, u.id, 1, PLAYER_FACTION),
+        canBuild(world, territoryId, u.id, 1, playerId!),
       ]),
     );
   }, [world, territory, territoryId]);
@@ -111,11 +114,12 @@ export function TerritoryScreen() {
   const incomeHr = territoryIncomePerHour(world, territoryId);
   const maxTier = maxBuildableTier(territory.infraLevel);
   const facilityLabel = territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
-  const infraCost = infraUpgradeCostPreview(world, territoryId, PLAYER_FACTION);
-  const playerIdentity = getFactionIdentity(world, PLAYER_FACTION);
+  const infraCost = infraUpgradeCostPreview(world, territoryId, playerId!);
+  const playerIdentity = getFactionIdentity(world, playerId!);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScreenBackButton />
       <Text style={styles.heading}>Territory</Text>
       <Text style={styles.playerIdentity}>
         {playerIdentity.compactLine} · {playerIdentity.citiesLine}
@@ -164,6 +168,7 @@ export function TerritoryScreen() {
               <TerritoryDetail
                 world={world}
                 territoryId={t.id}
+                playerId={playerId!}
                 faction={faction}
                 incomeHr={incomeHr}
                 maxTier={maxTier}
@@ -180,7 +185,7 @@ export function TerritoryScreen() {
         />
       ))}
 
-      {__DEV__ && <DevTimeSkip />}
+      {showDevControls && <DevTimeSkip />}
     </ScrollView>
   );
 }
@@ -188,6 +193,7 @@ export function TerritoryScreen() {
 function TerritoryDetail({
   world,
   territoryId,
+  playerId,
   faction,
   incomeHr,
   maxTier,
@@ -199,6 +205,7 @@ function TerritoryDetail({
 }: {
   world: WorldState;
   territoryId: string;
+  playerId: string;
   faction: NonNullable<WorldState['factions'][string]>;
   incomeHr: number;
   maxTier: number;
@@ -268,6 +275,7 @@ function TerritoryDetail({
           key={unitType.id}
           world={world}
           territoryId={territoryId}
+          playerId={playerId}
           unitType={unitType}
           check={buildChecks[unitType.id]}
           onBuild={() => onBuild(unitType.id)}
@@ -280,23 +288,25 @@ function TerritoryDetail({
 function BuildUnitRow({
   world,
   territoryId,
+  playerId,
   unitType,
   check,
   onBuild,
 }: {
   world: WorldState;
   territoryId: string;
+  playerId: string;
   unitType: UnitType;
   check: ReturnType<typeof canBuild> | undefined;
   onBuild: () => void;
 }) {
-  const preview = unitBuildCostPreview(world, territoryId, unitType, PLAYER_FACTION);
+  const preview = unitBuildCostPreview(world, territoryId, unitType, playerId);
   const blocked = check && !check.ok;
   const whyText =
     blocked && check
       ? buildWhyExplanation(
           world,
-          PLAYER_FACTION,
+          playerId,
           territoryId,
           unitType,
           check.reason,

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SimEvent, WorldState } from 'sim';
-import { ensureWorldMigrations } from 'sim';
+import { ensureWorldMigrations, backfillLegacyDispatchEventIds } from 'sim';
 import { LEADERS_BY_ID } from 'shared';
 import { UNIT_TYPES_BY_ID } from 'shared';
 import { STORAGE_KEYS } from '../theme/terminal';
@@ -21,7 +21,7 @@ export async function saveWorld(world: WorldState): Promise<void> {
 export async function loadDispatches(): Promise<SimEvent[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.dispatches);
   if (!raw) return [];
-  return JSON.parse(raw) as SimEvent[];
+  return backfillLegacyDispatchEventIds(JSON.parse(raw) as SimEvent[]);
 }
 
 export async function saveDispatches(events: SimEvent[]): Promise<void> {
@@ -43,6 +43,15 @@ export async function loadScenarioId(): Promise<string | null> {
 
 export async function saveScenarioId(id: string): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.scenarioId, id);
+}
+
+export async function loadTutorialOnboarded(): Promise<boolean> {
+  const raw = await AsyncStorage.getItem(STORAGE_KEYS.tutorialOnboarded);
+  return raw === 'true';
+}
+
+export async function saveTutorialOnboarded(onboarded: boolean): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEYS.tutorialOnboarded, onboarded ? 'true' : 'false');
 }
 
 export async function clearCampaignStorage(): Promise<void> {

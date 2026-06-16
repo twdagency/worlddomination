@@ -7,9 +7,10 @@ import {
   ensureWorldMigrations,
   playerProposeAlliance,
   SCOUT_UNIT_TYPE_ID,
+  stampEvents,
   taggedOrderFields,
 } from 'sim';
-import { createSprint4World, createSprint5World, LEADERS_BY_ID, UNIT_TYPES_BY_ID } from 'shared';
+import { createSprint4World, createSprint5World, LEADERS_BY_ID, resolvePlayerFactionId, UNIT_TYPES_BY_ID } from 'shared';
 import { buildActionFeedback } from './actionFeedback';
 import {
   getDashboardCatchUpSummary,
@@ -17,7 +18,6 @@ import {
   getDashboardNavCards,
   getDashboardUrgentCount,
   getDashboardUrgentItems,
-  PLAYER_FACTION_ID,
 } from './playerView';
 import { getFactionIdentity } from './factionDisplay';
 import { infraUpgradeCostPreview, unitBuildCostPreview } from './costPreview';
@@ -26,7 +26,7 @@ import { PRIMARY_TAB_COUNT } from '../navigation/tabConfig';
 const START_MS = 1_700_000_000_000;
 const LONDON = 'territory-london';
 const BELGRADE = 'territory-belgrade';
-const PLAYER = PLAYER_FACTION_ID;
+const PLAYER_S4 = resolvePlayerFactionId(createSprint4World(START_MS))!;
 const TWENTY_FOUR_HOURS_MS = 24 * 3_600_000;
 
 function migrate(world: ReturnType<typeof createSprint4World>) {
@@ -40,7 +40,7 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
   describe('createSprint4World', () => {
     it('loads with three distinct AI leaders including Philip II at Madrid', () => {
       const world = createSprint4World(START_MS);
-      const player = getFactionIdentity(world, PLAYER);
+      const player = getFactionIdentity(world, PLAYER_S4);
       const rome = getFactionIdentity(world, 'faction-rome');
       const steppe = getFactionIdentity(world, 'faction-steppe');
       const spain = getFactionIdentity(world, 'faction-britain');
@@ -71,14 +71,14 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
       const legacy = createSprint4World(START_MS);
       const { [SCOUT_UNIT_TYPE_ID]: _removed, ...unitTypes } = legacy.unitTypes;
       const migrated = migrate({ ...legacy, unitTypes });
-      expect(canBuild(migrated, LONDON, SCOUT_UNIT_TYPE_ID, 1, PLAYER).ok).toBe(true);
+      expect(canBuild(migrated, LONDON, SCOUT_UNIT_TYPE_ID, 1, PLAYER_S4).ok).toBe(true);
     });
 
     it('cost transparency previews are available for infra and builds', () => {
       const world = createSprint4World(START_MS);
       const scout = world.unitTypes[SCOUT_UNIT_TYPE_ID]!;
-      const infra = infraUpgradeCostPreview(world, LONDON, PLAYER);
-      const build = unitBuildCostPreview(world, LONDON, scout, PLAYER);
+      const infra = infraUpgradeCostPreview(world, LONDON, PLAYER_S4);
+      const build = unitBuildCostPreview(world, LONDON, scout, PLAYER_S4);
       expect(infra.lines.length).toBeGreaterThan(0);
       expect(build.lines.length).toBeGreaterThan(0);
     });
@@ -91,11 +91,12 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
           territoryId: LONDON,
           unitTypeId: SCOUT_UNIT_TYPE_ID,
           count: 1,
-          ...taggedOrderFields(PLAYER, START_MS, 'build'),
+          ...taggedOrderFields(PLAYER_S4, START_MS, 'build'),
         },
       ]);
       const afterBuild = { ...world, territories, factions };
-      const buildFeedback = buildActionFeedback('build', afterBuild, buildEvents, {
+      const stampedBuild = stampEvents(afterBuild, buildEvents);
+      const buildFeedback = buildActionFeedback('build', stampedBuild.world, stampedBuild.events, {
         territoryId: LONDON,
         unitTypeId: SCOUT_UNIT_TYPE_ID,
         count: 1,
@@ -105,7 +106,7 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
 
       const { world: afterDiplomacy, events: diploEvents } = playerProposeAlliance(
         world,
-        PLAYER,
+        PLAYER_S4,
         'faction-rome',
         START_MS,
       );
@@ -117,7 +118,7 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
 
     it('Philip II labels Madrid AI dispatches (not duplicate Elizabeth)', () => {
       const { events, world } = advanceTo(createSprint4World(START_MS), START_MS + 72 * 3_600_000);
-      const lines = events.map((event) => dispatchLineForEvent(world, event, PLAYER));
+      const lines = events.map((event) => dispatchLineForEvent(world, event, PLAYER_S4));
       expect(lines.some((line) => line.includes('Philip II'))).toBe(true);
       expect(lines.some((line) => /Elizabeth.*Madrid|Madrid.*Elizabeth/i.test(line))).toBe(false);
     });
@@ -128,7 +129,8 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
       const world = createSprint5World(START_MS);
       const { events, world: advanced } = advanceTo(world, START_MS + TWENTY_FOUR_HOURS_MS);
       const empire = getDashboardEmpireSummary(advanced);
-      const belgrade = getFactionIdentity(advanced, PLAYER);
+      const playerId = resolvePlayerFactionId(advanced)!;
+      const belgrade = getFactionIdentity(advanced, playerId);
 
       expect(empire?.territoryNames).toContain('Belgrade');
       expect(belgrade.territoryNames).toContain('Belgrade');
@@ -137,10 +139,11 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
 
     it('scout build path is valid on sprint5 player territory', () => {
       const world = migrate(createSprint5World(START_MS));
+      const playerId = resolvePlayerFactionId(world)!;
       const scout = world.unitTypes[SCOUT_UNIT_TYPE_ID]!;
-      const preview = unitBuildCostPreview(world, BELGRADE, scout, PLAYER);
+      const preview = unitBuildCostPreview(world, BELGRADE, scout, playerId);
       expect(preview.lines.length).toBeGreaterThan(0);
-      expect(canBuild(world, BELGRADE, SCOUT_UNIT_TYPE_ID, 1, PLAYER).ok).toBe(true);
+      expect(canBuild(world, BELGRADE, SCOUT_UNIT_TYPE_ID, 1, playerId).ok).toBe(true);
     });
   });
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useGame } from '../game/GameContext';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import {
@@ -7,6 +7,7 @@ import {
   playerForces,
 } from '../game/playerView';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
+import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { terminal } from '../theme/terminal';
 import { formatDuration } from '../utils/format';
 
@@ -22,7 +23,12 @@ export function ForcesScreen() {
       data={units}
       keyExtractor={(u) => u.id}
       extraData={wallNowMs}
-      ListHeaderComponent={<Text style={styles.heading}>Forces</Text>}
+      ListHeaderComponent={
+        <View>
+          <ScreenBackButton />
+          <Text style={styles.heading}>Forces</Text>
+        </View>
+      }
       renderItem={({ item }) => {
         const unitType = world.unitTypes[item.typeId];
         const inTransit = item.transit;

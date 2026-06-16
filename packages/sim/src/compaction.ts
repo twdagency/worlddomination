@@ -158,6 +158,7 @@ export function compactDispatchFeed(
       item: {
         key: 'compact-income',
         event: {
+          eventId: 'compact-income',
           kind: 'income',
           at: incomeAt,
           funding: incomeFunding,

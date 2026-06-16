@@ -1,11 +1,12 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useGame } from '../game/GameContext';
+import { showDevControls } from '../game/devFlag';
 import { DEV_SCENARIOS } from '../game/scenarios';
 import { terminal } from '../theme/terminal';
 
 export function DevScenarioSelector() {
-  if (!__DEV__) return null;
+  if (!showDevControls) return null;
 
   const { scenarioId, loadScenario } = useGame();
 

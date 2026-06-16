@@ -158,6 +158,8 @@ export interface Faction {
   policies?: Policies;
   diplomacy?: Record<Id, DiplomacyState>;
   tension?: Record<Id, number>;
+  /** Accumulated identity tags from dilemma resolutions. */
+  identityTags?: string[];
 }
 
 export type Order =
@@ -209,7 +211,7 @@ export interface BattleReport {
 
 export type IntelReportVariant = 'activity' | 'massing' | 'construction';
 
-export type SimEvent =
+export type SimEventKind =
   | {
       kind: 'departure';
       at: Millis;
@@ -416,10 +418,85 @@ export type SimEvent =
       missing?: ResourceId;
       importance?: DispatchImportance;
     }
-  | { kind: 'procedural'; at: Millis; eventId: Id; templateId: Id; payload: unknown }
+  | { kind: 'procedural'; at: Millis; catalogEventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
   | { kind: 'victory'; at: Millis; factionId: Id }
-  | { kind: 'espionage'; at: Millis; report: string; exposed: boolean };
+  | { kind: 'espionage'; at: Millis; report: string; exposed: boolean }
+  | {
+      kind: 'territoryCaptured';
+      at: Millis;
+      territoryId: Id;
+      previousOwnerId?: Id;
+      newOwnerId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'buildCompleted';
+      at: Millis;
+      ownerId: Id;
+      territoryId: Id;
+      buildType: 'infrastructure' | 'food-infrastructure' | 'unit';
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'dilemmaResolved';
+      at: Millis;
+      factionId: Id;
+      dilemmaId: Id;
+      optionId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tutorialHandoffReady';
+      at: Millis;
+      factionId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tutorialGraduated';
+      at: Millis;
+      factionId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'allyArrivalPeaceful';
+      at: Millis;
+      factionId: Id;
+      allyFactionId: Id;
+      territoryId: Id;
+      fromTerritoryId: Id;
+      unitId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'dispatchCancelledByAlliance';
+      at: Millis;
+      factionId: Id;
+      allyFactionId: Id;
+      unitId: Id;
+      fromTerritoryId: Id;
+      toTerritoryId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'orderRedirectedToAlly';
+      at: Millis;
+      orderingFactionId: Id;
+      territoryId: Id;
+      newOwnerId: Id;
+      unitId: Id;
+      fromTerritoryId: Id;
+      importance?: DispatchImportance;
+    };
+
+/** Stable unique identifier assigned at emission time (see `emit` / `stampEvents`). */
+export interface SimEventBase {
+  eventId: Id;
+}
+
+export type SimEvent = SimEventBase & SimEventKind;
+/** Event payload before `eventId` is assigned at emission. */
+export type SimEventDraft = SimEventKind;
 
 export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty';
 
@@ -472,6 +549,29 @@ export type TerritoryVisibilityState =
     }
   | { state: 'unknown' };
 
+export type TutorialBeatId =
+  | 'movement'
+  | 'combat'
+  | 'economy'
+  | 'pinch'
+  | 'governance'
+  | 'handoff';
+
+export interface TutorialState {
+  /** True during beats 1–6; false after graduation. */
+  active: boolean;
+  currentBeat: TutorialBeatId | null;
+  completedBeats: TutorialBeatId[];
+  startedAt: Millis;
+  graduatedAt: Millis | null;
+}
+
+export interface PendingDilemma {
+  dilemmaId: Id;
+  factionId: Id;
+  offeredAt: Millis;
+}
+
 export interface WorldState {
   nowMs: Millis;
   day: number;
@@ -487,6 +587,13 @@ export interface WorldState {
   treaties: Treaty[];
   reputation: Reputation;
   pendingProposals: PendingProposal[];
+  pendingDilemmas?: PendingDilemma[];
   scenarioId: Id;
   victoryThreshold?: number;
+  /** Undefined on non-tutorial worlds. Populated by tutorial scenario or migration backfill. */
+  tutorial?: TutorialState;
+  /** Game-time pacing knob. 30 during active tutorial; 1 otherwise. Set by migration if missing. */
+  timeMultiplier?: number;
+  /** Monotonic counter for deterministic `eventId` assignment. Starts at 0 on new worlds. */
+  nextEventId?: number;
 }

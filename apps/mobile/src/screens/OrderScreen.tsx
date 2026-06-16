@@ -1,19 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { TransitOrder } from 'sim';
-import { moveDistanceKm, previewMoveEtaMs } from 'sim';
+import { moveDistanceKm, previewMoveEtaMs, TUTORIAL_PARIS_TERRITORY_ID } from 'sim';
 import { useGame } from '../game/GameContext';
 import { formatIntelAge } from '../game/intelDisplay';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
+import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import {
   getPlayerVisibleTerritory,
   ownerIdForIntelDisplay,
   playerMovableUnits,
   playerOrderDestinations,
-  PLAYER_FACTION_ID,
+  resolvePlayerFactionId,
 } from '../game/playerView';
+import { getFactionIdentity } from '../game/factionDisplay';
+import {
+  classifyDestination,
+  formatDestinationRowTitle,
+  type DestinationStance,
+} from '../game/orderDestinations';
 import { IntelSourceHint } from '../components/IntelSourceHint';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -30,14 +37,29 @@ const STANCES: { id: TransitOrder['stanceOnArrival']; label: string; hint: strin
   { id: 'hold', label: 'Hold', hint: 'Arrive without initiating assault' },
 ];
 
-export function OrderScreen() {
-  const { world, confirmMove, actionFeedback } = useGame();
-  const movableUnits = playerMovableUnits(world);
+function stancesForDestination(stance: DestinationStance) {
+  if (stance === 'allied') {
+    return STANCES.filter((entry) => entry.id === 'hold');
+  }
+  return STANCES;
+}
 
-  const [unitId, setUnitId] = useState(movableUnits[0]?.id ?? '');
+export function OrderScreen() {
+  const { world, confirmMove, actionFeedback, isTutorialActive, currentBeat } = useGame();
+  const playerId = resolvePlayerFactionId(world);
+  const movableUnits = playerMovableUnits(world);
+  const isMovementBeat = isTutorialActive && currentBeat === 'movement';
+
+  const [unitId, setUnitId] = useState('');
   const [destinationId, setDestinationId] = useState<string>('');
   const [stance, setStance] = useState<TransitOrder['stanceOnArrival']>('assault');
   const [expandedSection, setExpandedSection] = useState<string | null>('confirm');
+
+  useEffect(() => {
+    if (isMovementBeat && movableUnits.length === 1) {
+      setUnitId(movableUnits[0]!.id);
+    }
+  }, [isMovementBeat, movableUnits]);
 
   const unit = movableUnits.find((u) => u.id === unitId);
   const availableDestinations = useMemo(
@@ -46,18 +68,45 @@ export function OrderScreen() {
   );
 
   useEffect(() => {
-    if (availableDestinations.length === 0) {
+    if (!unitId || availableDestinations.length === 0) {
       setDestinationId('');
       return;
     }
+
+    if (isMovementBeat) {
+      const paris = availableDestinations.find(
+        (destination) => destination.territoryId === TUTORIAL_PARIS_TERRITORY_ID,
+      );
+      if (paris) {
+        setDestinationId(TUTORIAL_PARIS_TERRITORY_ID);
+        return;
+      }
+    }
+
     setDestinationId((prev) =>
       availableDestinations.some((t) => t.territoryId === prev)
         ? prev
-        : availableDestinations[0].territoryId,
+        : availableDestinations[0]!.territoryId,
     );
-  }, [unitId, availableDestinations]);
+  }, [unitId, availableDestinations, isMovementBeat]);
 
   const selectedDestination = availableDestinations.find((t) => t.territoryId === destinationId);
+  const selectedDestOwner = selectedDestination
+    ? ownerIdForIntelDisplay(world, selectedDestination)
+    : undefined;
+  const selectedDestStance = classifyDestination(
+    world,
+    playerId,
+    selectedDestination?.territoryId ?? '',
+    selectedDestOwner,
+  );
+  const availableStances = stancesForDestination(selectedDestStance);
+
+  useEffect(() => {
+    if (!availableStances.some((entry) => entry.id === stance)) {
+      setStance('hold');
+    }
+  }, [availableStances, stance]);
 
   const preview = useMemo(() => {
     if (!unitId || !destinationId || !unit?.locationId) return null;
@@ -73,10 +122,8 @@ export function OrderScreen() {
     unitId && destinationId && unit?.locationId !== destinationId
       ? moveDistanceKm(world, unitId, destinationId)
       : null;
-  const destOwner = selectedDestination
-    ? ownerIdForIntelDisplay(world, selectedDestination)
-    : undefined;
-  const isHostile = destOwner && destOwner !== PLAYER_FACTION_ID;
+  const destOwner = selectedDestOwner;
+  const isHostile = selectedDestStance === 'hostile';
 
   const canConfirm = Boolean(
     unitId &&
@@ -94,8 +141,16 @@ export function OrderScreen() {
       ? `${fromName} → ${toName} · ETA ${formatDuration(preview.travelMs)}`
       : 'Select force and destination';
 
+  const destinationEmptyCopy =
+    movableUnits.length === 0
+      ? 'No forces available to deploy.'
+      : !unitId || !unit
+        ? 'Select a force above to issue an order.'
+        : `${unitLabel} cannot move from ${fromName ?? 'current location'} — no reachable territories.`;
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScreenBackButton />
       <Text style={styles.heading}>Issue Move Order</Text>
 
       <ActionFeedbackBanner action="move" feedback={actionFeedback} />
@@ -123,27 +178,44 @@ export function OrderScreen() {
       <Text style={styles.section}>Destination</Text>
       {availableDestinations.length === 0 ? (
         <TerminalCard>
-          <Text style={styles.muted}>No valid destinations — force is not stationed for redeployment.</Text>
+          <Text style={styles.muted}>{destinationEmptyCopy}</Text>
         </TerminalCard>
       ) : (
         availableDestinations.map((destination) => {
-          const hostile =
-            ownerIdForIntelDisplay(world, destination) &&
-            ownerIdForIntelDisplay(world, destination) !== PLAYER_FACTION_ID;
+          const ownerId = ownerIdForIntelDisplay(world, destination);
+          const destinationStance = classifyDestination(
+            world,
+            playerId,
+            destination.territoryId,
+            ownerId,
+          );
+          const ownerName = ownerId
+            ? getFactionIdentity(world, ownerId).leaderName
+            : undefined;
           const selected = destination.territoryId === destinationId;
           const isStale = destination.state === 'stale';
+          const recommended =
+            isMovementBeat && destination.territoryId === TUTORIAL_PARIS_TERRITORY_ID;
 
           return (
-            <Pressable key={destination.territoryId} onPress={() => setDestinationId(destination.territoryId)}>
+            <Pressable
+              key={destination.territoryId}
+              onPress={() => setDestinationId(destination.territoryId)}
+            >
               <TerminalCard
                 style={[
                   selected ? styles.selected : undefined,
                   isStale ? styles.staleCard : undefined,
+                  recommended ? styles.recommendedCard : undefined,
                 ]}
               >
                 <Text style={[styles.optionTitle, isStale && styles.staleTitle]}>
-                  {destination.name}
-                  {hostile ? ' [HOSTILE]' : ''}
+                  {formatDestinationRowTitle(
+                    destination.name,
+                    destinationStance,
+                    ownerName,
+                    recommended,
+                  )}
                 </Text>
                 {isStale && destination.lastObservedAt !== undefined && (
                   <Text style={styles.staleSub}>
@@ -158,7 +230,7 @@ export function OrderScreen() {
       )}
 
       <Text style={styles.section}>Stance on arrival</Text>
-      {STANCES.map((s) => (
+      {availableStances.map((s) => (
         <Pressable key={s.id} onPress={() => setStance(s.id)}>
           <TerminalCard style={stance === s.id ? styles.selected : undefined}>
             <Text style={styles.optionTitle}>{s.label}</Text>
@@ -241,6 +313,9 @@ const styles = StyleSheet.create({
   },
   selected: {
     borderColor: terminal.accent,
+  },
+  recommendedCard: {
+    borderColor: terminal.tutorial,
   },
   staleCard: {
     borderColor: terminal.stale,

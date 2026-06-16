@@ -1,16 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSprint4World } from 'shared';
+import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import {
   buildActionFeedback,
   dispatchActionFeedback,
   previewBuildBlockedMessage,
 } from './actionFeedback';
 import { mergeDispatches } from './actions';
+import { testSimEvent } from '../test/simEventFixtures';
 
 const START_MS = 1_700_000_000_000;
 const LONDON = 'territory-london';
 const PARIS = 'territory-paris';
-const PLAYER = 'faction-player';
+const playerId = () => resolvePlayerFactionId(createSprint4World(START_MS))!;
 
 describe('buildActionFeedback', () => {
   it('formats move success with route and ETA', () => {
@@ -19,11 +20,11 @@ describe('buildActionFeedback', () => {
       'move',
       world,
       [
-        {
+        testSimEvent({
           kind: 'departure',
           at: START_MS,
           unitId: 'unit-player-mg',
-          ownerId: PLAYER,
+          ownerId: playerId(),
           fromTerritoryId: LONDON,
           toTerritoryId: PARIS,
           unitTypeId: 'mg-armor-t5',
@@ -33,7 +34,7 @@ describe('buildActionFeedback', () => {
           source: 'direct',
           beatId: 'beat-move',
           decisionTickMs: START_MS,
-        },
+        }),
       ],
       {
         unitId: 'unit-player-mg',
@@ -55,13 +56,13 @@ describe('buildActionFeedback', () => {
       'build',
       world,
       [
-        {
+        testSimEvent({
           kind: 'buildBlocked',
           at: START_MS,
           territoryId: LONDON,
           reason: 'Cannot build Scout — missing food',
           importance: 'medium',
-        },
+        }),
       ],
       { territoryId: LONDON, unitTypeId: 'scout-t1' },
     );
@@ -94,16 +95,16 @@ describe('dispatchActionFeedback', () => {
     const world = createSprint4World(START_MS);
     const showToast = vi.fn();
     const events = [
-      {
+      testSimEvent({
         kind: 'allianceDeclined' as const,
         at: START_MS,
-        from: PLAYER,
+        from: playerId(),
         to: 'faction-rome',
         declinedBy: 'faction-rome',
         beatId: 'beat',
         decisionTickMs: START_MS,
         importance: 'medium' as const,
-      },
+      }),
     ];
 
     const result = dispatchActionFeedback(

@@ -26,7 +26,7 @@ export {
   buildTransit,
   pendingArrivalMs,
 } from './movement';
-export { advanceTo, mergeAccruedIncome, nextEventMs, unitPosition, previewMoveEtaMs, moveDistanceKm } from './clock';
+export { advanceTo, mergeAccruedIncome, nextEventMs, unitPosition, previewMoveEtaMs, moveDistanceKm, getTimeMultiplier } from './clock';
 export {
   assertAiOrders,
   applyTempoCommitment,
@@ -177,7 +177,16 @@ export {
 } from './pendingProposals';
 export { reputationCategory } from './reputationDisplay';
 export type { ReputationCategory } from './reputationDisplay';
-export { ensureWorldMigrations } from './migrations';
+export { ensureWorldMigrations, ensureWorldTimeMultiplier } from './migrations';
+export {
+  backfillLegacyDispatchEventIds,
+  DEFAULT_NEXT_EVENT_ID,
+  emit,
+  ensureWorldEventCounter,
+  LEGACY_EVENT_ID_PREFIX,
+  nextEventId,
+  stampEvents,
+} from './events';
 export type { WorldMigrationCatalog } from './migrations';
 export {
   areAllied,
@@ -201,7 +210,38 @@ export {
 } from './intelDispatch';
 export type { IntelReportVariant } from './intelDispatch';
 export type { DispatchBeatGroup, DispatchFeedItem } from './dispatch';
-export type { ScoutingPriority, DiplomaticPosture } from './types';
+export type { ScoutingPriority, DiplomaticPosture, TutorialBeatId, TutorialState } from './types';
+export {
+  TUTORIAL_BEAT_ORDER,
+  TUTORIAL_ACTIVE_TIME_MULTIPLIER,
+  STANDARD_TIME_MULTIPLIER,
+  PLAYER_TUTORIAL_FACTION_ID,
+  TUTORIAL_HOME_TERRITORY_ID,
+  TUTORIAL_PARIS_TERRITORY_ID,
+  TUTORIAL_BURGUNDY_TERRITORY_ID,
+  TUTORIAL_CALAIS_TERRITORY_ID,
+  TUTORIAL_BURGUNDY_FACTION_ID,
+  createInitialTutorialState,
+  markBeatComplete,
+  graduateTutorial,
+  isBeatComplete,
+  getNextBeat,
+} from './tutorial';
+export {
+  type BeatPredicate,
+  TUTORIAL_BEAT_PREDICATES,
+} from './tutorialBeats';
+export {
+  type BeatController,
+  createBeatController,
+  evaluateBeatProgression,
+} from './beatController';
+export {
+  enqueuePendingDilemma,
+  getDilemmaById,
+  resolveDilemma,
+} from './dilemmas';
+export { FOREIGN_RULE_DILEMMA } from './dilemmas/foreignRule';
 export {
   compactDispatchFeed,
   renderCompactDigestText,

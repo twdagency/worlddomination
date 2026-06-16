@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSprint4World } from 'shared';
+import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import {
   formatFactionIdentityLine,
   getFactionIdentity,
@@ -11,7 +11,8 @@ const START_MS = 1_700_000_000_000;
 describe('factionDisplay', () => {
   it('formats player identity with owned cities', () => {
     const world = createSprint4World(START_MS);
-    const identity = getFactionIdentity(world, 'faction-player');
+    const playerId = resolvePlayerFactionId(world)!;
+    const identity = getFactionIdentity(world, playerId);
     expect(identity.primaryLine).toBe('Elizabeth — Britain');
     expect(identity.compactLine).toBe('Elizabeth of Britain');
     expect(identity.territoryNames).toContain('London');

@@ -355,8 +355,37 @@ Every new persisted `WorldState` field ships with:
 
 This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
 
+## Sprint 7b tutorial follow-ups
+
+### Sprint 8 candidates
+- **Unit food upkeep consumption per game-day** — pinch is currently legibility-driven
+  (low stocks + banner copy), not mechanically forced. Design canon assumes mechanical
+  scarcity drives strategic decisions.
+- **`buildCompleted` event emission** — event shape reserved in Phase 5; wire when async
+  build queues land.
+- **Full scenario picker UI** — Phase 6 exposes scenario list via dev menu; player-facing
+  picker for New Game (tutorial + sandbox scenarios) deferred.
+
+### Sprint 9 candidates (content depth)
+- **Dilemma triggers for treaty/infra pinch paths** — conquest path enqueues Foreign
+  Rule; treaty and food-infra paths auto-complete governance via side effect. Add
+  dilemmas such as "Treaty Terms" and "Foreign Investment."
+- **Dilemma consequence preview UI tuning** — Phase 6 ships Choose without spelling out
+  "+200 gold, -30 standing" on option cards (legibility B: constraints visible,
+  consequences hinted).
+
 ## UI — Diplomacy identity axes (Sprint 8+)
 
 DiplomacyScreen tertiary disclosure (reputation score + stance today) is the
 home for full canon Layer 3 identity-axis display when multi-axis reputation
 tracking ships.
+
+## Save infrastructure — multi-campaign (Sprint 8+)
+
+Player campaign identity is implicit today: the loaded `WorldState` JSON carries
+`isPlayer` on one faction, not an explicit storage record. Sprint 7c `eventId`
+migration backfills legacy dispatches with `legacy-{index}` IDs and starts
+`nextEventId` at `1_000_000` on old saves — no schema break because saves are
+full world JSON. If Sprint 8 introduces save slots or multiple campaigns,
+promote explicit campaign identity in storage (slot id, player faction id,
+scenario metadata) rather than inferring solely from `isPlayer`.

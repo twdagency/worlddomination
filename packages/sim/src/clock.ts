@@ -2,11 +2,22 @@ import { haversineKm } from './geo';
 import type { AccruedIncome } from './economy';
 import { collectAiOrders, isAiDecisionMs, nextAiDecisionMs } from './ai';
 import { applyAiDiplomaticDecisions } from './diplomaticAi';
+import { emit } from './events';
 import { buildTransit, effectiveSpeedKmh, pendingArrivalMs } from './movement';
 import { unitPosition } from './position';
 import { pendingProductionMs } from './production';
 import { tick } from './tick';
 import type { Coord, Id, Millis, ResourceId, SimEvent, WorldState } from './types';
+import { STANDARD_TIME_MULTIPLIER } from './tutorial';
+
+/**
+ * Presentation pacing for real-time catch-up. Sim ticks advance in game-ms only;
+ * the mobile layer scales wall-clock elapsed by this multiplier before calling
+ * `advanceTo`. Defaults to 1 when unset (see `ensureWorldTimeMultiplier`).
+ */
+export function getTimeMultiplier(world: WorldState): number {
+  return world.timeMultiplier ?? STANDARD_TIME_MULTIPLIER;
+}
 
 /** Timestamp of the soonest pending event, or null if none. */
 export function nextEventMs(world: WorldState): Millis | null {
@@ -81,13 +92,15 @@ export function advanceTo(
     incomeAccrued.funding > 0 ||
     hasTerritoryResourceAccrual(incomeAccrued.resourcesByTerritory)
   ) {
-    allEvents.push({
+    const income = emit(current, {
       kind: 'income',
       at: current.nowMs,
       funding: incomeAccrued.funding,
       resourcesByTerritory: incomeAccrued.resourcesByTerritory,
       importance: 'low',
     });
+    current = income.world;
+    allEvents.push(income.event);
   }
 
   return { world: current, events: allEvents };

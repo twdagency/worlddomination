@@ -103,6 +103,7 @@ export function makeWorld(overrides: Partial<WorldState> = {}): WorldState {
     intel: {},
     ...diplomacyDefaults(factions),
     scenarioId: 'test-sprint1',
+    nextEventId: 0,
     ...overrides,
   };
 }
