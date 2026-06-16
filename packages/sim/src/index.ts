@@ -124,7 +124,9 @@ export { formatIntelSourceLabel } from './intelDisplay';
 export {
   REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED,
   REPUTATION_PENALTY_ALLIANCE_BREAK_OBSERVER,
+  REPUTATION_PENALTY_ALLY_DEFEATED,
   applyAllianceBreakReputationPenalty,
+  applyDefeatAllianceDissolutionReputationPenalty,
   createInitialReputation,
 } from './reputation';
 export {
@@ -184,6 +186,7 @@ export {
   CANONICAL_CAPITALS_BY_SCENARIO,
   citiesOf,
   countryToFaction,
+  defeatCountry,
   ensureWorldCountries,
   factionToCountry,
   findCountry,
@@ -211,7 +214,9 @@ export {
   areAllied,
   breakAlliance,
   diplomacyDefaults,
+  dissolveAlliancesForDefeatedCountry,
   ensureWorldDiplomacy,
+  expireTreatiesForDefeatedCountry,
   formAlliance,
   formTreaty,
   getActiveTreaties,

@@ -1,4 +1,5 @@
 import { AI_DECISION_INTERVAL_MS, INFRA_UPGRADE_BASE_COST, MAX_INFRA_LEVEL } from './constants';
+import { findCountry } from './country';
 import { areAllied } from './diplomacy';
 import { taggedOrderFields, assertActionableOrderTagged } from './dispatch';
 import { haversineKm } from './geo';
@@ -554,9 +555,15 @@ export function decideOrders(world: WorldState, factionId: Id, decisionTickMs: M
   return orders;
 }
 
+function isFactionDefeated(world: WorldState, factionId: Id): boolean {
+  if (!world.countries || Object.keys(world.countries).length === 0) return false;
+  return findCountry(world, factionId)?.defeated === true;
+}
+
 export function collectAiOrders(world: WorldState, decisionTickMs: Millis): Order[] {
   const orders = Object.values(world.factions)
     .filter((faction) => !faction.isPlayer)
+    .filter((faction) => !isFactionDefeated(world, faction.id))
     .flatMap((faction) => decideOrders(world, faction.id, decisionTickMs));
   assertAiOrders(orders);
   return orders;

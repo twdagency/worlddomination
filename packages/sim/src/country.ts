@@ -1,4 +1,8 @@
 import type { Country, Faction, Id, Millis, SimEventDraft, Territory, WorldState } from './types';
+import {
+  dissolveAlliancesForDefeatedCountry,
+  expireTreatiesForDefeatedCountry,
+} from './diplomacy';
 
 /**
  * Scenario-specific capital assignments. Same faction ID may map to different
@@ -194,7 +198,6 @@ function buildCapitalRelocatedEvent(
 }
 
 function buildCountryDefeatedEvent(
-  world: WorldState,
   at: Millis,
   country: Country,
 ): SimEventDraft {
@@ -206,6 +209,46 @@ function buildCountryDefeatedEvent(
     finalTerritoryId: country.lastLostTerritoryId ?? country.capitalTerritoryId,
     importance: 'high',
   };
+}
+
+function clearPendingDilemmasForCountry(world: WorldState, countryId: Id): WorldState {
+  const pending = world.pendingDilemmas ?? [];
+  const next = pending.filter((entry) => entry.factionId !== countryId);
+  if (next.length === pending.length) return world;
+  return { ...world, pendingDilemmas: next };
+}
+
+/**
+ * Full defeat cascade: mark defeated, dissolve alliances, expire treaties, clear dilemmas,
+ * emit events in dispatch order:
+ *   1. allianceBroken (per ally, ally ID order)
+ *   2. treatyExpired (per treaty, treaty ID order)
+ *   3. countryDefeated (culmination — always last)
+ */
+export function defeatCountry(
+  world: WorldState,
+  countryId: Id,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  const country = findCountry(world, countryId);
+  if (!country || country.defeated) return { world, events: [] };
+
+  const preDefeatSnapshot = country;
+  let w = setCountryDefeated(world, countryId);
+  const events: SimEventDraft[] = [];
+
+  const alliances = dissolveAlliancesForDefeatedCountry(w, countryId, at);
+  w = alliances.world;
+  events.push(...alliances.events);
+
+  const treaties = expireTreatiesForDefeatedCountry(w, countryId, at);
+  w = treaties.world;
+  events.push(...treaties.events);
+
+  w = clearPendingDilemmasForCountry(w, countryId);
+  events.push(buildCountryDefeatedEvent(at, preDefeatSnapshot));
+
+  return { world: w, events };
 }
 
 /** Derive `world.countries` from legacy `world.factions`. Idempotent; no defeat events. */
@@ -260,9 +303,9 @@ export function syncCountriesFromFactions(world: WorldState): CountrySyncResult 
     }
 
     if (cities.length === 0) {
-      const snapshot = w.countries![countryId]!;
-      w = setCountryDefeated(w, countryId);
-      events.push(buildCountryDefeatedEvent(w, w.nowMs, snapshot));
+      const cascade = defeatCountry(w, countryId, w.nowMs);
+      w = cascade.world;
+      events.push(...cascade.events);
     }
   }
 

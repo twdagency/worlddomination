@@ -265,9 +265,3 @@ describe('country defeat and capital relocation (Phase 2)', () => {
     expect(isDispatchVisibleToFaction(stamped.world, defeat, ROME)).toBe(true);
   });
 });
-
-describe('country defeat (Phase 3 contract)', () => {
-  it.todo('dissolves alliances involving the defeated country');
-  it.todo('expires active treaties involving the defeated country');
-  it.todo('excludes defeated country from collectAiOrders');
-});
