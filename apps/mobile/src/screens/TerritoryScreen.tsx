@@ -31,6 +31,7 @@ import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { WhyBlock } from '../components/disclosure/WhyBlock';
 import { DevTimeSkip } from '../components/DevTimeSkip';
+import { showDevControls } from '../game/devFlag';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import {
@@ -182,7 +183,7 @@ export function TerritoryScreen() {
         />
       ))}
 
-      {__DEV__ && <DevTimeSkip />}
+      {showDevControls && <DevTimeSkip />}
     </ScrollView>
   );
 }

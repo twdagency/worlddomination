@@ -404,7 +404,7 @@ export function buildDispatchFeed(
     }
 
     items.push({
-      key: `${i}-${event.kind}-${'at' in event ? event.at : i}`,
+      key: event.eventId,
       header,
       event,
       line,

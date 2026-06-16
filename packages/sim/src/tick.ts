@@ -1,5 +1,5 @@
 import type { AccruedIncome } from './economy';
-import type { Order, SimEvent, WorldState } from './types';
+import type { Order, SimEvent, SimEventDraft, WorldState } from './types';
 import { MS_PER_DAY } from './constants';
 import { accrueEconomy } from './economy';
 import { pruneExpiredTreaties } from './diplomacy';
@@ -15,6 +15,7 @@ import { evaluateBeatProgression } from './beatController';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
+import { stampEvents } from './events';
 
 /**
  * Pure. Advances the world by `elapsedMs`, applies `orders`, resolves events in
@@ -25,7 +26,7 @@ export function tick(
   orders: Order[],
   elapsedMs: number,
 ): { world: WorldState; events: SimEvent[]; accrued: AccruedIncome } {
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   const { units: unitsAfterMoves, events: departureEvents } = applyMoveOrders(world, orders);
   events.push(...departureEvents);
@@ -132,5 +133,6 @@ export function tick(
   next = progression.world;
   events.push(...progression.events);
 
-  return { world: next, events, accrued: economy.accrued };
+  const stamped = stampEvents(next, events);
+  return { world: stamped.world, events: stamped.events, accrued: economy.accrued };
 }

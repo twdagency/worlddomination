@@ -6,6 +6,7 @@ import {
   previewBuildBlockedMessage,
 } from './actionFeedback';
 import { mergeDispatches } from './actions';
+import { testSimEvent } from '../test/simEventFixtures';
 
 const START_MS = 1_700_000_000_000;
 const LONDON = 'territory-london';
@@ -19,7 +20,7 @@ describe('buildActionFeedback', () => {
       'move',
       world,
       [
-        {
+        testSimEvent({
           kind: 'departure',
           at: START_MS,
           unitId: 'unit-player-mg',
@@ -33,7 +34,7 @@ describe('buildActionFeedback', () => {
           source: 'direct',
           beatId: 'beat-move',
           decisionTickMs: START_MS,
-        },
+        }),
       ],
       {
         unitId: 'unit-player-mg',
@@ -55,13 +56,13 @@ describe('buildActionFeedback', () => {
       'build',
       world,
       [
-        {
+        testSimEvent({
           kind: 'buildBlocked',
           at: START_MS,
           territoryId: LONDON,
           reason: 'Cannot build Scout — missing food',
           importance: 'medium',
-        },
+        }),
       ],
       { territoryId: LONDON, unitTypeId: 'scout-t1' },
     );
@@ -94,7 +95,7 @@ describe('dispatchActionFeedback', () => {
     const world = createSprint4World(START_MS);
     const showToast = vi.fn();
     const events = [
-      {
+      testSimEvent({
         kind: 'allianceDeclined' as const,
         at: START_MS,
         from: playerId(),
@@ -103,7 +104,7 @@ describe('dispatchActionFeedback', () => {
         beatId: 'beat',
         decisionTickMs: START_MS,
         importance: 'medium' as const,
-      },
+      }),
     ];
 
     const result = dispatchActionFeedback(

@@ -379,3 +379,13 @@ This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
 DiplomacyScreen tertiary disclosure (reputation score + stance today) is the
 home for full canon Layer 3 identity-axis display when multi-axis reputation
 tracking ships.
+
+## Save infrastructure — multi-campaign (Sprint 8+)
+
+Player campaign identity is implicit today: the loaded `WorldState` JSON carries
+`isPlayer` on one faction, not an explicit storage record. Sprint 7c `eventId`
+migration backfills legacy dispatches with `legacy-{index}` IDs and starts
+`nextEventId` at `1_000_000` on old saves — no schema break because saves are
+full world JSON. If Sprint 8 introduces save slots or multiple campaigns,
+promote explicit campaign identity in storage (slot id, player faction id,
+scenario metadata) rather than inferring solely from `isPlayer`.

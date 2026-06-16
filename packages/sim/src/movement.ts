@@ -3,7 +3,7 @@ import { DEFAULT_TRAIT, MS_PER_HOUR } from './constants';
 import { ensureIntelStore } from './intel';
 import { haversineKm } from './geo';
 import { arrivalImportance, departureImportance } from './importance';
-import type { Id, IntelStore, Millis, Order, OrderIntent, SimEvent, TraitKey, TransitOrder, Unit, WorldState } from './types';
+import type { Id, IntelStore, Millis, Order, OrderIntent, SimEventDraft, TraitKey, TransitOrder, Unit, WorldState } from './types';
 
 type TransitOrderFields = {
   stanceOnArrival: TransitOrder['stanceOnArrival'];
@@ -95,9 +95,9 @@ export function estimateTravelMs(world: WorldState, unit: Unit, toTerritoryId: I
 export function applyMoveOrders(
   world: WorldState,
   orders: Order[],
-): { units: WorldState['units']; events: SimEvent[] } {
+): { units: WorldState['units']; events: SimEventDraft[] } {
   const units = { ...world.units };
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   for (const order of orders) {
     if (order.kind !== 'move') continue;
@@ -170,13 +170,13 @@ export function resolveArrivals(
   territories: WorldState['territories'];
   rng: WorldState['rng'];
   intel: IntelStore;
-  events: SimEvent[];
+  events: SimEventDraft[];
 } {
   let units = { ...world.units };
   let territories = { ...world.territories };
   let rng = world.rng;
   let intel = ensureIntelStore(world);
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   const arriving = Object.entries(units)
     .filter(([, unit]) => unit.transit && nowMs >= unit.transit.arriveMs)

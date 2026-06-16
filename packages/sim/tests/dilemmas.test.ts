@@ -73,14 +73,14 @@ describe('dilemmas', () => {
       START_MS,
     );
     expect(events).toEqual([
-      {
+      expect.objectContaining({
         kind: 'dilemmaResolved',
         at: START_MS,
         factionId: PLAYER_TUTORIAL_FACTION_ID,
         dilemmaId: 'foreign-rule',
         optionId: 'conciliation',
         importance: 'high',
-      },
+      }),
     ]);
   });
 

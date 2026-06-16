@@ -7,6 +7,7 @@ import {
   ensureWorldMigrations,
   playerProposeAlliance,
   SCOUT_UNIT_TYPE_ID,
+  stampEvents,
   taggedOrderFields,
 } from 'sim';
 import { createSprint4World, createSprint5World, LEADERS_BY_ID, resolvePlayerFactionId, UNIT_TYPES_BY_ID } from 'shared';
@@ -94,7 +95,8 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
         },
       ]);
       const afterBuild = { ...world, territories, factions };
-      const buildFeedback = buildActionFeedback('build', afterBuild, buildEvents, {
+      const stampedBuild = stampEvents(afterBuild, buildEvents);
+      const buildFeedback = buildActionFeedback('build', stampedBuild.world, stampedBuild.events, {
         territoryId: LONDON,
         unitTypeId: SCOUT_UNIT_TYPE_ID,
         count: 1,

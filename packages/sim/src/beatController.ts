@@ -1,4 +1,4 @@
-import type { SimEvent, TutorialBeatId, WorldState } from './types';
+import type { SimEvent, SimEventDraft, SimEventKind, TutorialBeatId, WorldState } from './types';
 import { enqueuePendingDilemma } from './dilemmas';
 import {
   isBeatComplete,
@@ -13,13 +13,13 @@ import {
 
 export interface BeatController {
   /** Returns world with tutorial state updated when the current beat predicate matches. */
-  evaluate(event: SimEvent, world: WorldState): WorldState;
+  evaluate(event: SimEventKind, world: WorldState): WorldState;
 }
 
 function applyBeatSideEffects(
   world: WorldState,
   beat: TutorialBeatId,
-  event: SimEvent,
+  event: SimEventKind,
 ): WorldState {
   if (beat === 'pinch') {
     if (isPinchConquestEvent(event)) {
@@ -39,7 +39,7 @@ export function createBeatController(
   const predicateByBeat = new Map(predicates.map((predicate) => [predicate.beat, predicate]));
 
   return {
-    evaluate(event: SimEvent, world: WorldState): WorldState {
+    evaluate(event: SimEventKind, world: WorldState): WorldState {
       const tutorial = world.tutorial;
       if (tutorial?.active !== true) return world;
 
@@ -60,7 +60,7 @@ export function createBeatController(
   };
 }
 
-function maybeEmitTutorialHandoff(world: WorldState): { world: WorldState; events: SimEvent[] } {
+function maybeEmitTutorialHandoff(world: WorldState): { world: WorldState; events: SimEventDraft[] } {
   const tutorial = world.tutorial;
   if (!tutorial?.active || tutorial.currentBeat !== 'handoff') {
     return { world, events: [] };
@@ -70,7 +70,7 @@ function maybeEmitTutorialHandoff(world: WorldState): { world: WorldState; event
   }
 
   const controller = createBeatController();
-  const event: SimEvent = {
+  const event: SimEventDraft = {
     kind: 'tutorialHandoffReady',
     at: world.nowMs,
     factionId: PLAYER_TUTORIAL_FACTION_ID,
@@ -85,11 +85,11 @@ function maybeEmitTutorialHandoff(world: WorldState): { world: WorldState; event
 /** Feeds tick-emitted events through the beat controller in emission order. */
 export function evaluateBeatProgression(
   world: WorldState,
-  events: readonly SimEvent[],
+  events: readonly SimEventDraft[],
   controller: BeatController = createBeatController(),
-): { world: WorldState; events: SimEvent[] } {
+): { world: WorldState; events: SimEventDraft[] } {
   let next = world;
-  const emitted: SimEvent[] = [];
+  const emitted: SimEventDraft[] = [];
 
   for (const event of events) {
     next = controller.evaluate(event, next);

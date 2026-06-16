@@ -2,6 +2,7 @@ import { haversineKm } from './geo';
 import type { AccruedIncome } from './economy';
 import { collectAiOrders, isAiDecisionMs, nextAiDecisionMs } from './ai';
 import { applyAiDiplomaticDecisions } from './diplomaticAi';
+import { emit } from './events';
 import { buildTransit, effectiveSpeedKmh, pendingArrivalMs } from './movement';
 import { unitPosition } from './position';
 import { pendingProductionMs } from './production';
@@ -91,13 +92,15 @@ export function advanceTo(
     incomeAccrued.funding > 0 ||
     hasTerritoryResourceAccrual(incomeAccrued.resourcesByTerritory)
   ) {
-    allEvents.push({
+    const income = emit(current, {
       kind: 'income',
       at: current.nowMs,
       funding: incomeAccrued.funding,
       resourcesByTerritory: incomeAccrued.resourcesByTerritory,
       importance: 'low',
     });
+    current = income.world;
+    allEvents.push(income.event);
   }
 
   return { world: current, events: allEvents };

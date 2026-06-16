@@ -136,7 +136,7 @@ export function DiplomacyScreen() {
             feedback={actionFeedback}
           />
           <Text style={styles.hint}>
-            Player actions are unconditional. AI acceptance uses reputation and posture only.
+            Propose alliances and treaties to other leaders. Your standing and their disposition affect their decisions.
           </Text>
           {incoming.length > 0 && (
             <TerminalCard style={styles.incomingCard}>

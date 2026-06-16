@@ -1,4 +1,4 @@
-import type { Id, SimEvent, TutorialBeatId, WorldState } from './types';
+import type { Id, SimEventKind, TutorialBeatId, WorldState } from './types';
 import { enqueuePendingDilemma } from './dilemmas';
 import {
   PLAYER_TUTORIAL_FACTION_ID,
@@ -11,10 +11,10 @@ import {
 
 export interface BeatPredicate {
   beat: TutorialBeatId;
-  isComplete(event: SimEvent, world: WorldState): boolean;
+  isComplete(event: SimEventKind, world: WorldState): boolean;
 }
 
-function isPlayerArrivalAwayFromHome(event: SimEvent, _world: WorldState): boolean {
+function isPlayerArrivalAwayFromHome(event: SimEventKind, _world: WorldState): boolean {
   return (
     event.kind === 'arrival' &&
     event.ownerId === PLAYER_TUTORIAL_FACTION_ID &&
@@ -22,7 +22,7 @@ function isPlayerArrivalAwayFromHome(event: SimEvent, _world: WorldState): boole
   );
 }
 
-function isPlayerParisCapture(event: SimEvent, _world: WorldState): boolean {
+function isPlayerParisCapture(event: SimEventKind, _world: WorldState): boolean {
   return (
     event.kind === 'territoryCaptured' &&
     event.newOwnerId === PLAYER_TUTORIAL_FACTION_ID &&
@@ -30,7 +30,7 @@ function isPlayerParisCapture(event: SimEvent, _world: WorldState): boolean {
   );
 }
 
-function isPlayerInfraUpgrade(event: SimEvent, _world: WorldState): boolean {
+function isPlayerInfraUpgrade(event: SimEventKind, _world: WorldState): boolean {
   return (
     event.kind === 'infraUpgraded' &&
     event.factionId === PLAYER_TUTORIAL_FACTION_ID &&
@@ -42,7 +42,7 @@ function treatyIncludesFaction(parties: [Id, Id], factionId: Id): boolean {
   return parties[0] === factionId || parties[1] === factionId;
 }
 
-function isPinchResolved(event: SimEvent, _world: WorldState): boolean {
+function isPinchResolved(event: SimEventKind, _world: WorldState): boolean {
   if (
     event.kind === 'territoryCaptured' &&
     event.newOwnerId === PLAYER_TUTORIAL_FACTION_ID &&
@@ -71,7 +71,7 @@ function isPinchResolved(event: SimEvent, _world: WorldState): boolean {
   return false;
 }
 
-function isPinchConquest(event: SimEvent): boolean {
+function isPinchConquest(event: SimEventKind): boolean {
   return (
     event.kind === 'territoryCaptured' &&
     event.newOwnerId === PLAYER_TUTORIAL_FACTION_ID &&
@@ -80,7 +80,7 @@ function isPinchConquest(event: SimEvent): boolean {
   );
 }
 
-function isForeignRuleResolved(event: SimEvent, _world: WorldState): boolean {
+function isForeignRuleResolved(event: SimEventKind, _world: WorldState): boolean {
   return (
     event.kind === 'dilemmaResolved' &&
     event.factionId === PLAYER_TUTORIAL_FACTION_ID &&
@@ -88,7 +88,7 @@ function isForeignRuleResolved(event: SimEvent, _world: WorldState): boolean {
   );
 }
 
-function isTutorialHandoffReady(event: SimEvent, _world: WorldState): boolean {
+function isTutorialHandoffReady(event: SimEventKind, _world: WorldState): boolean {
   return (
     event.kind === 'tutorialHandoffReady' &&
     event.factionId === PLAYER_TUTORIAL_FACTION_ID
@@ -104,6 +104,6 @@ export const TUTORIAL_BEAT_PREDICATES: readonly BeatPredicate[] = [
   { beat: 'handoff', isComplete: isTutorialHandoffReady },
 ];
 
-export function isPinchConquestEvent(event: SimEvent): boolean {
+export function isPinchConquestEvent(event: SimEventKind): boolean {
   return isPinchConquest(event);
 }

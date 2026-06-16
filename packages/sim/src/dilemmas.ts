@@ -1,5 +1,6 @@
 import type { Dilemma, DilemmaConsequence, DilemmaOption } from 'shared';
-import type { Faction, Id, Millis, PendingDilemma, Reputation, SimEvent, Territory, WorldState } from './types';
+import type { Faction, Id, Millis, PendingDilemma, Reputation, SimEvent, SimEventDraft, Territory, WorldState } from './types';
+import { stampEvents } from './events';
 import { FOREIGN_RULE_DILEMMA } from './dilemmas/foreignRule';
 
 const DILEMMAS_BY_ID: Record<string, Dilemma> = {
@@ -154,7 +155,7 @@ export function resolveDilemma(
     ),
   };
 
-  const event: SimEvent = {
+  const event: SimEventDraft = {
     kind: 'dilemmaResolved',
     at,
     factionId,
@@ -163,5 +164,5 @@ export function resolveDilemma(
     importance: 'high',
   };
 
-  return { world: next, events: [event] };
+  return stampEvents(next, [event]);
 }

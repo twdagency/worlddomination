@@ -1,4 +1,5 @@
-import type { Millis, SimEvent, TutorialBeatId, TutorialState, WorldState } from './types';
+import type { Millis, SimEvent, SimEventDraft, TutorialBeatId, TutorialState, WorldState } from './types';
+import { stampEvents } from './events';
 import { playerFactionId } from './dispatch';
 
 export const TUTORIAL_BEAT_ORDER: readonly TutorialBeatId[] = [
@@ -92,15 +93,17 @@ export function graduateTutorial(
     tutorial,
   };
 
+  const stamped = stampEvents(graduatedWorld, [
+    {
+      kind: 'tutorialGraduated',
+      at,
+      factionId,
+      importance: 'high',
+    },
+  ]);
+
   return {
-    world: graduatedWorld,
-    events: [
-      {
-        kind: 'tutorialGraduated',
-        at,
-        factionId,
-        importance: 'high',
-      },
-    ],
+    world: stamped.world,
+    events: stamped.events,
   };
 }

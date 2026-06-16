@@ -211,7 +211,7 @@ export interface BattleReport {
 
 export type IntelReportVariant = 'activity' | 'massing' | 'construction';
 
-export type SimEvent =
+export type SimEventKind =
   | {
       kind: 'departure';
       at: Millis;
@@ -418,7 +418,7 @@ export type SimEvent =
       missing?: ResourceId;
       importance?: DispatchImportance;
     }
-  | { kind: 'procedural'; at: Millis; eventId: Id; templateId: Id; payload: unknown }
+  | { kind: 'procedural'; at: Millis; catalogEventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
   | { kind: 'victory'; at: Millis; factionId: Id }
   | { kind: 'espionage'; at: Millis; report: string; exposed: boolean }
@@ -478,6 +478,15 @@ export type SimEvent =
       toTerritoryId: Id;
       importance?: DispatchImportance;
     };
+
+/** Stable unique identifier assigned at emission time (see `emit` / `stampEvents`). */
+export interface SimEventBase {
+  eventId: Id;
+}
+
+export type SimEvent = SimEventBase & SimEventKind;
+/** Event payload before `eventId` is assigned at emission. */
+export type SimEventDraft = SimEventKind;
 
 export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty';
 
@@ -575,4 +584,6 @@ export interface WorldState {
   tutorial?: TutorialState;
   /** Game-time pacing knob. 30 during active tutorial; 1 otherwise. Set by migration if missing. */
   timeMultiplier?: number;
+  /** Monotonic counter for deterministic `eventId` assignment. Starts at 0 on new worlds. */
+  nextEventId?: number;
 }

@@ -8,6 +8,7 @@ import type {
   Millis,
   OrderIntent,
   SimEvent,
+  SimEventDraft,
   WorldState,
 } from './types';
 
@@ -41,7 +42,7 @@ export function intelReportFromRecord(
   world: WorldState,
   receiverFactionId: Id,
   record: IntelRecord,
-): SimEvent | undefined {
+): SimEventDraft | undefined {
   const territory = world.territories[record.territoryId];
   if (territory?.ownerId === receiverFactionId) return undefined;
 
@@ -121,8 +122,8 @@ export function emitIntelReportEvents(
   priorStore: IntelStore,
   nextStore: IntelStore,
   observationTime: Millis = world.nowMs,
-): SimEvent[] {
-  const events: SimEvent[] = [];
+): SimEventDraft[] {
+  const events: SimEventDraft[] = [];
 
   for (const factionId of Object.keys(world.factions)) {
     const added = newRecordsAtTime(
@@ -164,8 +165,8 @@ export function intelReportsFromRecords(
   world: WorldState,
   factionId: Id,
   records: IntelRecord[],
-): SimEvent[] {
-  const events: SimEvent[] = [];
+): SimEventDraft[] {
+  const events: SimEventDraft[] = [];
   for (const record of records) {
     const event = intelReportFromRecord(world, factionId, record);
     if (event) events.push(event);

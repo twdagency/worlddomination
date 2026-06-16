@@ -178,6 +178,15 @@ export {
 export { reputationCategory } from './reputationDisplay';
 export type { ReputationCategory } from './reputationDisplay';
 export { ensureWorldMigrations, ensureWorldTimeMultiplier } from './migrations';
+export {
+  backfillLegacyDispatchEventIds,
+  DEFAULT_NEXT_EVENT_ID,
+  emit,
+  ensureWorldEventCounter,
+  LEGACY_EVENT_ID_PREFIX,
+  nextEventId,
+  stampEvents,
+} from './events';
 export type { WorldMigrationCatalog } from './migrations';
 export {
   areAllied,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import type { SimEvent } from 'sim';
+import { testSimEvent } from '../test/simEventFixtures';
 import { getDashboardUrgentItems } from '../game/playerView';
 
 const START_MS = 1_700_000_000_000;
@@ -47,7 +48,7 @@ describe('dashboard urgent item prioritization', () => {
   it('includes crisis events within the recent window', () => {
     const world = createSprint4World(START_MS + 3_600_000);
     const events: SimEvent[] = [
-      {
+      testSimEvent({
         kind: 'battle',
         at: START_MS + 2 * 3_600_000,
         territoryId: 'territory-paris',
@@ -62,7 +63,7 @@ describe('dashboard urgent item prioritization', () => {
           winnerId: playerId(),
         },
         importance: 'high',
-      },
+      }),
     ];
 
     const items = getDashboardUrgentItems(world, events);

@@ -27,9 +27,14 @@ import {
   proposalExpiresAt,
   removePendingProposal,
 } from './pendingProposals';
-import type { Id, Millis, PendingProposal, SimEvent, WorldState } from './types';
+import type { Id, Millis, PendingProposal, SimEvent, SimEventDraft, WorldState } from './types';
+import { stampEvents } from './events';
 
 export { DEFAULT_TREATY_DURATION_MS } from './diplomaticDispatch';
+
+function withEvents(world: WorldState, events: SimEventDraft[]): { world: WorldState; events: SimEvent[] } {
+  return stampEvents(world, events);
+}
 
 function assertPlayerFaction(world: WorldState, factionId: Id): void {
   if (!world.factions[factionId]?.isPlayer) {
@@ -43,7 +48,7 @@ export function expirePendingProposals(
   atMs: Millis,
 ): { world: WorldState; events: SimEvent[] } {
   let current = world;
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   for (const proposal of world.pendingProposals) {
     if (proposal.expiresAt > atMs) continue;
@@ -63,7 +68,7 @@ export function expirePendingProposals(
     }
   }
 
-  return { world: current, events };
+  return withEvents(current, events);
 }
 
 /**
@@ -87,16 +92,13 @@ export function playerProposeAlliance(
   const acceptanceScore = scoreAllianceAcceptance(world, targetId, playerId);
   if (acceptanceScore >= ALLIANCE_ACCEPT_THRESHOLD) {
     const formed = formAlliance(world, playerId, targetId, atMs);
-    return {
-      world: formed.world,
-      events: [...formed.events, allianceFormedEvent(playerId, targetId, atMs, playerId)],
-    };
+    return withEvents(formed.world, [
+      ...formed.events,
+      allianceFormedEvent(playerId, targetId, atMs, playerId),
+    ]);
   }
 
-  return {
-    world,
-    events: [allianceDeclinedEvent(playerId, targetId, targetId, atMs)],
-  };
+  return withEvents(world, [allianceDeclinedEvent(playerId, targetId, targetId, atMs)]);
 }
 
 /** Player breaks alliance — reputation penalties via breakAlliance; no AI break heuristic. */
@@ -109,10 +111,9 @@ export function playerBreakAlliance(
   assertPlayerFaction(world, playerId);
   if (!areAllied(world, playerId, allyId)) return { world, events: [] };
 
-  return {
-    world: breakAlliance(world, playerId, allyId),
-    events: [allianceBrokenEvent(playerId, allyId, atMs)],
-  };
+  return withEvents(breakAlliance(world, playerId, allyId), [
+    allianceBrokenEvent(playerId, allyId, atMs),
+  ]);
 }
 
 /**
@@ -148,16 +149,12 @@ export function playerProposeTreaty(
         row.scope.territoryIds.includes(territoryId),
     );
     if (!treaty) return { world, events: [] };
-    return {
-      world: next,
-      events: [treatyFormedEvent(treaty, atMs, playerId)],
-    };
+    return withEvents(next, [treatyFormedEvent(treaty, atMs, playerId)]);
   }
 
-  return {
-    world,
-    events: [treatyDeclinedEvent(playerId, targetId, targetId, atMs, [territoryId])],
-  };
+  return withEvents(world, [
+    treatyDeclinedEvent(playerId, targetId, targetId, atMs, [territoryId]),
+  ]);
 }
 
 export function playerAcceptProposal(
@@ -171,7 +168,7 @@ export function playerAcceptProposal(
   if (!proposal || proposal.to !== playerId) return { world, events: [] };
 
   let next = removePendingProposal(world, proposalId);
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   if (proposal.type === 'alliance') {
     const formed = formAlliance(next, proposal.from, proposal.to, atMs);
@@ -195,7 +192,7 @@ export function playerAcceptProposal(
     }
   }
 
-  return { world: next, events };
+  return withEvents(next, events);
 }
 
 export function playerDeclineProposal(
@@ -210,23 +207,19 @@ export function playerDeclineProposal(
 
   const next = removePendingProposal(world, proposalId);
   if (proposal.type === 'alliance') {
-    return {
-      world: next,
-      events: [allianceDeclinedEvent(proposal.from, proposal.to, playerId, atMs)],
-    };
+    return withEvents(next, [
+      allianceDeclinedEvent(proposal.from, proposal.to, playerId, atMs),
+    ]);
   }
-  return {
-    world: next,
-    events: [
-      treatyDeclinedEvent(
-        proposal.from,
-        proposal.to,
-        playerId,
-        atMs,
-        proposal.scope?.territoryIds,
-      ),
-    ],
-  };
+  return withEvents(next, [
+    treatyDeclinedEvent(
+      proposal.from,
+      proposal.to,
+      playerId,
+      atMs,
+      proposal.scope?.territoryIds,
+    ),
+  ]);
 }
 
 /** Queue an AI → player alliance proposal (used by diplomaticAi). */
@@ -245,9 +238,12 @@ export function queueAllianceProposal(
     proposedAt: atMs,
     expiresAt: proposalExpiresAt(atMs),
   };
+  const stamped = stampEvents(world, [
+    allianceProposedEvent(proposalId, from, to, atMs, proposal.expiresAt),
+  ]);
   return {
-    world: addPendingProposal(world, proposal),
-    events: [allianceProposedEvent(proposalId, from, to, atMs, proposal.expiresAt)],
+    world: addPendingProposal(stamped.world, proposal),
+    events: stamped.events,
     proposal,
   };
 }

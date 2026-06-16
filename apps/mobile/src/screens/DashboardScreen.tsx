@@ -22,6 +22,7 @@ import { CatchUpSummary } from '../components/dashboard/CatchUpSummary';
 import { DilemmaModal } from '../components/dilemma/DilemmaModal';
 import { EmpireSummary } from '../components/dashboard/EmpireSummary';
 import { NavigationGrid } from '../components/dashboard/NavigationGrid';
+import { ScrollFadeFooter } from '../components/ScrollFadeFooter';
 import { UrgentQueue } from '../components/dashboard/UrgentQueue';
 import { terminal } from '../theme/terminal';
 
@@ -70,7 +71,13 @@ export function DashboardScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.scrollWrap}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator
+        persistentScrollbar
+      >
       <Text style={styles.heading}>Dashboard</Text>
 
       {pendingDilemmas[0] ? (
@@ -119,11 +126,17 @@ export function DashboardScreen() {
           }}
         />
       ) : null}
-    </ScrollView>
+      </ScrollView>
+      <ScrollFadeFooter testID="dashboard-scroll-fade" />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollWrap: {
+    flex: 1,
+    position: 'relative',
+  },
   container: {
     flex: 1,
     backgroundColor: terminal.bg,

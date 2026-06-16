@@ -1,5 +1,6 @@
 import type { Leader, TutorialState, UnitType, WorldState } from './types';
 import { ensureWorldDiplomacy } from './diplomacy';
+import { ensureWorldEventCounter } from './events';
 import { STANDARD_TIME_MULTIPLIER } from './tutorial';
 
 export interface WorldMigrationCatalog {
@@ -88,6 +89,8 @@ export function ensureWorldMigrations(
   }
 
   next = ensureFactionFields(next);
+
+  next = ensureWorldEventCounter(next);
 
   return next;
 }

@@ -1,12 +1,13 @@
 import { getAlliancesFor } from './diplomacy';
 import { allianceBrokenEvent, allianceFormedEvent } from './diplomaticDispatch';
+import { stampEvents } from './events';
 import { expirePendingProposals, queueAllianceProposal } from './playerDiplomacy';
 import { hasPendingProposalBetween } from './pendingProposals';
 import {
   REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED,
   REPUTATION_PENALTY_ALLIANCE_BREAK_OBSERVER,
 } from './reputation';
-import type { DiplomaticPosture, Id, LeaderWeights, Millis, SimEvent, WorldState } from './types';
+import type { DiplomaticPosture, Id, LeaderWeights, Millis, SimEvent, SimEventDraft, WorldState } from './types';
 import { areAllied, breakAlliance, formAlliance } from './diplomacy';
 
 export const RELATIVE_POWER_PEER_RATIO_MIN = 0.5;
@@ -254,7 +255,7 @@ export function applyAiDiplomaticDecisions(
   atMs: Millis,
 ): { world: WorldState; events: SimEvent[] } {
   let current = world;
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   const expired = expirePendingProposals(current, atMs);
   current = expired.world;
@@ -311,5 +312,5 @@ export function applyAiDiplomaticDecisions(
     }
   }
 
-  return { world: current, events };
+  return stampEvents(current, events);
 }

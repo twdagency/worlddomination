@@ -16,6 +16,7 @@ import {
   playerProposeTreaty,
   previewMoveEtaMs,
   resolveDilemma,
+  stampEvents,
 } from 'sim';
 import {
   catchUp,
@@ -175,8 +176,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         Date.now(),
       );
       const progressed = evaluateBeatProgression(resolved.world, resolved.events);
-      const allEvents = [...resolved.events, ...progressed.events];
-      const nextWorld = progressed.world;
+      const handoffStamped = stampEvents(progressed.world, progressed.events);
+      const allEvents = [...resolved.events, ...handoffStamped.events];
+      const nextWorld = handoffStamped.world;
       const merged = mergeDispatches(nextWorld, dispatchesRef.current, allEvents);
       setWorld(nextWorld);
       setDispatches(merged);

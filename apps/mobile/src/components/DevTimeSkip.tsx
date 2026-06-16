@@ -2,10 +2,11 @@ import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { nextEventMs } from 'sim';
 import { useGame } from '../game/GameContext';
+import { showDevControls } from '../game/devFlag';
 import { terminal } from '../theme/terminal';
 
 export function DevTimeSkip() {
-  if (!__DEV__) return null;
+  if (!showDevControls) return null;
 
   const { world, skipNext } = useGame();
   const hasNext = nextEventMs(world) !== null;

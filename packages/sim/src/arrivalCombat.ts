@@ -14,14 +14,14 @@ import {
   formatBattleNarrative,
   formatSecuredNarrative,
 } from './reports';
-import type { Id, IntelStore, Millis, SimEvent, Unit, WorldState } from './types';
+import type { Id, IntelStore, Millis, SimEventDraft, Unit, WorldState } from './types';
 
 export interface ArrivalResolution {
   units: WorldState['units'];
   territories: WorldState['territories'];
   rng: WorldState['rng'];
   intel: IntelStore;
-  events: SimEvent[];
+  events: SimEventDraft[];
 }
 
 function relocateFleeingDefenders(
@@ -63,7 +63,7 @@ function resolvePeacefulAllyArrival(
   fromTerritoryId: Id | undefined,
   at: Millis,
 ): ArrivalResolution {
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
   const units = { ...world.units };
   const allyFactionId = world.territories[territoryId]?.ownerId;
   const originId = fromTerritoryId ?? arrivingUnit.locationId;
@@ -112,7 +112,7 @@ export function resolveHostileArrival(
   stanceOnArrival: 'assault' | 'secure' | 'hold',
   fromTerritoryId?: Id,
 ): ArrivalResolution {
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
   let units = { ...world.units, [arrivingUnit.id]: arrivingUnit };
   let territories = { ...world.territories };
   let rng = world.rng;

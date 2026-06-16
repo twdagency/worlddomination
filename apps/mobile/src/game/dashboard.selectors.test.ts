@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSprint4World } from 'shared';
 import type { SimEvent } from 'sim';
+import { testSimEvent } from '../test/simEventFixtures';
 import { resolvePlayerFactionId } from 'shared';
 import {
   DASHBOARD_AWAY_COLLAPSE_MS,
@@ -29,7 +30,7 @@ describe('dashboard catch-up selector', () => {
     const world = createSprint4World(START_MS + 6 * 3_600_000);
     const awayMs = 6 * 3_600_000;
     const events: SimEvent[] = [
-      {
+      testSimEvent({
         kind: 'allianceProposed',
         at: START_MS + 2 * 3_600_000,
         proposalId: 'proposal-catchup',
@@ -39,8 +40,8 @@ describe('dashboard catch-up selector', () => {
         beatId: 'beat-test',
         decisionTickMs: START_MS + 2 * 3_600_000,
         importance: 'high',
-      },
-      {
+      }),
+      testSimEvent({
         kind: 'buildStarted',
         at: START_MS + 3 * 3_600_000,
         territoryId: 'territory-london',
@@ -52,14 +53,14 @@ describe('dashboard catch-up selector', () => {
         beatId: 'beat-build',
         decisionTickMs: START_MS + 3 * 3_600_000,
         importance: 'medium',
-      },
-      {
+      }),
+      testSimEvent({
         kind: 'income',
         at: START_MS + 4 * 3_600_000,
         funding: 100,
         resourcesByTerritory: {},
         importance: 'low',
-      },
+      }),
     ];
 
     const summary = getDashboardCatchUpSummary(world, events, awayMs);
@@ -74,7 +75,7 @@ describe('dashboard catch-up selector', () => {
   it('filters out events the player cannot see', () => {
     const world = createSprint4World(START_MS + 3_600_000);
     const events: SimEvent[] = [
-      {
+      testSimEvent({
         kind: 'intelReport',
         at: START_MS + 1_800_000,
         observerFaction: 'faction-rome',
@@ -86,7 +87,7 @@ describe('dashboard catch-up selector', () => {
         beatId: 'beat-hidden',
         decisionTickMs: START_MS + 1_800_000,
         importance: 'high',
-      },
+      }),
     ];
 
     const summary = getDashboardCatchUpSummary(world, events, 3_600_000);

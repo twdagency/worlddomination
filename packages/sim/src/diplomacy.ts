@@ -5,6 +5,7 @@ import type {
   Millis,
   Reputation,
   SimEvent,
+  SimEventDraft,
   Treaty,
   WorldState,
 } from './types';
@@ -124,7 +125,7 @@ export function formAlliance(
   factionA: Id,
   factionB: Id,
   gameTime: Millis,
-): { world: WorldState; events: SimEvent[] } {
+): { world: WorldState; events: SimEventDraft[] } {
   if (factionA === factionB) return { world, events: [] };
 
   const [a, b] = normalizeFactionPair(factionA, factionB);
@@ -164,9 +165,9 @@ export function recallHostileAssaultsBetweenAllies(
   factionA: Id,
   factionB: Id,
   at: Millis,
-): { units: WorldState['units']; events: SimEvent[] } {
+): { units: WorldState['units']; events: SimEventDraft[] } {
   const units = { ...world.units };
-  const events: SimEvent[] = [];
+  const events: SimEventDraft[] = [];
 
   for (const [unitId, unit] of Object.entries(units)) {
     const transit = unit.transit;

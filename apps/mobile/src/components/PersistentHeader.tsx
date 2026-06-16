@@ -8,7 +8,7 @@ import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
 import { getDashboardUrgentCount } from '../game/playerView';
 import { terminal } from '../theme/terminal';
-import { formatAwayDuration, formatDateTime, formatFunding } from '../utils/format';
+import { formatAwayDuration, formatGameClock, formatFunding } from '../utils/format';
 import {
   buildPersistentHeaderModel,
   formatUrgentBadgeCount,
@@ -34,7 +34,7 @@ export function PersistentHeader() {
 
   const model = buildPersistentHeaderModel({
     gameDay: world.day,
-    gameDateLabel: formatDateTime(world.nowMs),
+    gameDateLabel: formatGameClock(world.nowMs),
     fundingLabel: formatFunding(faction?.funding ?? 0),
     awayMs,
     urgentCount,

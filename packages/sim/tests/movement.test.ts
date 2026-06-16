@@ -47,22 +47,24 @@ describe('movement', () => {
       stanceOnArrival: 'hold',
     });
     const { events } = tick(world, [move], 0);
-    expect(events).toContainEqual({
-      kind: 'departure',
-      at: world.nowMs,
-      unitId: 'unit-1',
-      fromTerritoryId: LONDON.id,
-      toTerritoryId: NEW_YORK.id,
-      ownerId: 'faction-player',
-      unitTypeId: 'mg-armor-t5',
-      count: 1,
-      stanceOnArrival: 'hold',
-      intent: 'defend',
-      source: 'direct',
-      beatId: move.beatId,
-      decisionTickMs: world.nowMs,
-      importance: 'medium',
-    });
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        kind: 'departure',
+        at: world.nowMs,
+        unitId: 'unit-1',
+        fromTerritoryId: LONDON.id,
+        toTerritoryId: NEW_YORK.id,
+        ownerId: 'faction-player',
+        unitTypeId: 'mg-armor-t5',
+        count: 1,
+        stanceOnArrival: 'hold',
+        intent: 'defend',
+        source: 'direct',
+        beatId: move.beatId,
+        decisionTickMs: world.nowMs,
+        importance: 'medium',
+      }),
+    );
   });
 
   it('Genghis landSpeedMult produces shorter ETA than baseline', () => {

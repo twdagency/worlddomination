@@ -1,6 +1,6 @@
 import { computeBeatId } from './dispatch';
 import { normalizeFactionPair } from './diplomacy';
-import type { Id, Millis, SimEvent, TerritorySnapshot, Treaty, WorldState } from './types';
+import type { Id, Millis, SimEvent, SimEventDraft, TerritorySnapshot, Treaty, WorldState } from './types';
 
 export const DEFAULT_TREATY_DURATION_MS = 48 * 3_600_000;
 
@@ -16,7 +16,7 @@ export function allianceFormedEvent(
   partyB: Id,
   atMs: Millis,
   initiatingFaction: Id,
-): SimEvent {
+): SimEventDraft {
   return {
     kind: 'allianceFormed',
     at: atMs,
@@ -28,7 +28,7 @@ export function allianceFormedEvent(
   };
 }
 
-export function allianceBrokenEvent(breaker: Id, betrayed: Id, atMs: Millis): SimEvent {
+export function allianceBrokenEvent(breaker: Id, betrayed: Id, atMs: Millis): SimEventDraft {
   return {
     kind: 'allianceBroken',
     at: atMs,
@@ -41,7 +41,7 @@ export function allianceBrokenEvent(breaker: Id, betrayed: Id, atMs: Millis): Si
   };
 }
 
-export function treatyFormedEvent(treaty: Treaty, atMs: Millis, initiatingFaction: Id): SimEvent {
+export function treatyFormedEvent(treaty: Treaty, atMs: Millis, initiatingFaction: Id): SimEventDraft {
   return {
     kind: 'treatyFormed',
     at: atMs,
@@ -56,7 +56,7 @@ export function treatyFormedEvent(treaty: Treaty, atMs: Millis, initiatingFactio
   };
 }
 
-export function treatyExpiredEvent(treaty: Treaty, atMs: Millis): SimEvent {
+export function treatyExpiredEvent(treaty: Treaty, atMs: Millis): SimEventDraft {
   return {
     kind: 'treatyExpired',
     at: atMs,
@@ -75,7 +75,7 @@ export function allianceProposedEvent(
   to: Id,
   atMs: Millis,
   expiresAt: Millis,
-): SimEvent {
+): SimEventDraft {
   return {
     kind: 'allianceProposed',
     at: atMs,
@@ -94,7 +94,7 @@ export function allianceDeclinedEvent(
   to: Id,
   declinedBy: Id,
   atMs: Millis,
-): SimEvent {
+): SimEventDraft {
   return {
     kind: 'allianceDeclined',
     at: atMs,
@@ -115,7 +115,7 @@ export function treatyProposedEvent(
   atMs: Millis,
   expiresAt: Millis,
   durationMs: Millis,
-): SimEvent {
+): SimEventDraft {
   return {
     kind: 'treatyProposed',
     at: atMs,
@@ -137,7 +137,7 @@ export function treatyDeclinedEvent(
   declinedBy: Id,
   atMs: Millis,
   territoryIds?: Id[],
-): SimEvent {
+): SimEventDraft {
   return {
     kind: 'treatyDeclined',
     at: atMs,
@@ -155,7 +155,7 @@ export function expiredTreatyEvents(
   priorTreaties: Treaty[],
   nextTreaties: Treaty[],
   atMs: Millis,
-): SimEvent[] {
+): SimEventDraft[] {
   const remaining = new Set(nextTreaties.map((treaty) => treaty.id));
   return priorTreaties
     .filter((treaty) => !remaining.has(treaty.id))
