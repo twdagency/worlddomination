@@ -362,6 +362,14 @@ regardless of pinch path), re-audit downstream design decisions that assumed the
 old canon. Sprint 7b deferred governance skip on non-conquest pinch paths; that
 decision became wrong after Option β and was fixed in Sprint 8.5 Phase 1.
 
+## Process — player action feedback (no silent failures)
+
+Sprint 7c established dispatch events for player-visible cancellations (e.g.
+`dispatchCancelledByAlliance`). Sprint 8.5 Phase 2 extends the same principle to
+rejections (`orderRejected`). Player-initiated actions that fail in sim should
+emit a dispatch or feedback event — never fail silently. AI/non-player failures
+may reject quietly.
+
 ## Sprint 7b tutorial follow-ups
 
 ### Sprint 8 candidates
@@ -412,6 +420,9 @@ Tier-locked orders surface as greyed-out with tooltips
 Combined-force orders show combat unit's order list; scout auto-screens
 Scout order list: Recon / Infiltrate / Shadow / Screen / Sabotage(T2)
 Levy order list: Assault / Secure / Hold / Reinforce / Withdraw
+**Note (Sprint 8.5):** `Reinforce` and other unit-specific verbs are design targets for
+this redesign. The live sim stance type remains `assault | secure | hold` only until
+that work ships; do not reference `reinforce` as an implemented order stance.
 Future units (when roster expands): Men-at-Arms (Assault/Storm/Hold/Reinforce), Cavalry (Charge/Raid/Pursue/Hold/Screen), Archers (Assault/Garrison/Hold/Withdraw), Siege (Besiege/Bombard/Hold)
 "Raid" and "Pursue" verbs touch the in-transit interception system — far-future backlog item; coordinate when prioritized
 Source: 7c-era design session with other agent, 2026-06-16

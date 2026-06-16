@@ -131,6 +131,7 @@ export function applyMoveOrders(
 
     const assaultValidation = validateAssaultOrder(world, order);
     if (!assaultValidation.valid) {
+      // Player-facing rejections emit orderRejected (Sprint 7c: no silent failures for player actions).
       if (world.factions[unit.ownerId]?.isPlayer) {
         events.push({
           kind: 'orderRejected',

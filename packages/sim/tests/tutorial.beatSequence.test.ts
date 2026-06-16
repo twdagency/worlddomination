@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createTutorialWorld } from '../../shared/src/scenario-tutorial';
 import {
+  accrueEconomy,
   evaluateBeatProgression,
   PLAYER_TUTORIAL_FACTION_ID,
   previewMoveEtaMs,
@@ -19,6 +20,7 @@ const UNIT = 'unit-britain-infantry';
 const PARIS = TUTORIAL_PARIS_TERRITORY_ID;
 const BURGUNDY = TUTORIAL_BURGUNDY_TERRITORY_ID;
 const HOME = TUTORIAL_HOME_TERRITORY_ID;
+const FRANCE = 'faction-france-tutorial';
 
 function march(
   world: ReturnType<typeof createTutorialWorld>,
@@ -121,7 +123,18 @@ describe('tutorial beat sequence invariants (Sprint 8.5)', () => {
     expect(progressed.events.some((event) => event.kind === 'tutorialHandoffReady')).toBe(true);
   });
 
-  it.skip('income computation skips territories captured in the same tick', () => {
-    // Phase 3: accrueEconomy runs after resolveArrivals, or excludes lost territories.
+  it('does not accrue income for a territory lost to capture in the same tick', () => {
+    const world = createTutorialWorld(START_MS);
+    const franceBefore = world.factions[FRANCE]!.funding;
+    const travelMs = previewMoveEtaMs(world, UNIT, PARIS)!.travelMs;
+    const staleFranceIncome =
+      accrueEconomy(world, travelMs).factions[FRANCE]!.funding - franceBefore;
+
+    const result = march(world, PARIS);
+
+    expect(result.world.territories[PARIS]?.ownerId).toBe(PLAYER_TUTORIAL_FACTION_ID);
+    const franceDelta = (result.world.factions[FRANCE]?.funding ?? 0) - franceBefore;
+    expect(staleFranceIncome).toBeGreaterThan(0);
+    expect(franceDelta).toBe(0);
   });
 });

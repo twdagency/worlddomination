@@ -9,7 +9,7 @@ const LONDON = 'territory-london';
 const PARIS = 'territory-paris';
 
 describe('income tick ordering diagnostics (#16)', () => {
-  it('DIAGNOSTIC: tick accrues income from tick-start ownership before arrivals mutate territories', () => {
+  it('DIAGNOSTIC: tick accrues income from post-capture ownership, not tick-start ownership', () => {
     const base = createSprint4World(START_MS);
     const london = base.territories[LONDON]!;
     const elapsedMs = 3_600_000;
@@ -42,9 +42,7 @@ describe('income tick ordering diagnostics (#16)', () => {
     };
 
     const fundingBefore = world.factions[PLAYER]!.funding;
-    const accrualResult = accrueEconomy(world, elapsedMs);
-    const expectedPlayerDelta =
-      accrualResult.factions[PLAYER]!.funding - fundingBefore;
+    const stalePlayerDelta = accrueEconomy(world, elapsedMs).factions[PLAYER]!.funding - fundingBefore;
     const result = tick(world, [], elapsedMs);
 
     const playerFundingDelta =
@@ -52,22 +50,24 @@ describe('income tick ordering diagnostics (#16)', () => {
     const londonCapturedByEnemy = result.world.territories[LONDON]?.ownerId === ROME;
 
     expect(londonCapturedByEnemy).toBe(true);
-    expect(playerFundingDelta).toBeCloseTo(expectedPlayerDelta, 0);
+    expect(stalePlayerDelta).toBeGreaterThan(0);
+    expect(playerFundingDelta).toBe(0);
+    expect(playerFundingDelta).toBeLessThan(stalePlayerDelta);
   });
 
-  it('DIAGNOSTIC: documents tick phase order relative to income and arrivals', () => {
+  it('DIAGNOSTIC: documents tick phase order — arrivals before economy accrual', () => {
     const phases = [
       'applyMoveOrders',
       'applyBuildOrders',
-      'accrueEconomy',
       'resolveProductionCompletions',
       'resolveArrivals',
+      'accrueEconomy',
       'pruneExpiredTreaties',
       'recordIntelObservations',
       'syncCountriesFromFactions',
       'evaluateBeatProgression',
     ];
 
-    expect(phases.indexOf('accrueEconomy')).toBeLessThan(phases.indexOf('resolveArrivals'));
+    expect(phases.indexOf('resolveArrivals')).toBeLessThan(phases.indexOf('accrueEconomy'));
   });
 });
