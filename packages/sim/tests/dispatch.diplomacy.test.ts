@@ -207,6 +207,25 @@ describe('dispatch diplomacy', () => {
     expect(alliedLines.length).toBeGreaterThan(0);
     expect(dispatchLineForEvent(withIntel, alliedLines[0]!)).toContain("Genghis's forces report");
   });
+
+  it('formats order redirected to ally when assault target is ally-held on arrival', () => {
+    const world = createSprint4World(START_MS);
+    const event = {
+      kind: 'orderRedirectedToAlly' as const,
+      eventId: 'evt-redirect-test',
+      at: START_MS,
+      orderingFactionId: PLAYER,
+      territoryId: BERLIN,
+      newOwnerId: GENGHIS,
+      unitId: 'unit-player-mg',
+      fromTerritoryId: 'territory-london',
+    };
+
+    const line = dispatchLineForEvent(world, event, PLAYER);
+    expect(line).toContain('Assault cancelled');
+    expect(line).toContain('Berlin');
+    expect(line).toContain('Genghis');
+  });
 });
 
 describe('dispatch diplomacy cold-read snapshot', () => {

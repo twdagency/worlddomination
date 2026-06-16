@@ -1,23 +1,20 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
 import { getDashboardUrgentCount } from '../game/playerView';
+import { rootNavigationRef } from '../navigation/navigationRef';
 import { terminal } from '../theme/terminal';
 import { formatAwayDuration, formatGameClock, formatFunding } from '../utils/format';
 import {
   buildPersistentHeaderModel,
   formatUrgentBadgeCount,
 } from '../navigation/persistentHeaderModel';
-import type { RootTabParamList } from '../navigation/types';
 
 export function PersistentHeader() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
   const {
     world,
     dispatches,
@@ -60,7 +57,11 @@ export function PersistentHeader() {
         <View style={styles.right}>
           <Pressable
             style={styles.urgentTap}
-            onPress={() => navigation.navigate('Dashboard')}
+            onPress={() => {
+              if (rootNavigationRef.isReady()) {
+                rootNavigationRef.navigate('Dashboard');
+              }
+            }}
             accessibilityLabel="Open dashboard urgent queue"
           >
             {badgeLabel.length > 0 && (

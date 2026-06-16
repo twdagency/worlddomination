@@ -153,6 +153,25 @@ export function playerForces(world: WorldState): Unit[] {
   );
 }
 
+/** In-flight hostile assault orders — clears when recalled or redirected. */
+export function playerHostileAssaultsInTransit(world: WorldState): number {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return 0;
+
+  return playerForces(world).filter((unit) => {
+    const transit = unit.transit;
+    if (!transit || transit.stanceOnArrival !== 'assault') return false;
+
+    const destId = transit.toTerritoryId;
+    if (!destId) return false;
+
+    const destOwner = world.territories[destId]?.ownerId;
+    if (!destOwner || destOwner === playerId) return false;
+    if (areAllied(world, playerId, destOwner)) return false;
+    return true;
+  }).length;
+}
+
 /** Live sight only — binary fog gate for detail that must reflect current ground truth. */
 export function getPlayerVisibleTerritory(
   world: WorldState,
@@ -509,12 +528,12 @@ export function getDashboardNavCards(
   const territoryBadge = urgent.filter((item) => item.kind === 'build-blocker').length;
   const staleIntel = playerWorldIntel(world).filter((entry) => entry.state === 'stale').length;
   const forcesInTransit = playerForces(world).filter((unit) => unit.transit).length;
-  const movableForces = playerMovableUnits(world).length;
+  const hostileAssaultsInTransit = playerHostileAssaultsInTransit(world);
 
   return [
     { screen: 'Dispatches', label: 'Dispatches', badgeCount: 0 },
     { screen: 'World', label: 'World', badgeCount: staleIntel > 0 ? staleIntel : 0 },
-    { screen: 'Order', label: 'Order', badgeCount: movableForces > 0 ? 1 : 0 },
+    { screen: 'Order', label: 'Order', badgeCount: hostileAssaultsInTransit > 0 ? 1 : 0 },
     { screen: 'Diplomacy', label: 'Diplomacy', badgeCount: diplomacyBadge },
     { screen: 'Territory', label: 'Territory', badgeCount: territoryBadge },
     { screen: 'Forces', label: 'Forces', badgeCount: forcesInTransit },

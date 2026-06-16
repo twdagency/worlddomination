@@ -62,6 +62,7 @@ function resolvePeacefulAllyArrival(
   territoryId: Id,
   fromTerritoryId: Id | undefined,
   at: Millis,
+  stanceOnArrival: 'assault' | 'secure' | 'hold',
 ): ArrivalResolution {
   const events: SimEventDraft[] = [];
   const units = { ...world.units };
@@ -89,6 +90,19 @@ function resolvePeacefulAllyArrival(
       unitId: arrivingUnit.id,
       importance: 'medium',
     });
+
+    if (stanceOnArrival === 'assault') {
+      events.push({
+        kind: 'orderRedirectedToAlly',
+        at,
+        orderingFactionId: arrivingUnit.ownerId,
+        territoryId,
+        newOwnerId: allyFactionId,
+        unitId: arrivingUnit.id,
+        fromTerritoryId: originId ?? territoryId,
+        importance: 'medium',
+      });
+    }
   }
 
   return {
@@ -140,6 +154,7 @@ export function resolveHostileArrival(
       territoryId,
       fromTerritoryId,
       at,
+      stanceOnArrival,
     );
   }
 

@@ -5,30 +5,19 @@ import { DiplomacyScreen } from '../screens/DiplomacyScreen';
 import { ForcesScreen } from '../screens/ForcesScreen';
 import { OrderScreen } from '../screens/OrderScreen';
 import { TerritoryScreen } from '../screens/TerritoryScreen';
-import { terminal } from '../theme/terminal';
+import { ACTION_STACK_SCREEN_OPTIONS } from './actionStackConfig';
 import type { ActionStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<ActionStackParamList>();
 
-const stackScreenOptions = {
-  headerStyle: { backgroundColor: terminal.card },
-  headerTintColor: terminal.accent,
-  headerTitleStyle: { fontFamily: terminal.mono, fontSize: 15 },
-  contentStyle: { backgroundColor: terminal.bg },
-};
-
 export function ActionStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={stackScreenOptions}>
-      <Stack.Screen
-        name="ActionMenu"
-        component={ActionMenuScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen name="Order" component={OrderScreen} options={{ title: '', headerBackTitle: 'Actions' }} />
-      <Stack.Screen name="Diplomacy" component={DiplomacyScreen} options={{ title: '', headerBackTitle: 'Actions' }} />
-      <Stack.Screen name="Territory" component={TerritoryScreen} options={{ title: '', headerBackTitle: 'Actions' }} />
-      <Stack.Screen name="Forces" component={ForcesScreen} options={{ title: '', headerBackTitle: 'Actions' }} />
+    <Stack.Navigator screenOptions={ACTION_STACK_SCREEN_OPTIONS}>
+      <Stack.Screen name="ActionMenu" component={ActionMenuScreen} />
+      <Stack.Screen name="Order" component={OrderScreen} />
+      <Stack.Screen name="Diplomacy" component={DiplomacyScreen} />
+      <Stack.Screen name="Territory" component={TerritoryScreen} />
+      <Stack.Screen name="Forces" component={ForcesScreen} />
     </Stack.Navigator>
   );
 }

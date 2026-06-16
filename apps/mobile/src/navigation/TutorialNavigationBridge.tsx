@@ -1,14 +1,12 @@
-import React, { useEffect } from 'react';
 import type { NavigationState } from '@react-navigation/native';
-import { useNavigationState } from '@react-navigation/native';
-import { useGame } from '../game/GameContext';
+import type { TutorialBeatId } from 'sim';
 import {
   matchesTutorialNavTarget,
   TUTORIAL_BEAT_NAV_TARGET,
   type ActiveTutorialRoute,
 } from '../game/tutorialBeatNavigation';
 
-function resolveActiveRoute(state: NavigationState | undefined): ActiveTutorialRoute | null {
+export function resolveActiveRoute(state: NavigationState | undefined): ActiveTutorialRoute | null {
   if (!state) return null;
 
   const tabRoute = state.routes[state.index ?? 0];
@@ -24,21 +22,22 @@ function resolveActiveRoute(state: NavigationState | undefined): ActiveTutorialR
 }
 
 /** Collapses the tutorial banner when the player reaches the beat's target screen. */
-export function TutorialNavigationBridge() {
-  const { isTutorialActive, currentBeat, collapseTutorialBanner } = useGame();
-  const navState = useNavigationState((state) => state);
+export function maybeCollapseTutorialBannerOnNavigation(
+  state: NavigationState | undefined,
+  options: {
+    isTutorialActive: boolean;
+    currentBeat: TutorialBeatId | null;
+    collapseTutorialBanner: () => void;
+  },
+): void {
+  const { isTutorialActive, currentBeat, collapseTutorialBanner } = options;
+  if (!isTutorialActive || !currentBeat) return;
 
-  useEffect(() => {
-    if (!isTutorialActive || !currentBeat) return;
+  const target = TUTORIAL_BEAT_NAV_TARGET[currentBeat];
+  if (!target) return;
 
-    const target = TUTORIAL_BEAT_NAV_TARGET[currentBeat];
-    if (!target) return;
-
-    const route = resolveActiveRoute(navState);
-    if (route && matchesTutorialNavTarget(target, route)) {
-      collapseTutorialBanner();
-    }
-  }, [navState, isTutorialActive, currentBeat, collapseTutorialBanner]);
-
-  return null;
+  const route = resolveActiveRoute(state);
+  if (route && matchesTutorialNavTarget(target, route)) {
+    collapseTutorialBanner();
+  }
 }

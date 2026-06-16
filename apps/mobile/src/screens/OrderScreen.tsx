@@ -7,6 +7,7 @@ import { formatIntelAge } from '../game/intelDisplay';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
+import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import {
   getPlayerVisibleTerritory,
   ownerIdForIntelDisplay,
@@ -14,6 +15,12 @@ import {
   playerOrderDestinations,
   resolvePlayerFactionId,
 } from '../game/playerView';
+import { getFactionIdentity } from '../game/factionDisplay';
+import {
+  classifyDestination,
+  formatDestinationRowTitle,
+  type DestinationStance,
+} from '../game/orderDestinations';
 import { IntelSourceHint } from '../components/IntelSourceHint';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -29,6 +36,13 @@ const STANCES: { id: TransitOrder['stanceOnArrival']; label: string; hint: strin
   { id: 'secure', label: 'Secure', hint: 'Occupy neutral ground only' },
   { id: 'hold', label: 'Hold', hint: 'Arrive without initiating assault' },
 ];
+
+function stancesForDestination(stance: DestinationStance) {
+  if (stance === 'allied') {
+    return STANCES.filter((entry) => entry.id === 'hold');
+  }
+  return STANCES;
+}
 
 export function OrderScreen() {
   const { world, confirmMove, actionFeedback, isTutorialActive, currentBeat } = useGame();
@@ -77,6 +91,22 @@ export function OrderScreen() {
   }, [unitId, availableDestinations, isMovementBeat]);
 
   const selectedDestination = availableDestinations.find((t) => t.territoryId === destinationId);
+  const selectedDestOwner = selectedDestination
+    ? ownerIdForIntelDisplay(world, selectedDestination)
+    : undefined;
+  const selectedDestStance = classifyDestination(
+    world,
+    playerId,
+    selectedDestination?.territoryId ?? '',
+    selectedDestOwner,
+  );
+  const availableStances = stancesForDestination(selectedDestStance);
+
+  useEffect(() => {
+    if (!availableStances.some((entry) => entry.id === stance)) {
+      setStance('hold');
+    }
+  }, [availableStances, stance]);
 
   const preview = useMemo(() => {
     if (!unitId || !destinationId || !unit?.locationId) return null;
@@ -92,10 +122,8 @@ export function OrderScreen() {
     unitId && destinationId && unit?.locationId !== destinationId
       ? moveDistanceKm(world, unitId, destinationId)
       : null;
-  const destOwner = selectedDestination
-    ? ownerIdForIntelDisplay(world, selectedDestination)
-    : undefined;
-  const isHostile = Boolean(destOwner && playerId && destOwner !== playerId);
+  const destOwner = selectedDestOwner;
+  const isHostile = selectedDestStance === 'hostile';
 
   const canConfirm = Boolean(
     unitId &&
@@ -122,6 +150,7 @@ export function OrderScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScreenBackButton />
       <Text style={styles.heading}>Issue Move Order</Text>
 
       <ActionFeedbackBanner action="move" feedback={actionFeedback} />
@@ -153,9 +182,16 @@ export function OrderScreen() {
         </TerminalCard>
       ) : (
         availableDestinations.map((destination) => {
-          const hostile =
-            ownerIdForIntelDisplay(world, destination) &&
-            ownerIdForIntelDisplay(world, destination) !== playerId;
+          const ownerId = ownerIdForIntelDisplay(world, destination);
+          const destinationStance = classifyDestination(
+            world,
+            playerId,
+            destination.territoryId,
+            ownerId,
+          );
+          const ownerName = ownerId
+            ? getFactionIdentity(world, ownerId).leaderName
+            : undefined;
           const selected = destination.territoryId === destinationId;
           const isStale = destination.state === 'stale';
           const recommended =
@@ -174,9 +210,12 @@ export function OrderScreen() {
                 ]}
               >
                 <Text style={[styles.optionTitle, isStale && styles.staleTitle]}>
-                  {destination.name}
-                  {recommended ? ' · Suggested' : ''}
-                  {hostile ? ' [HOSTILE]' : ''}
+                  {formatDestinationRowTitle(
+                    destination.name,
+                    destinationStance,
+                    ownerName,
+                    recommended,
+                  )}
                 </Text>
                 {isStale && destination.lastObservedAt !== undefined && (
                   <Text style={styles.staleSub}>
@@ -191,7 +230,7 @@ export function OrderScreen() {
       )}
 
       <Text style={styles.section}>Stance on arrival</Text>
-      {STANCES.map((s) => (
+      {availableStances.map((s) => (
         <Pressable key={s.id} onPress={() => setStance(s.id)}>
           <TerminalCard style={stance === s.id ? styles.selected : undefined}>
             <Text style={styles.optionTitle}>{s.label}</Text>

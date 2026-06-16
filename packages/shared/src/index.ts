@@ -9,8 +9,12 @@ export { createSprint5World, SPRINT5_TERRITORIES } from './scenario-sprint5';
 export { createTutorialWorld, TUTORIAL_TERRITORIES } from './scenario-tutorial';
 export {
   PLAYER_TUTORIAL_FACTION_ID,
+  TUTORIAL_BURGUNDY_FACTION_ID,
+  TUTORIAL_BURGUNDY_TERRITORY_ID,
+  TUTORIAL_CALAIS_TERRITORY_ID,
   TUTORIAL_HOME_TERRITORY_ID,
-} from 'sim';
+  TUTORIAL_PARIS_TERRITORY_ID,
+} from './tutorialConstants';
 export { TUTORIAL_BEAT_COPY, type BeatCopy } from './tutorialBeatCopy';
 export type {
   Dilemma,

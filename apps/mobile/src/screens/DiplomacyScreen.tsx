@@ -24,6 +24,7 @@ import { getFactionIdentity } from '../game/factionDisplay';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { evaluateCostLines, treatyOfferLine } from '../game/costPreview';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
+import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { resolvePlayerFactionId } from 'shared';
@@ -130,6 +131,7 @@ export function DiplomacyScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View>
+          <ScreenBackButton />
           <Text style={styles.title}>Diplomacy</Text>
           <ActionFeedbackBanner
             action={['proposeAlliance', 'proposeTreaty', 'breakAlliance', 'acceptProposal', 'declineProposal']}

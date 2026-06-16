@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import { tick } from '../src/tick';
 import { resolveHostileArrival } from '../src/arrivalCombat';
+import { formAlliance } from '../src/diplomacy';
 import { resolveBattle } from '../src/combat';
 import {
   WITHDRAWAL_ATTACKER_LOSS,
@@ -222,5 +224,39 @@ describe('arrivalCombat integration', () => {
     const { events } = tick(world, [], 1000);
     expect(events.some((e) => e.kind === 'battle')).toBe(true);
     expect(events.some((e) => e.kind === 'arrival')).toBe(true);
+  });
+
+  it('assault on ally-held territory emits orderRedirectedToAlly for the attacker', () => {
+    const START_MS = 1_700_000_000_000;
+    const PLAYER = 'faction-player';
+    const GENGHIS = 'faction-steppe';
+    const BERLIN = 'territory-berlin';
+    const LONDON = 'territory-london';
+
+    const world = formAlliance(createSprint4World(START_MS), PLAYER, GENGHIS, START_MS).world;
+    const arriving = {
+      ...world.units['unit-player-mg']!,
+      locationId: BERLIN,
+      transit: undefined,
+    };
+
+    const result = resolveHostileArrival(
+      world,
+      arriving,
+      BERLIN,
+      START_MS,
+      'assault',
+      LONDON,
+    );
+
+    const redirected = result.events.find((event) => event.kind === 'orderRedirectedToAlly');
+    expect(redirected).toMatchObject({
+      kind: 'orderRedirectedToAlly',
+      orderingFactionId: PLAYER,
+      territoryId: BERLIN,
+      newOwnerId: GENGHIS,
+      unitId: 'unit-player-mg',
+      fromTerritoryId: LONDON,
+    });
   });
 });

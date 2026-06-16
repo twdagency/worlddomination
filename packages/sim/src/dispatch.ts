@@ -1,5 +1,4 @@
 import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
-import { resolvePlayerFactionId } from 'shared';
 import { isTerritoryVisible } from './visibility';
 import { isTreatyParty, otherParty } from './diplomaticDispatch';
 import {
@@ -258,6 +257,15 @@ function formatDispatchCancelledByAllianceLine(
   return `DIPLOMACY — Order cancelled — alliance with ${allyName} formed mid-transit.`;
 }
 
+function formatOrderRedirectedToAllyLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'orderRedirectedToAlly' }>,
+): string {
+  const allyName = factionName(world, event.newOwnerId);
+  const place = territoryName(world, event.territoryId);
+  return `DIPLOMACY — Assault cancelled — ${place} now held by allied ${allyName}.`;
+}
+
 export function formatAllianceProposedLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'allianceProposed' }>,
@@ -369,6 +377,8 @@ export function dispatchLineForEvent(
       return formatAllyArrivalPeacefulLine(world, event);
     case 'dispatchCancelledByAlliance':
       return formatDispatchCancelledByAllianceLine(world, event);
+    case 'orderRedirectedToAlly':
+      return formatOrderRedirectedToAllyLine(world, event);
     default:
       return `${event.kind} event`;
   }
@@ -500,7 +510,7 @@ export function taggedOrderFields(
 }
 
 export function playerFactionId(world: WorldState): Id | undefined {
-  return resolvePlayerFactionId(world);
+  return Object.values(world.factions).find((faction) => faction.isPlayer)?.id;
 }
 
 /**
@@ -560,6 +570,13 @@ export function isDispatchVisibleToFaction(
     case 'withdrawal':
     case 'secured':
       return isTerritoryVisible(world, factionId, event.territoryId);
+
+    case 'allyArrivalPeaceful':
+    case 'dispatchCancelledByAlliance':
+      return event.factionId === factionId;
+
+    case 'orderRedirectedToAlly':
+      return event.orderingFactionId === factionId;
 
     default:
       return true;

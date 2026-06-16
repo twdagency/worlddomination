@@ -27,6 +27,7 @@ import {
 import { buildWhyExplanation, infraWhyExplanation } from '../game/whyBlockText';
 import type { ActionStackParamList } from '../navigation/types';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
+import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { WhyBlock } from '../components/disclosure/WhyBlock';
@@ -118,6 +119,7 @@ export function TerritoryScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScreenBackButton />
       <Text style={styles.heading}>Territory</Text>
       <Text style={styles.playerIdentity}>
         {playerIdentity.compactLine} · {playerIdentity.citiesLine}

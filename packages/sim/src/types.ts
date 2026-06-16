@@ -477,6 +477,16 @@ export type SimEventKind =
       fromTerritoryId: Id;
       toTerritoryId: Id;
       importance?: DispatchImportance;
+    }
+  | {
+      kind: 'orderRedirectedToAlly';
+      at: Millis;
+      orderingFactionId: Id;
+      territoryId: Id;
+      newOwnerId: Id;
+      unitId: Id;
+      fromTerritoryId: Id;
+      importance?: DispatchImportance;
     };
 
 /** Stable unique identifier assigned at emission time (see `emit` / `stampEvents`). */

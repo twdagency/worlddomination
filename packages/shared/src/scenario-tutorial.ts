@@ -1,12 +1,10 @@
 import type { WorldState } from 'sim';
-import {
-  createInitialTutorialState,
-  diplomacyDefaults,
-  PLAYER_TUTORIAL_FACTION_ID,
-  TUTORIAL_ACTIVE_TIME_MULTIPLIER,
-  TUTORIAL_HOME_TERRITORY_ID,
-} from 'sim';
+import { createInitialTutorialState, diplomacyDefaults, TUTORIAL_ACTIVE_TIME_MULTIPLIER } from 'sim';
 import { LEADERS_BY_ID } from './leaders';
+import {
+  PLAYER_TUTORIAL_FACTION_ID,
+  TUTORIAL_HOME_TERRITORY_ID,
+} from './tutorialConstants';
 import { UNIT_TYPES_BY_ID } from './units';
 
 /**
