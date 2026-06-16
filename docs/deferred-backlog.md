@@ -370,6 +370,17 @@ rejections (`orderRejected`). Player-initiated actions that fail in sim should
 emit a dispatch or feedback event — never fail silently. AI/non-player failures
 may reject quietly.
 
+## Process — diagnostic-first (Sprint 8.5)
+
+Run a diagnostic pass before fixing suspected bugs when cold-play perception and
+code path are misaligned. Sprint 8.5 Issue #18: Phase 0 found sim/UI cost logic
+correct; Phase 4 construction tests confirmed — no fix required. Prevents
+fix-where-no-bug-exists work.
+
+**Require-cycle warnings during cold-play:** triage; do not auto-fix before ship
+unless symptomatic. Noise obscures real bugs. Fix when: undefined-at-import,
+flaky tests, or user-visible incorrect behavior tied to the cycled modules.
+
 ## Sprint 7b tutorial follow-ups
 
 ### Sprint 8 candidates
@@ -395,6 +406,18 @@ may reject quietly.
 - **Dilemma consequence preview UI tuning** — Phase 6 ships Choose without spelling out
   "+200 gold, -30 standing" on option cards (legibility B: constraints visible,
   consequences hinted).
+
+### Sprint 9 — engineering hygiene (symptom-triggered)
+
+- **`diplomaticAi` ↔ `playerDiplomacy` require cycle (sim)** — Promote to active work
+  if diplomacy proposals show non-deterministic accept/decline behavior,
+  undefined-at-import errors, or test flakiness. Fix scope: extract
+  scoring/thresholds to `diplomaticScoring.ts` (~30–60 min refactor). No symptom
+  as of Sprint 8.5 cold-play prep.
+- **VirtualizedList slow-update warnings (mobile)** — Promote if scroll jank is
+  reported during cold-play on World, Diplomacy, Dispatches, or Forces screens.
+  Fix scope: `React.memo` row components, stable `keyExtractor`, avoid inline
+  objects in `renderItem`. Dev warning alone is not sufficient trigger.
 
 ## UI — Diplomacy identity axes (Sprint 8+)
 

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import { breakAlliance, formAlliance } from 'sim';
-import { classifyDestination, formatDestinationRowTitle } from '../src/game/orderDestinations';
+import { classifyDestination } from '../src/game/orderDestinations';
+import { formatDestinationRowTitle } from '../src/game/territoryOwnerLabel';
 
 const START_MS = 1_700_000_000_000;
 const PLAYER = 'faction-player';

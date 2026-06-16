@@ -8,8 +8,6 @@ export interface OrderDestinationIntel {
   snapshot?: { ownerId?: Id };
 }
 
-export { formatDestinationRowTitle } from './territoryOwnerLabel';
-
 export function classifyDestination(
   world: WorldState,
   playerId: Id | undefined,
