@@ -6,3 +6,7 @@ export { createSprint3World, SPRINT3_TERRITORY_OVERRIDES } from './scenario-spri
 export { createSprint4World, SPRINT4_TERRITORIES } from './scenario-sprint4';
 export { createSprint5World, SPRINT5_TERRITORIES } from './scenario-sprint5';
 export { createTutorialWorld, TUTORIAL_TERRITORIES } from './scenario-tutorial';
+export {
+  PLAYER_TUTORIAL_FACTION_ID,
+  TUTORIAL_HOME_TERRITORY_ID,
+} from 'sim';

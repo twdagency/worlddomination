@@ -11,6 +11,7 @@ import {
   recordTreatyObservations,
 } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
+import { evaluateBeatProgression } from './beatController';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
@@ -113,13 +114,21 @@ export function tick(
   });
   events.push(...emitIntelReportEvents(afterDiplomacy, priorIntel, nextIntel));
 
-  const next: WorldState = {
+  let next: WorldState = {
     ...afterDiplomacy,
     units: unitsAfterArrivals,
     territories,
     rng,
     intel: nextIntel,
   };
+
+  // Tutorial beat progression (after intel emission; last step before tick return):
+  // 1. recordIntelObservations
+  // 2. recordAlliedObservations
+  // 3. recordTreatyObservations
+  // 4. emitIntelReportEvents
+  // 5. evaluateBeatProgression ← runs here
+  next = evaluateBeatProgression(next, events);
 
   return { world: next, events, accrued: economy.accrued };
 }

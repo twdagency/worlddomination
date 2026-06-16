@@ -12,6 +12,10 @@ export const TUTORIAL_BEAT_ORDER: readonly TutorialBeatId[] = [
 export const TUTORIAL_ACTIVE_TIME_MULTIPLIER = 30;
 export const STANDARD_TIME_MULTIPLIER = 1;
 
+/** Tutorial scenario faction/territory ids (shared with scenario-tutorial factory). */
+export const PLAYER_TUTORIAL_FACTION_ID = 'faction-britain-tutorial';
+export const TUTORIAL_HOME_TERRITORY_ID = 'territory-london-tutorial';
+
 export function createInitialTutorialState(startedAt: Millis): TutorialState {
   return {
     active: true,

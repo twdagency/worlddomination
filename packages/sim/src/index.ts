@@ -206,12 +206,23 @@ export {
   TUTORIAL_BEAT_ORDER,
   TUTORIAL_ACTIVE_TIME_MULTIPLIER,
   STANDARD_TIME_MULTIPLIER,
+  PLAYER_TUTORIAL_FACTION_ID,
+  TUTORIAL_HOME_TERRITORY_ID,
   createInitialTutorialState,
   markBeatComplete,
   graduateTutorial,
   isBeatComplete,
   getNextBeat,
 } from './tutorial';
+export {
+  type BeatPredicate,
+  TUTORIAL_BEAT_PREDICATES,
+} from './tutorialBeats';
+export {
+  type BeatController,
+  createBeatController,
+  evaluateBeatProgression,
+} from './beatController';
 export {
   compactDispatchFeed,
   renderCompactDigestText,

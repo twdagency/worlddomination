@@ -2,7 +2,9 @@ import type { WorldState } from 'sim';
 import {
   createInitialTutorialState,
   diplomacyDefaults,
+  PLAYER_TUTORIAL_FACTION_ID,
   TUTORIAL_ACTIVE_TIME_MULTIPLIER,
+  TUTORIAL_HOME_TERRITORY_ID,
 } from 'sim';
 import { LEADERS_BY_ID } from './leaders';
 import { UNIT_TYPES_BY_ID } from './units';
@@ -16,7 +18,7 @@ export const TUTORIAL_TERRITORIES = {
     id: 'territory-london-tutorial',
     name: 'London',
     coord: { lat: 51.5, lon: 0.0 },
-    ownerId: 'faction-britain-tutorial',
+    ownerId: PLAYER_TUTORIAL_FACTION_ID,
     baseYield: 90,
     infraLevel: 1,
     extraction: { food: 4, steel: 4 },
@@ -57,8 +59,8 @@ export const TUTORIAL_TERRITORIES = {
 /** Tutorial: 4-city Europe subset with food pinch and two AI paths (conquest vs treaty). */
 export function createTutorialWorld(nowMs: number = Date.now()): WorldState {
   const factions = {
-    'faction-britain-tutorial': {
-      id: 'faction-britain-tutorial',
+    [PLAYER_TUTORIAL_FACTION_ID]: {
+      id: PLAYER_TUTORIAL_FACTION_ID,
       leaderId: 'leader-elizabeth',
       isPlayer: true,
       funding: 500,
@@ -93,9 +95,9 @@ export function createTutorialWorld(nowMs: number = Date.now()): WorldState {
       'unit-britain-infantry': {
         id: 'unit-britain-infantry',
         typeId: 'levy-t1',
-        ownerId: 'faction-britain-tutorial',
+        ownerId: PLAYER_TUTORIAL_FACTION_ID,
         count: 1,
-        locationId: 'territory-london-tutorial',
+        locationId: TUTORIAL_HOME_TERRITORY_ID,
         stance: 'defend',
       },
       'unit-france-levy': {
