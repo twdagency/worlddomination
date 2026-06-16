@@ -1,4 +1,6 @@
-import { getDilemmaById, playerFactionId, type Id, type WorldState } from 'sim';
+import { getDilemmaById } from 'sim';
+import { resolvePlayerFactionId } from 'shared';
+import type { Id, WorldState } from 'sim';
 
 export interface PendingDilemmaCard {
   dilemmaId: Id;
@@ -9,7 +11,7 @@ export interface PendingDilemmaCard {
 export function selectPendingDilemmaCards(world: WorldState | null): PendingDilemmaCard[] {
   if (!world?.pendingDilemmas?.length) return [];
 
-  const playerId = playerFactionId(world);
+  const playerId = resolvePlayerFactionId(world);
   const cards: PendingDilemmaCard[] = [];
 
   for (const entry of world.pendingDilemmas) {

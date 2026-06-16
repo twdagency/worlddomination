@@ -1,9 +1,12 @@
 import type { TutorialBeatId, WorldState } from 'sim';
 import { TUTORIAL_BEAT_COPY, type BeatCopy } from 'shared';
 
+export type TutorialBannerMode = 'hidden' | 'collapsed' | 'expanded';
+
 export interface TutorialSelectorInput {
   world: WorldState | null;
   lastDismissedBeat: TutorialBeatId | null;
+  bannerCollapsedBeat: TutorialBeatId | null;
 }
 
 export interface TutorialSelectorOutput {
@@ -11,11 +14,29 @@ export interface TutorialSelectorOutput {
   currentBeat: TutorialBeatId | null;
   currentBeatCopy: BeatCopy | null;
   shouldShowBanner: boolean;
+  bannerMode: TutorialBannerMode;
   isHandoffReady: boolean;
 }
 
+function resolveBannerBeatKey(
+  currentBeat: TutorialBeatId | null,
+  isHandoffReady: boolean,
+): TutorialBeatId | null {
+  if (currentBeat) return currentBeat;
+  return isHandoffReady ? 'handoff' : null;
+}
+
+function resolveBannerMode(
+  shouldShowBanner: boolean,
+  beatKey: TutorialBeatId | null,
+  bannerCollapsedBeat: TutorialBeatId | null,
+): TutorialBannerMode {
+  if (!shouldShowBanner || !beatKey) return 'hidden';
+  return bannerCollapsedBeat === beatKey ? 'collapsed' : 'expanded';
+}
+
 export function selectTutorialState(input: TutorialSelectorInput): TutorialSelectorOutput {
-  const { world, lastDismissedBeat } = input;
+  const { world, lastDismissedBeat, bannerCollapsedBeat } = input;
   const tutorial = world?.tutorial;
 
   if (!tutorial?.active) {
@@ -24,16 +45,20 @@ export function selectTutorialState(input: TutorialSelectorInput): TutorialSelec
       currentBeat: tutorial?.currentBeat ?? null,
       currentBeatCopy: null,
       shouldShowBanner: false,
+      bannerMode: 'hidden',
       isHandoffReady: false,
     };
   }
 
   if (tutorial.completedBeats.includes('handoff')) {
+    const shouldShowBanner = lastDismissedBeat !== 'handoff';
+    const beatKey = resolveBannerBeatKey(null, true);
     return {
       isActive: true,
       currentBeat: null,
       currentBeatCopy: TUTORIAL_BEAT_COPY.handoff,
-      shouldShowBanner: lastDismissedBeat !== 'handoff',
+      shouldShowBanner,
+      bannerMode: resolveBannerMode(shouldShowBanner, beatKey, bannerCollapsedBeat),
       isHandoffReady: true,
     };
   }
@@ -45,6 +70,7 @@ export function selectTutorialState(input: TutorialSelectorInput): TutorialSelec
       currentBeat: null,
       currentBeatCopy: null,
       shouldShowBanner: false,
+      bannerMode: 'hidden',
       isHandoffReady: false,
     };
   }
@@ -57,6 +83,7 @@ export function selectTutorialState(input: TutorialSelectorInput): TutorialSelec
     currentBeat,
     currentBeatCopy,
     shouldShowBanner,
+    bannerMode: resolveBannerMode(shouldShowBanner, currentBeat, bannerCollapsedBeat),
     isHandoffReady: false,
   };
 }

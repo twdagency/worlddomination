@@ -8,7 +8,7 @@ import {
   type WorldState,
 } from 'sim';
 import { formatDispatchLine } from './actions';
-import { PLAYER_FACTION_ID } from './playerView';
+import { resolvePlayerFactionId } from 'shared';
 
 export type ActionKind =
   | 'move'
@@ -68,7 +68,9 @@ function leaderLabel(world: WorldState, factionId: string | undefined): string {
 }
 
 function playerVisibleEvents(world: WorldState, events: SimEvent[]): SimEvent[] {
-  return filterDispatchesForFaction(world, events, PLAYER_FACTION_ID);
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return [];
+  return filterDispatchesForFaction(world, events, playerId);
 }
 
 function primaryDispatchLine(world: WorldState, events: SimEvent[]): string | null {
@@ -231,7 +233,8 @@ function buildDiplomacyFeedback(
     };
   }
 
-  const toastMessage = dispatchLineForEvent(world, primary, PLAYER_FACTION_ID);
+  const playerId = resolvePlayerFactionId(world);
+  const toastMessage = dispatchLineForEvent(world, primary, playerId);
   const success = !(
     primary.kind === 'allianceDeclined' ||
     primary.kind === 'treatyDeclined'
@@ -298,7 +301,9 @@ export function previewBuildBlockedMessage(
   unitTypeId: string,
   count: number = 1,
 ): string | undefined {
-  const check = canBuild(world, territoryId, unitTypeId, count, PLAYER_FACTION_ID);
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return 'No player faction';
+  const check = canBuild(world, territoryId, unitTypeId, count, playerId);
   if (check.ok) return undefined;
   const unitType = world.unitTypes[unitTypeId];
   return formatBuildBlockedMessage(unitType, check.reason);

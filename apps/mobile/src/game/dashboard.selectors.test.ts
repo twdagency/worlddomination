@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { createSprint4World } from 'shared';
 import type { SimEvent } from 'sim';
+import { resolvePlayerFactionId } from 'shared';
 import {
   DASHBOARD_AWAY_COLLAPSE_MS,
   getDashboardCatchUpSummary,
   getDashboardEmpireSummary,
   getDashboardNavCards,
   getDashboardUrgentCount,
-  PLAYER_FACTION_ID,
 } from '../game/playerView';
 
 const START_MS = 1_700_000_000_000;
+
+function sprint4PlayerId(): string {
+  return resolvePlayerFactionId(createSprint4World(START_MS))!;
+}
 
 describe('dashboard catch-up selector', () => {
   it('collapses to current status when away duration is under one game-hour', () => {
@@ -30,7 +34,7 @@ describe('dashboard catch-up selector', () => {
         at: START_MS + 2 * 3_600_000,
         proposalId: 'proposal-catchup',
         from: 'faction-rome',
-        to: PLAYER_FACTION_ID,
+        to: sprint4PlayerId(),
         expiresAt: START_MS + 50 * 3_600_000,
         beatId: 'beat-test',
         decisionTickMs: START_MS + 2 * 3_600_000,
@@ -40,7 +44,7 @@ describe('dashboard catch-up selector', () => {
         kind: 'buildStarted',
         at: START_MS + 3 * 3_600_000,
         territoryId: 'territory-london',
-        factionId: PLAYER_FACTION_ID,
+        factionId: sprint4PlayerId(),
         unitTypeId: 'levy-t1',
         count: 1,
         intent: 'build',
@@ -113,7 +117,7 @@ describe('dashboard navigation cards', () => {
         {
           id: 'proposal-test',
           from: 'faction-rome',
-          to: PLAYER_FACTION_ID,
+          to: sprint4PlayerId(),
           type: 'alliance' as const,
           proposedAt: START_MS,
           expiresAt: START_MS + 48 * 3_600_000,

@@ -52,7 +52,7 @@ import {
   saveTutorialOnboarded,
   saveWorld,
 } from '../storage/worldStorage';
-import { selectTutorialState } from './tutorialSelector';
+import { selectTutorialState, type TutorialBannerMode } from './tutorialSelector';
 
 export interface TutorialContextSlice {
   isTutorialActive: boolean;
@@ -60,9 +60,12 @@ export interface TutorialContextSlice {
   currentBeatCopy: BeatCopy | null;
   isBannerDismissed: boolean;
   shouldShowBanner: boolean;
+  bannerMode: TutorialBannerMode;
   isHandoffReady: boolean;
   dismissBanner: () => void;
   restoreBanner: () => void;
+  collapseTutorialBanner: () => void;
+  expandTutorialBanner: () => void;
   graduate: () => Promise<void>;
 }
 
@@ -114,6 +117,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [lastDismissedBeat, setLastDismissedBeat] = useState<TutorialBeatId | null>(null);
+  const [bannerCollapsedBeat, setBannerCollapsedBeat] = useState<TutorialBeatId | null>(null);
   const worldRef = useRef(world);
   const dispatchesRef = useRef(dispatches);
   worldRef.current = world;
@@ -122,9 +126,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const hasPendingEvents = nextEventMs(world) !== null;
 
   const tutorialState = useMemo(
-    () => selectTutorialState({ world, lastDismissedBeat }),
-    [world, lastDismissedBeat],
+    () => selectTutorialState({ world, lastDismissedBeat, bannerCollapsedBeat }),
+    [world, lastDismissedBeat, bannerCollapsedBeat],
   );
+
+  const tutorialBeatKey = useMemo((): TutorialBeatId | null => {
+    if (tutorialState.currentBeat) return tutorialState.currentBeat;
+    return tutorialState.isHandoffReady ? 'handoff' : null;
+  }, [tutorialState.currentBeat, tutorialState.isHandoffReady]);
+
+  useEffect(() => {
+    setBannerCollapsedBeat(null);
+  }, [tutorialBeatKey]);
 
   const dismissBanner = useCallback(() => {
     const tutorial = worldRef.current.tutorial;
@@ -141,6 +154,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setWorld(nextWorld);
     setDispatches(merged);
     setLastDismissedBeat(null);
+    setBannerCollapsedBeat(null);
     await saveTutorialOnboarded(true);
     await persist(nextWorld, merged);
     showToast('Your tutorial is complete. The campaign continues at standard speed.', 'success');
@@ -176,6 +190,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const restoreBanner = useCallback(() => {
     setLastDismissedBeat(null);
+    const tutorial = worldRef.current.tutorial;
+    const beat =
+      tutorial?.currentBeat ??
+      (tutorial?.completedBeats.includes('handoff') ? ('handoff' as TutorialBeatId) : null);
+    if (beat) setBannerCollapsedBeat(beat);
+  }, []);
+
+  const collapseTutorialBanner = useCallback(() => {
+    if (!tutorialBeatKey) return;
+    setBannerCollapsedBeat(tutorialBeatKey);
+  }, [tutorialBeatKey]);
+
+  const expandTutorialBanner = useCallback(() => {
+    setBannerCollapsedBeat(null);
   }, []);
 
   const clearActionFeedback = useCallback(() => {
@@ -360,6 +388,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setDispatches([]);
     setActionFeedback(null);
     setLastDismissedBeat(null);
+    setBannerCollapsedBeat(null);
     setWorld(fresh);
     await clearCampaignStorage();
     await Promise.all([
@@ -456,9 +485,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           : tutorialState.currentBeat !== null &&
             tutorialState.currentBeat === lastDismissedBeat,
         shouldShowBanner: tutorialState.shouldShowBanner,
+        bannerMode: tutorialState.bannerMode,
         isHandoffReady: tutorialState.isHandoffReady,
         dismissBanner,
         restoreBanner,
+        collapseTutorialBanner,
+        expandTutorialBanner,
         graduate,
         resolvePendingDilemma,
         confirmMove,

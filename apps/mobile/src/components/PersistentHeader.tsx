@@ -4,8 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
-import { getDashboardUrgentCount, PLAYER_FACTION_ID } from '../game/playerView';
+import { getDashboardUrgentCount } from '../game/playerView';
 import { terminal } from '../theme/terminal';
 import { formatAwayDuration, formatDateTime, formatFunding } from '../utils/format';
 import {
@@ -17,10 +18,20 @@ import type { RootTabParamList } from '../navigation/types';
 export function PersistentHeader() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<BottomTabNavigationProp<RootTabParamList>>();
-  const { world, dispatches, awayMs } = useGame();
+  const {
+    world,
+    dispatches,
+    awayMs,
+    isTutorialActive,
+    isBannerDismissed,
+    restoreBanner,
+  } = useGame();
 
-  const faction = world.factions[PLAYER_FACTION_ID];
-  const urgentCount = getDashboardUrgentCount(world, dispatches, PLAYER_FACTION_ID);
+  const playerId = resolvePlayerFactionId(world);
+  const faction = playerId ? world.factions[playerId] : undefined;
+  const urgentCount = getDashboardUrgentCount(world, dispatches);
+  const showTutorialRestore = isTutorialActive && isBannerDismissed;
+
   const model = buildPersistentHeaderModel({
     gameDay: world.day,
     gameDateLabel: formatDateTime(world.nowMs),
@@ -59,6 +70,18 @@ export function PersistentHeader() {
             )}
             <Ionicons name="notifications-outline" size={18} color={terminal.muted} />
           </Pressable>
+
+          {showTutorialRestore ? (
+            <Pressable
+              style={styles.tutorialRestore}
+              onPress={restoreBanner}
+              accessibilityRole="button"
+              accessibilityLabel="Restore tutorial banner"
+              testID="tutorial-banner-restore"
+            >
+              <Ionicons name="school-outline" size={18} color={terminal.tutorial} />
+            </Pressable>
+          ) : null}
 
           <Text style={styles.funding} numberOfLines={1}>
             {model.fundingLabel}
@@ -129,6 +152,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  tutorialRestore: {
+    minWidth: 32,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badge: {
     position: 'absolute',

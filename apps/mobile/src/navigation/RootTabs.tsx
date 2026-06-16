@@ -7,6 +7,7 @@ import { useGame } from '../game/GameContext';
 import { PersistentHeader } from '../components/PersistentHeader';
 import { TutorialBanner } from '../components/tutorial/TutorialBanner';
 import { ActionStackNavigator } from './ActionStackNavigator';
+import { TutorialNavigationBridge } from './TutorialNavigationBridge';
 import { DispatchesScreen } from '../screens/DispatchesScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { WorldScreen } from '../screens/WorldScreen';
@@ -41,9 +42,11 @@ function tabBarIcon(iconName: string, activeIconName: string) {
 export function RootTabs() {
   const {
     ready,
-    shouldShowBanner,
+    bannerMode,
     currentBeatCopy,
     dismissBanner,
+    expandTutorialBanner,
+    collapseTutorialBanner,
     isHandoffReady,
     graduate,
   } = useGame();
@@ -61,14 +64,18 @@ export function RootTabs() {
     <NavigationContainer theme={navTheme}>
       <View style={styles.appShell}>
         <PersistentHeader />
-        {shouldShowBanner && currentBeatCopy ? (
+        {bannerMode !== 'hidden' && currentBeatCopy ? (
           <TutorialBanner
             copy={currentBeatCopy}
+            mode={bannerMode}
             onDismiss={dismissBanner}
+            onExpand={expandTutorialBanner}
+            onCollapse={collapseTutorialBanner}
             isHandoffReady={isHandoffReady}
             onGraduate={graduate}
           />
         ) : null}
+        <TutorialNavigationBridge />
         <Tab.Navigator
           initialRouteName="Dashboard"
           screenOptions={{

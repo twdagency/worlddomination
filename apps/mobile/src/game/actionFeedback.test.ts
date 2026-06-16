@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSprint4World } from 'shared';
+import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import {
   buildActionFeedback,
   dispatchActionFeedback,
@@ -10,7 +10,7 @@ import { mergeDispatches } from './actions';
 const START_MS = 1_700_000_000_000;
 const LONDON = 'territory-london';
 const PARIS = 'territory-paris';
-const PLAYER = 'faction-player';
+const playerId = () => resolvePlayerFactionId(createSprint4World(START_MS))!;
 
 describe('buildActionFeedback', () => {
   it('formats move success with route and ETA', () => {
@@ -23,7 +23,7 @@ describe('buildActionFeedback', () => {
           kind: 'departure',
           at: START_MS,
           unitId: 'unit-player-mg',
-          ownerId: PLAYER,
+          ownerId: playerId(),
           fromTerritoryId: LONDON,
           toTerritoryId: PARIS,
           unitTypeId: 'mg-armor-t5',
@@ -97,7 +97,7 @@ describe('dispatchActionFeedback', () => {
       {
         kind: 'allianceDeclined' as const,
         at: START_MS,
-        from: PLAYER,
+        from: playerId(),
         to: 'faction-rome',
         declinedBy: 'faction-rome',
         beatId: 'beat',

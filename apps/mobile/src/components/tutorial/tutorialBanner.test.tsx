@@ -14,13 +14,17 @@ function renderBanner(
   onDismiss = () => undefined,
   isHandoffReady = false,
   onGraduate = () => undefined,
+  mode: 'collapsed' | 'expanded' = 'expanded',
 ) {
   let tree!: TestRenderer.ReactTestRenderer;
   act(() => {
     tree = TestRenderer.create(
       <TutorialBanner
         copy={copy}
+        mode={mode}
         onDismiss={onDismiss}
+        onExpand={() => undefined}
+        onCollapse={() => undefined}
         isHandoffReady={isHandoffReady}
         onGraduate={onGraduate}
       />,

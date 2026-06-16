@@ -1,45 +1,63 @@
 import { describe, expect, it } from 'vitest';
-import { createSprint4World } from 'shared';
-import { createTutorialWorld } from 'shared';
-import { TUTORIAL_BEAT_COPY } from 'shared';
-import { TUTORIAL_BEAT_ORDER } from 'sim';
+import { createSprint4World, createTutorialWorld, TUTORIAL_BEAT_COPY } from 'shared';
+import { TUTORIAL_BEAT_ORDER, type TutorialBeatId } from 'sim';
 import { selectTutorialState } from './tutorialSelector';
 
 const START_MS = 1_700_400_000_000;
+const baseInput = { lastDismissedBeat: null as TutorialBeatId | null, bannerCollapsedBeat: null as TutorialBeatId | null };
 
 describe('tutorial selector', () => {
   it('returns inactive when world is null', () => {
-    const result = selectTutorialState({ world: null, lastDismissedBeat: null });
+    const result = selectTutorialState({ world: null, ...baseInput });
     expect(result).toEqual({
       isActive: false,
       currentBeat: null,
       currentBeatCopy: null,
       shouldShowBanner: false,
+      bannerMode: 'hidden',
       isHandoffReady: false,
     });
   });
 
   it('returns inactive for non-tutorial worlds', () => {
     const world = createSprint4World(START_MS);
-    const result = selectTutorialState({ world, lastDismissedBeat: null });
+    const result = selectTutorialState({ world, ...baseInput });
     expect(result.isActive).toBe(false);
     expect(result.shouldShowBanner).toBe(false);
+    expect(result.bannerMode).toBe('hidden');
   });
 
   it('shows movement copy when tutorial is active and not dismissed', () => {
     const world = createTutorialWorld(START_MS);
-    const result = selectTutorialState({ world, lastDismissedBeat: null });
+    const result = selectTutorialState({ world, ...baseInput });
     expect(result.isActive).toBe(true);
     expect(result.currentBeat).toBe('movement');
     expect(result.currentBeatCopy).toEqual(TUTORIAL_BEAT_COPY.movement);
     expect(result.shouldShowBanner).toBe(true);
+    expect(result.bannerMode).toBe('expanded');
   });
 
   it('hides banner when the current beat was dismissed', () => {
     const world = createTutorialWorld(START_MS);
-    const result = selectTutorialState({ world, lastDismissedBeat: 'movement' });
+    const result = selectTutorialState({
+      world,
+      lastDismissedBeat: 'movement',
+      bannerCollapsedBeat: null,
+    });
     expect(result.shouldShowBanner).toBe(false);
+    expect(result.bannerMode).toBe('hidden');
     expect(result.currentBeatCopy).toEqual(TUTORIAL_BEAT_COPY.movement);
+  });
+
+  it('shows collapsed mode when bannerCollapsedBeat matches current beat', () => {
+    const world = createTutorialWorld(START_MS);
+    const result = selectTutorialState({
+      world,
+      lastDismissedBeat: null,
+      bannerCollapsedBeat: 'movement',
+    });
+    expect(result.shouldShowBanner).toBe(true);
+    expect(result.bannerMode).toBe('collapsed');
   });
 
   it('restores banner when current beat changes after a prior dismiss', () => {
@@ -52,9 +70,14 @@ describe('tutorial selector', () => {
         completedBeats: ['movement'],
       },
     };
-    const result = selectTutorialState({ world: advanced, lastDismissedBeat: 'movement' });
+    const result = selectTutorialState({
+      world: advanced,
+      lastDismissedBeat: 'movement',
+      bannerCollapsedBeat: null,
+    });
     expect(result.currentBeat).toBe('combat');
     expect(result.shouldShowBanner).toBe(true);
+    expect(result.bannerMode).toBe('expanded');
     expect(result.currentBeatCopy).toEqual(TUTORIAL_BEAT_COPY.combat);
   });
 
@@ -70,7 +93,11 @@ describe('tutorial selector', () => {
       },
       timeMultiplier: 1,
     };
-    const result = selectTutorialState({ world: graduated, lastDismissedBeat: 'movement' });
+    const result = selectTutorialState({
+      world: graduated,
+      lastDismissedBeat: 'movement',
+      bannerCollapsedBeat: null,
+    });
     expect(result.isActive).toBe(false);
     expect(result.shouldShowBanner).toBe(false);
   });
@@ -85,9 +112,10 @@ describe('tutorial selector', () => {
         completedBeats: [...TUTORIAL_BEAT_ORDER],
       },
     };
-    const result = selectTutorialState({ world: preGraduation, lastDismissedBeat: null });
+    const result = selectTutorialState({ world: preGraduation, ...baseInput });
     expect(result.isActive).toBe(true);
     expect(result.shouldShowBanner).toBe(true);
+    expect(result.bannerMode).toBe('expanded');
     expect(result.currentBeatCopy).toEqual(TUTORIAL_BEAT_COPY.handoff);
     expect(result.isHandoffReady).toBe(true);
   });
@@ -102,7 +130,11 @@ describe('tutorial selector', () => {
         completedBeats: [...TUTORIAL_BEAT_ORDER],
       },
     };
-    const result = selectTutorialState({ world: preGraduation, lastDismissedBeat: 'handoff' });
+    const result = selectTutorialState({
+      world: preGraduation,
+      lastDismissedBeat: 'handoff',
+      bannerCollapsedBeat: null,
+    });
     expect(result.shouldShowBanner).toBe(false);
     expect(result.isHandoffReady).toBe(true);
   });

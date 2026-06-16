@@ -68,8 +68,8 @@ export function DiplomacyScreen() {
   const [treatyTarget, setTreatyTarget] = useState<string | null>(null);
   const [expandedFactionId, setExpandedFactionId] = useState<string | null>(null);
 
-  const playerId = resolvePlayerFactionId(world) ?? playerFactionId(world) ?? 'faction-player';
-  const incoming = pendingProposalsForFaction(world, playerId);
+  const playerId = resolvePlayerFactionId(world) ?? playerFactionId(world);
+  const incoming = playerId ? pendingProposalsForFaction(world, playerId) : [];
   const timestampedDispatches = dispatches.filter(isTimestampedDispatch);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function DiplomacyScreen() {
     () =>
       diplomacyTargetFactions(world)
         .map((faction) => {
-          const reputation = world.reputation[playerId]?.[faction.id] ?? 0;
+          const reputation = playerId ? (world.reputation[playerId]?.[faction.id] ?? 0) : 0;
           const stance = computeStance(
             world,
             faction.id,
@@ -93,7 +93,9 @@ export function DiplomacyScreen() {
           return {
             id: faction.id,
             identity: getFactionIdentity(world, faction.id),
-            status: diplomaticRelationshipStatus(world, playerId, faction.id),
+            status: playerId
+              ? diplomaticRelationshipStatus(world, playerId, faction.id)
+              : ('neutral' as const),
             reputationLabel: reputationCategory(reputation),
             reputation,
             stance,
@@ -106,11 +108,19 @@ export function DiplomacyScreen() {
     [world, playerId, timestampedDispatches],
   );
 
-  const activeTreaties = getActiveTreaties(world, playerId, world.nowMs);
+  const activeTreaties = playerId ? getActiveTreaties(world, playerId, world.nowMs) : [];
 
   const treatyTerritories = Object.values(world.territories)
     .filter((territory) => territory.ownerId !== playerId)
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (!playerId) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.muted}>No player faction in this campaign.</Text>
+      </View>
+    );
+  }
 
   return (
     <FlatList
