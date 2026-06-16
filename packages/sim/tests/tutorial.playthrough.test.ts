@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { TUTORIAL_BEAT_COPY } from '../../shared/src/tutorialBeatCopy';
 import { createTutorialWorld } from '../../shared/src/scenario-tutorial';
 import {
   evaluateBeatProgression,
@@ -10,13 +11,16 @@ import {
   TUTORIAL_PARIS_TERRITORY_ID,
   tick,
 } from '../src';
+import { collectAiOrders } from '../src/ai';
 import { INFRA_UPGRADE_BASE_COST } from '../src/constants';
+import { FOREIGN_RULE_DILEMMA } from '../src/dilemmas/foreignRule';
 import { tagOrder } from './fixtures';
 
 const START_MS = 1_700_700_000_000;
 const UNIT = 'unit-britain-infantry';
 const PARIS = TUTORIAL_PARIS_TERRITORY_ID;
 const BURGUNDY = TUTORIAL_BURGUNDY_TERRITORY_ID;
+const FRANCE = 'faction-france-tutorial';
 
 function march(
   world: ReturnType<typeof createTutorialWorld>,
@@ -55,6 +59,18 @@ describe('tutorial playthrough', () => {
     expect(world.tutorial?.completedBeats).toContain('combat');
     expect(world.tutorial?.currentBeat).toBe('economy');
     expect(world.territories[PARIS]?.ownerId).toBe(PLAYER_TUTORIAL_FACTION_ID);
+    expect(world.countries?.[FRANCE]?.defeated).toBe(true);
+    expect(
+      toParis.events.some(
+        (event) => event.kind === 'countryDefeated' && event.countryId === FRANCE,
+      ),
+    ).toBe(true);
+    expect(
+      collectAiOrders(world, world.nowMs).every((order) => {
+        if (order.kind !== 'move') return true;
+        return world.units[order.unitId]?.ownerId !== FRANCE;
+      }),
+    ).toBe(true);
     const foodAfterParis = totalFood(world);
     expect(foodAfterParis).toBeGreaterThanOrEqual(20);
     expect(foodAfterParis).toBeLessThanOrEqual(80);
@@ -79,6 +95,8 @@ describe('tutorial playthrough', () => {
     expect(world.tutorial?.completedBeats).toContain('pinch');
     expect(world.tutorial?.currentBeat).toBe('governance');
     expect(world.pendingDilemmas?.some((entry) => entry.dilemmaId === 'foreign-rule')).toBe(true);
+    expect(TUTORIAL_BEAT_COPY.governance.title).toContain('France');
+    expect(FOREIGN_RULE_DILEMMA.prompt).toContain('Henry IV is defeated');
 
     const resolved = resolveDilemma(
       world,

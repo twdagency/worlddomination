@@ -2,9 +2,9 @@ import type { Dilemma } from 'shared';
 
 export const FOREIGN_RULE_DILEMMA: Dilemma = {
   id: 'foreign-rule',
-  title: 'How will you rule Paris?',
+  title: 'The fall of France',
   prompt:
-    'Paris has fallen. Its people are not your own. You must decide how to administer this conquered city.',
+    'Paris has fallen. Henry IV is defeated. The lands of France are yours — but the people are not. You must decide how to administer this conquered country.',
   options: [
     {
       id: 'harsh-repression',

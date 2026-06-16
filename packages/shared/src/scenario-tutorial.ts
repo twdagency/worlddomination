@@ -1,11 +1,45 @@
-import type { WorldState } from 'sim';
+import type { Country, WorldState } from 'sim';
 import { createInitialTutorialState, diplomacyDefaults, TUTORIAL_ACTIVE_TIME_MULTIPLIER } from 'sim';
 import { LEADERS_BY_ID } from './leaders';
 import {
   PLAYER_TUTORIAL_FACTION_ID,
+  TUTORIAL_BURGUNDY_FACTION_ID,
+  TUTORIAL_BURGUNDY_TERRITORY_ID,
   TUTORIAL_HOME_TERRITORY_ID,
+  TUTORIAL_PARIS_TERRITORY_ID,
 } from './tutorialConstants';
 import { UNIT_TYPES_BY_ID } from './units';
+
+const FRANCE_TUTORIAL_FACTION_ID = 'faction-france-tutorial';
+
+function buildTutorialCountries(): Record<string, Country> {
+  return {
+    [PLAYER_TUTORIAL_FACTION_ID]: {
+      id: PLAYER_TUTORIAL_FACTION_ID,
+      name: LEADERS_BY_ID['leader-elizabeth'].region,
+      leaderId: 'leader-elizabeth',
+      capitalTerritoryId: TUTORIAL_HOME_TERRITORY_ID,
+      defeated: false,
+      isPlayer: true,
+    },
+    [FRANCE_TUTORIAL_FACTION_ID]: {
+      id: FRANCE_TUTORIAL_FACTION_ID,
+      name: LEADERS_BY_ID['leader-henry-iv'].region,
+      leaderId: 'leader-henry-iv',
+      capitalTerritoryId: TUTORIAL_PARIS_TERRITORY_ID,
+      defeated: false,
+      isPlayer: false,
+    },
+    [TUTORIAL_BURGUNDY_FACTION_ID]: {
+      id: TUTORIAL_BURGUNDY_FACTION_ID,
+      name: LEADERS_BY_ID['leader-charles-bold'].region,
+      leaderId: 'leader-charles-bold',
+      capitalTerritoryId: TUTORIAL_BURGUNDY_TERRITORY_ID,
+      defeated: false,
+      isPlayer: false,
+    },
+  };
+}
 
 /**
  * Tutorial map uses compressed Channel-adjacent coords so levy marches land in
@@ -116,6 +150,7 @@ export function createTutorialWorld(nowMs: number = Date.now()): WorldState {
       },
     },
     factions,
+    countries: buildTutorialCountries(),
     leaders: {
       'leader-elizabeth': LEADERS_BY_ID['leader-elizabeth'],
       'leader-henry-iv': LEADERS_BY_ID['leader-henry-iv'],
