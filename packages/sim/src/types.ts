@@ -472,6 +472,23 @@ export type TerritoryVisibilityState =
     }
   | { state: 'unknown' };
 
+export type TutorialBeatId =
+  | 'movement'
+  | 'combat'
+  | 'economy'
+  | 'pinch'
+  | 'governance'
+  | 'handoff';
+
+export interface TutorialState {
+  /** True during beats 1–6; false after graduation. */
+  active: boolean;
+  currentBeat: TutorialBeatId | null;
+  completedBeats: TutorialBeatId[];
+  startedAt: Millis;
+  graduatedAt: Millis | null;
+}
+
 export interface WorldState {
   nowMs: Millis;
   day: number;
@@ -489,4 +506,8 @@ export interface WorldState {
   pendingProposals: PendingProposal[];
   scenarioId: Id;
   victoryThreshold?: number;
+  /** Undefined on non-tutorial worlds. Populated by tutorial scenario or migration backfill. */
+  tutorial?: TutorialState;
+  /** Game-time pacing knob. 30 during active tutorial; 1 otherwise. Set by migration if missing. */
+  timeMultiplier?: number;
 }

@@ -26,7 +26,7 @@ export {
   buildTransit,
   pendingArrivalMs,
 } from './movement';
-export { advanceTo, mergeAccruedIncome, nextEventMs, unitPosition, previewMoveEtaMs, moveDistanceKm } from './clock';
+export { advanceTo, mergeAccruedIncome, nextEventMs, unitPosition, previewMoveEtaMs, moveDistanceKm, getTimeMultiplier } from './clock';
 export {
   assertAiOrders,
   applyTempoCommitment,
@@ -177,7 +177,7 @@ export {
 } from './pendingProposals';
 export { reputationCategory } from './reputationDisplay';
 export type { ReputationCategory } from './reputationDisplay';
-export { ensureWorldMigrations } from './migrations';
+export { ensureWorldMigrations, ensureWorldTimeMultiplier } from './migrations';
 export type { WorldMigrationCatalog } from './migrations';
 export {
   areAllied,
@@ -201,7 +201,17 @@ export {
 } from './intelDispatch';
 export type { IntelReportVariant } from './intelDispatch';
 export type { DispatchBeatGroup, DispatchFeedItem } from './dispatch';
-export type { ScoutingPriority, DiplomaticPosture } from './types';
+export type { ScoutingPriority, DiplomaticPosture, TutorialBeatId, TutorialState } from './types';
+export {
+  TUTORIAL_BEAT_ORDER,
+  TUTORIAL_ACTIVE_TIME_MULTIPLIER,
+  STANDARD_TIME_MULTIPLIER,
+  createInitialTutorialState,
+  markBeatComplete,
+  graduateTutorial,
+  isBeatComplete,
+  getNextBeat,
+} from './tutorial';
 export {
   compactDispatchFeed,
   renderCompactDigestText,

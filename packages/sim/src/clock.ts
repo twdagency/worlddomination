@@ -7,6 +7,16 @@ import { unitPosition } from './position';
 import { pendingProductionMs } from './production';
 import { tick } from './tick';
 import type { Coord, Id, Millis, ResourceId, SimEvent, WorldState } from './types';
+import { STANDARD_TIME_MULTIPLIER } from './tutorial';
+
+/**
+ * Presentation pacing for real-time catch-up. Sim ticks advance in game-ms only;
+ * the mobile layer scales wall-clock elapsed by this multiplier before calling
+ * `advanceTo`. Defaults to 1 when unset (see `ensureWorldTimeMultiplier`).
+ */
+export function getTimeMultiplier(world: WorldState): number {
+  return world.timeMultiplier ?? STANDARD_TIME_MULTIPLIER;
+}
 
 /** Timestamp of the soonest pending event, or null if none. */
 export function nextEventMs(world: WorldState): Millis | null {
