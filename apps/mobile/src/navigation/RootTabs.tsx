@@ -10,9 +10,9 @@ import { PersistentHeader } from '../components/PersistentHeader';
 import { TutorialBanner } from '../components/tutorial/TutorialBanner';
 import { ActionStackNavigator } from './ActionStackNavigator';
 import { HomeStackNavigator } from './HomeStackNavigator';
+import { WorldStackNavigator } from './WorldStackNavigator';
 import { maybeCollapseTutorialBannerOnNavigation } from './TutorialNavigationBridge';
 import { rootNavigationRef } from './navigationRef';
-import { WorldScreen } from '../screens/WorldScreen';
 import { PRIMARY_TAB_ICONS } from './tabConfig';
 import { terminal } from '../theme/terminal';
 import type { RootTabParamList } from './types';
@@ -130,7 +130,9 @@ export function RootTabs() {
                   ? ActionStackNavigator
                   : tab.screen === 'Dashboard'
                     ? HomeStackNavigator
-                    : WorldScreen
+                    : tab.screen === 'World'
+                      ? WorldStackNavigator
+                      : WorldStackNavigator
               }
               options={{
                 title: tab.label,

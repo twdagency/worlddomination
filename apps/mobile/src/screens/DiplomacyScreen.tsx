@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -28,11 +28,14 @@ import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { resolvePlayerFactionId } from 'shared';
 import {
-  formatDiplomacyCountrySubtitle,
   formatDiplomacyCountryTitle,
   selectCountryById,
   selectDiplomacyTargets,
 } from '../game/countrySelector';
+import { LinkText } from '../components/navigation/LinkText';
+import { deepLinkForEntity } from '../navigation/deepLinks';
+import { useDeepLinkNavigation } from '../navigation/useDeepLinkNavigation';
+import { useFocusHighlight } from '../navigation/useFocusHighlight';
 import type { ActionStackParamList } from '../navigation/types';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -60,6 +63,8 @@ type DiplomacyRoute = RouteProp<ActionStackParamList, 'Diplomacy'>;
 
 export function DiplomacyScreen() {
   const route = useRoute<DiplomacyRoute>();
+  const navigateDeep = useDeepLinkNavigation();
+  const listRef = useRef<FlatList>(null);
   const {
     world,
     dispatches,
@@ -77,11 +82,14 @@ export function DiplomacyScreen() {
   const incoming = playerId ? pendingProposalsForFaction(world, playerId) : [];
   const timestampedDispatches = dispatches.filter(isTimestampedDispatch);
 
+  const focusCountryId = route.params?.focusCountryId ?? route.params?.expandFactionId;
+  const highlightedId = useFocusHighlight(focusCountryId);
+
   useEffect(() => {
-    if (route.params?.expandFactionId) {
-      setExpandedFactionId(route.params.expandFactionId);
+    if (focusCountryId) {
+      setExpandedFactionId(focusCountryId);
     }
-  }, [route.params?.expandFactionId]);
+  }, [focusCountryId]);
 
   const countries = useMemo(
     () =>
@@ -113,6 +121,16 @@ export function DiplomacyScreen() {
     [world, playerId, timestampedDispatches],
   );
 
+  useEffect(() => {
+    if (!focusCountryId) return;
+    const index = countries.findIndex((entry) => entry.id === focusCountryId);
+    if (index < 0) return;
+    const timer = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.2 });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [focusCountryId, countries]);
+
   const activeTreaties = playerId ? getActiveTreaties(world, playerId, world.nowMs) : [];
 
   const treatyTerritories = Object.values(world.territories)
@@ -129,10 +147,14 @@ export function DiplomacyScreen() {
 
   return (
     <FlatList
+      ref={listRef}
       style={styles.container}
       contentContainerStyle={styles.content}
       data={countries}
       keyExtractor={(item) => item.id}
+      onScrollToIndexFailed={() => {
+        // Layout may not be ready on first paint.
+      }}
       ListHeaderComponent={
         <View>
           <ScreenBackButton />
@@ -208,14 +230,50 @@ export function DiplomacyScreen() {
       renderItem={({ item }) => {
         const expanded = expandedFactionId === item.id;
         const pending = item.status === 'proposal-incoming';
+        const isFocused = highlightedId === item.id;
 
         return (
           <ExpandableRow
             rowId={item.id}
             title={formatDiplomacyCountryTitle(item.country)}
-            subtitle={formatDiplomacyCountrySubtitle(item.country, statusLabel(item.status))}
+            titleContent={
+              <View style={styles.titleRow}>
+                <LinkText
+                  testID={`diplomacy-country-link-${item.id}`}
+                  onPress={() => {
+                    const target = deepLinkForEntity({ kind: 'country', id: item.id });
+                    if (target) navigateDeep(target);
+                  }}
+                >
+                  {item.country.name}
+                </LinkText>
+                <Text style={styles.titleSuffix}> — led by {item.country.leaderName}</Text>
+              </View>
+            }
+            subtitleContent={
+              <View style={styles.subtitleRow}>
+                <Text style={styles.subtitlePrefix}>{statusLabel(item.status)} · Capital: </Text>
+                <LinkText
+                  testID={`diplomacy-capital-link-${item.id}`}
+                  onPress={() => {
+                    const target = deepLinkForEntity({
+                      kind: 'territory',
+                      id: item.country.capitalTerritoryId,
+                    });
+                    if (target) navigateDeep(target);
+                  }}
+                >
+                  {item.country.capitalName}
+                </LinkText>
+                <Text style={styles.subtitlePrefix}>
+                  {' '}
+                  ·{' '}
+                  {item.country.cities.map((city: { name: string }) => city.name).join(', ') || 'No holdings'}
+                </Text>
+              </View>
+            }
             expanded={expanded}
-            highlighted={pending}
+            highlighted={pending || isFocused}
             onToggle={(id) => setExpandedFactionId((prev) => toggleExpandedRow(prev, id))}
             secondary={
               <View style={styles.secondary}>
@@ -278,7 +336,7 @@ export function DiplomacyScreen() {
             tertiary={
               <Text style={styles.tertiaryText}>
                 Reputation: {item.reputation} ({item.reputationLabel}) ·{' '}
-                {item.country.cities.map((city) => city.name).join(', ') || 'No holdings'}
+                {item.country.cities.map((city: { name: string }) => city.name).join(', ') || 'No holdings'}
               </Text>
             }
           />
@@ -304,6 +362,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  titleSuffix: {
+    color: terminal.text,
+    fontFamily: terminal.mono,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  subtitlePrefix: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    lineHeight: 16,
   },
   hint: {
     color: terminal.muted,

@@ -9,3 +9,5 @@ export const HOME_STACK_SCREEN_OPTIONS = {
 };
 
 export const HOME_STACK_DETAIL_SCREENS = ['Dispatches'] as const;
+
+export const WORLD_STACK_SCREEN_OPTIONS = HOME_STACK_SCREEN_OPTIONS;

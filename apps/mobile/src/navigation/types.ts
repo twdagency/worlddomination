@@ -8,15 +8,19 @@ export type HomeStackParamList = {
 
 export type ActionStackParamList = {
   ActionMenu: undefined;
-  Order: undefined;
-  Diplomacy: { expandFactionId?: string } | undefined;
+  Order: { presetDestinationId?: string; presetForceId?: string } | undefined;
+  Diplomacy: { expandFactionId?: string; focusCountryId?: string } | undefined;
   Territory: { territoryId?: string } | undefined;
   Forces: undefined;
 };
 
+export type WorldStackParamList = {
+  WorldHome: { focusTerritoryId?: string; focusCountryId?: string } | undefined;
+};
+
 export type RootTabParamList = {
   Dashboard: NavigatorScreenParams<HomeStackParamList> | undefined;
-  World: undefined;
+  World: NavigatorScreenParams<WorldStackParamList> | undefined;
   Actions: NavigatorScreenParams<ActionStackParamList> | undefined;
 };
 
