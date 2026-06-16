@@ -8,14 +8,13 @@ import { toggleExpandedRow } from '../game/expandableRowState';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
-import {
-  getPlayerVisibleTerritory,
+import { getPlayerVisibleTerritory,
   ownerIdForIntelDisplay,
   playerMovableUnits,
   playerOrderDestinations,
   resolvePlayerFactionId,
 } from '../game/playerView';
-import { getFactionIdentity } from '../game/factionDisplay';
+import { selectCountryById } from '../game/countrySelector';
 import {
   classifyDestination,
   formatDestinationRowTitle,
@@ -190,7 +189,10 @@ export function OrderScreen() {
             ownerId,
           );
           const ownerName = ownerId
-            ? getFactionIdentity(world, ownerId).leaderName
+            ? selectCountryById(world, ownerId)?.leaderName
+            : undefined;
+          const ownerCountryName = ownerId
+            ? selectCountryById(world, ownerId)?.name
             : undefined;
           const selected = destination.territoryId === destinationId;
           const isStale = destination.state === 'stale';
@@ -213,6 +215,7 @@ export function OrderScreen() {
                   {formatDestinationRowTitle(
                     destination.name,
                     destinationStance,
+                    ownerCountryName,
                     ownerName,
                     recommended,
                   )}

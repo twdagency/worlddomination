@@ -2,6 +2,11 @@ import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text } from 'react-native';
 import { useGame } from '../game/GameContext';
 import { formatIntelAge, formatSnapshotHint } from '../game/intelDisplay';
+import {
+  formatWorldTerritoryCountryLine,
+  formatWorldTerritoryTitle,
+  selectTerritoryCountryContext,
+} from '../game/countrySelector';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { playerWorldIntel } from '../game/playerView';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
@@ -36,10 +41,19 @@ export function WorldScreen() {
       renderItem={({ item }) => {
         const isUnknown = item.state === 'unknown';
         const isStale = item.state === 'stale';
-        const displayName = isUnknown ? '???' : item.name;
+        const ownerId = item.snapshot?.ownerId ?? world.territories[item.territoryId]?.ownerId;
+        const countryContext = selectTerritoryCountryContext(world, item.territoryId, ownerId);
+        const displayName = isUnknown
+          ? '???'
+          : countryContext
+            ? formatWorldTerritoryTitle(countryContext)
+            : item.name;
         const subtitleParts = [intelSubtitle(item.state, item.lastObservedAt, world.nowMs)];
-        if (item.ownerAffiliation) {
-          subtitleParts.push(item.ownerAffiliation);
+        const countryLine = countryContext
+          ? formatWorldTerritoryCountryLine(countryContext)
+          : item.ownerAffiliation;
+        if (countryLine) {
+          subtitleParts.push(countryLine);
         }
 
         return (

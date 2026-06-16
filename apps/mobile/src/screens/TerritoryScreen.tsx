@@ -11,7 +11,7 @@ import type { ResourceId, UnitType, WorldState } from 'sim';
 import { UNIT_TYPES } from 'shared';
 import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
-import { getFactionIdentity } from '../game/factionDisplay';
+import { selectPlayerCountry } from '../game/countrySelector';
 import { playerOwnedTerritories } from '../game/playerView';
 import {
   collectActiveBuilds,
@@ -115,14 +115,16 @@ export function TerritoryScreen() {
   const maxTier = maxBuildableTier(territory.infraLevel);
   const facilityLabel = territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
   const infraCost = infraUpgradeCostPreview(world, territoryId, playerId!);
-  const playerIdentity = getFactionIdentity(world, playerId!);
+  const playerCountry = selectPlayerCountry(world);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <ScreenBackButton />
       <Text style={styles.heading}>Territory</Text>
       <Text style={styles.playerIdentity}>
-        {playerIdentity.compactLine} · {playerIdentity.citiesLine}
+        {playerCountry
+          ? `${playerCountry.name} — led by ${playerCountry.leaderName} · ${playerCountry.cities.map((city) => city.name).join(', ')}`
+          : 'Your holdings'}
       </Text>
 
       <ActionFeedbackBanner action={['build', 'upgradeInfra']} feedback={actionFeedback} />
@@ -149,12 +151,18 @@ export function TerritoryScreen() {
       ) : null}
 
       <Text style={styles.section}>Locations</Text>
-      {playerTerritories.map((t) => (
+      {playerTerritories.map((t) => {
+        const isCapital = playerCountry?.capitalTerritoryId === t.id;
+        return (
         <ExpandableRow
           key={t.id}
           rowId={t.id}
-          title={t.name}
-          subtitle={territoryGlanceSubtitle(t)}
+          title={isCapital ? `★ ${t.name} (capital)` : t.name}
+          subtitle={
+            playerCountry
+              ? `${playerCountry.name} — led by ${playerCountry.leaderName} · ${territoryGlanceSubtitle(t)}`
+              : territoryGlanceSubtitle(t)
+          }
           expanded={expandedTerritoryId === t.id}
           highlighted={
             territoryHasFoodShortage(t) || (t.buildQueue?.length ?? 0) > 0
@@ -183,7 +191,8 @@ export function TerritoryScreen() {
             )
           }
         />
-      ))}
+        );
+      })}
 
       {showDevControls && <DevTimeSkip />}
     </ScrollView>

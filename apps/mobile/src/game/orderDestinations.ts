@@ -20,16 +20,19 @@ export function classifyDestination(
 export function formatDestinationRowTitle(
   territoryName: string,
   stance: DestinationStance,
+  ownerCountryName?: string,
   ownerLeaderName?: string,
   recommended?: boolean,
 ): string {
   let title = territoryName;
+  if (ownerCountryName) title += ` (${ownerCountryName})`;
   if (recommended) title += ' · Suggested';
   if (stance === 'hostile' || stance === 'allied') {
     title += ` · ${stance.toUpperCase()}`;
     if (ownerLeaderName) title += ` · ${ownerLeaderName}`;
   } else if (stance === 'neutral') {
     title += ' · NEUTRAL';
+    if (ownerLeaderName) title += ` · ${ownerLeaderName}`;
   }
   return title;
 }

@@ -20,7 +20,6 @@ import {
 import { useGame } from '../game/GameContext';
 import { isTimestampedDispatch } from '../game/actions';
 import { formatStanceDetail, stanceColor } from '../game/diplomacyStanceDisplay';
-import { getFactionIdentity } from '../game/factionDisplay';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { evaluateCostLines, treatyOfferLine } from '../game/costPreview';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
@@ -28,7 +27,12 @@ import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { resolvePlayerFactionId } from 'shared';
-import { diplomacyTargetFactions } from '../game/diplomacySelector';
+import {
+  formatDiplomacyCountrySubtitle,
+  formatDiplomacyCountryTitle,
+  selectCountryById,
+  selectDiplomacyTargets,
+} from '../game/countrySelector';
 import type { ActionStackParamList } from '../navigation/types';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -79,23 +83,23 @@ export function DiplomacyScreen() {
     }
   }, [route.params?.expandFactionId]);
 
-  const factions = useMemo(
+  const countries = useMemo(
     () =>
-      diplomacyTargetFactions(world)
-        .map((faction) => {
-          const reputation = playerId ? (world.reputation[playerId]?.[faction.id] ?? 0) : 0;
+      selectDiplomacyTargets(world)
+        .map((country) => {
+          const reputation = playerId ? (world.reputation[playerId]?.[country.id] ?? 0) : 0;
           const stance = computeStance(
             world,
-            faction.id,
+            country.id,
             timestampedDispatches,
             world.nowMs,
             STANCE_WINDOW_MS,
           );
           return {
-            id: faction.id,
-            identity: getFactionIdentity(world, faction.id),
+            id: country.id,
+            country,
             status: playerId
-              ? diplomaticRelationshipStatus(world, playerId, faction.id)
+              ? diplomaticRelationshipStatus(world, playerId, country.id)
               : ('neutral' as const),
             reputationLabel: reputationCategory(reputation),
             reputation,
@@ -104,7 +108,7 @@ export function DiplomacyScreen() {
         })
         .sort((a, b) => {
           const priority = diplomacySortPriority(a.status) - diplomacySortPriority(b.status);
-          return priority !== 0 ? priority : a.identity.leaderName.localeCompare(b.identity.leaderName);
+          return priority !== 0 ? priority : a.country.name.localeCompare(b.country.name);
         }),
     [world, playerId, timestampedDispatches],
   );
@@ -127,7 +131,7 @@ export function DiplomacyScreen() {
     <FlatList
       style={styles.container}
       contentContainerStyle={styles.content}
-      data={factions}
+      data={countries}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View>
@@ -144,9 +148,9 @@ export function DiplomacyScreen() {
             <TerminalCard style={styles.incomingCard}>
               <Text style={styles.sectionLabel}>Incoming proposals</Text>
               {incoming.map((proposal) => {
-                const fromName =
-                  world.leaders[world.factions[proposal.from]?.leaderId ?? '']?.name ??
-                  proposal.from;
+                const fromName = selectCountryById(world, proposal.from)?.name
+                  ?? world.leaders[world.factions[proposal.from]?.leaderId ?? '']?.name
+                  ?? proposal.from;
                 return (
                   <View key={proposal.id} style={styles.proposalRow}>
                     <Text style={styles.proposalText}>
@@ -182,8 +186,9 @@ export function DiplomacyScreen() {
             activeTreaties.map((treaty) => {
               const other =
                 treaty.parties[0] === playerId ? treaty.parties[1] : treaty.parties[0];
-              const otherName =
-                world.leaders[world.factions[other]?.leaderId ?? '']?.name ?? other;
+              const otherName = selectCountryById(world, other)?.name
+                ?? world.leaders[world.factions[other]?.leaderId ?? '']?.name
+                ?? other;
               const places = treaty.scope.territoryIds
                 .map((id) => world.territories[id]?.name ?? id)
                 .join(', ');
@@ -207,8 +212,8 @@ export function DiplomacyScreen() {
         return (
           <ExpandableRow
             rowId={item.id}
-            title={item.identity.compactLine}
-            subtitle={`${statusLabel(item.status)} · ${item.identity.citiesLine}`}
+            title={formatDiplomacyCountryTitle(item.country)}
+            subtitle={formatDiplomacyCountrySubtitle(item.country, statusLabel(item.status))}
             expanded={expanded}
             highlighted={pending}
             onToggle={(id) => setExpandedFactionId((prev) => toggleExpandedRow(prev, id))}
@@ -272,7 +277,8 @@ export function DiplomacyScreen() {
             }
             tertiary={
               <Text style={styles.tertiaryText}>
-                Reputation: {item.reputation} ({item.reputationLabel}) · {item.identity.primaryLine}
+                Reputation: {item.reputation} ({item.reputationLabel}) ·{' '}
+                {item.country.cities.map((city) => city.name).join(', ') || 'No holdings'}
               </Text>
             }
           />
