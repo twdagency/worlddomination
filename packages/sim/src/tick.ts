@@ -16,7 +16,8 @@ import { syncCountriesFromFactions } from './country';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
-import { accruePassiveInfluence } from './influence';
+import { accruePassiveInfluence, ensureWorldTributes } from './influence';
+import { accrueTributes } from './influenceActions';
 import { applyInfluenceOrders, expireActiveInfluenceEffects } from './influenceAccelerators';
 import { stampEvents } from './events';
 
@@ -33,6 +34,7 @@ import { stampEvents } from './events';
  * 5. accrueEconomy + accrueManpower — income/regen from post-combat ownership
  * 5b. accruePassiveInfluence — passive accrual + decay toward neutrality when unsourced
  * 5c. expireActiveInfluenceEffects — mission expiry, expulsion, campaign cooldown prune
+ * 5d. accrueTributes — ongoing tribute extraction, resentment, rebellion
  * 6. pruneExpiredTreaties
  * 7. recordIntelObservations → recordAlliedObservations → recordTreatyObservations
  * 8. emitIntelReportEvents
@@ -128,7 +130,10 @@ export function tick(
   const afterInfluenceEffects = expireActiveInfluenceEffects(afterInfluence, nowMs);
   events.push(...afterInfluenceEffects.events);
 
-  const afterDiplomacy = pruneExpiredTreaties(afterInfluenceEffects.world, nowMs);
+  const afterTributes = accrueTributes(afterInfluenceEffects.world, nowMs);
+  events.push(...afterTributes.events);
+
+  const afterDiplomacy = pruneExpiredTreaties(afterTributes.world, nowMs);
   events.push(...expiredTreatyEvents(afterEconomy.treaties, afterDiplomacy.treaties, nowMs));
 
   const priorIntel = ensureIntelStore(afterDiplomacy);

@@ -5,6 +5,7 @@ import {
   getAlliancesFor,
 } from './diplomacy';
 import { clearInfluenceForCountry } from './influence';
+import { cancelTributesForDefeatedCountry } from './influenceActions';
 
 /**
  * Scenario-specific capital assignments. Same faction ID may map to different
@@ -263,6 +264,9 @@ export function defeatCountry(
 
   w = clearPendingDilemmasForCountry(w, countryId);
   w = clearInfluenceForCountry(w, countryId);
+  const tributeCleanup = cancelTributesForDefeatedCountry(w, countryId, at);
+  w = tributeCleanup.world;
+  events.push(...tributeCleanup.events);
   events.push(buildCountryDefeatedEvent(at, preDefeatSnapshot, formerAllianceIds));
 
   return { world: w, events };

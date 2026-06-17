@@ -10,8 +10,13 @@ import { formatOrderRejectedMessage } from './movement';
 import { nextRandom } from './rng';
 import {
   applyDiplomaticPressure,
+  applyTributeCancel,
+  applyTributeExtraction,
   type DiplomaticPressureRejectionReason,
+  type TributeRejectionReason,
   validateDiplomaticPressure,
+  validateTributeCancel,
+  validateTributeExtraction,
 } from './influenceActions';
 import type {
   ActiveDiplomaticMission,
@@ -41,6 +46,7 @@ export const INFLUENCE_SUBVERSION_REPUTATION_BOLD_BONUS = 5;
 
 export type InfluenceOrderRejectionReason =
   | DiplomaticPressureRejectionReason
+  | TributeRejectionReason
   | 'insufficient-gold'
   | 'insufficient-manpower'
   | 'target-is-own-city'
@@ -57,6 +63,8 @@ const INFLUENCE_ORDER_KINDS = new Set<Order['kind']>([
   'influence-subversion',
   'cancel-diplomatic-mission',
   'diplomatic-pressure',
+  'tribute-extraction',
+  'tribute-cancel',
 ]);
 
 export function isInfluenceOrder(order: Order): boolean {
@@ -91,6 +99,10 @@ export function formatInfluenceOrderRejectedMessage(reason: InfluenceOrderReject
       return 'This diplomatic pressure proposal kind is not yet available.';
     case 'target-country-mismatch':
       return 'Target city is not owned by the specified country.';
+    case 'tribute-already-active':
+      return 'A tribute extraction is already active in this city.';
+    case 'no-active-tribute':
+      return 'No active tribute extraction to cancel.';
     default:
       return formatOrderRejectedMessage(reason);
   }
@@ -167,8 +179,10 @@ function rejectInfluenceOrder(
   const influenceOrderKind =
     order.kind === 'cancel-diplomatic-mission'
       ? 'cancel-diplomatic-mission'
-      : order.kind === 'diplomatic-pressure'
-        ? 'diplomatic-pressure'
+      : order.kind === 'diplomatic-pressure' ||
+          order.kind === 'tribute-extraction' ||
+          order.kind === 'tribute-cancel'
+        ? order.kind
         : order.kind;
   events.push({
     kind: 'orderRejected',
@@ -304,6 +318,30 @@ export function applyInfluenceOrders(
         order.proposalKind,
         at,
       );
+      next = result.world;
+      events.push(...result.events);
+      continue;
+    }
+
+    if (order.kind === 'tribute-extraction') {
+      const validation = validateTributeExtraction(next, ownerId, targetCityId);
+      if (!validation.ok) {
+        rejectInfluenceOrder(next, order, validation.reason, events);
+        continue;
+      }
+      const result = applyTributeExtraction(next, ownerId, targetCityId, at);
+      next = result.world;
+      events.push(...result.events);
+      continue;
+    }
+
+    if (order.kind === 'tribute-cancel') {
+      const validation = validateTributeCancel(next, ownerId, targetCityId);
+      if (!validation.ok) {
+        rejectInfluenceOrder(next, order, validation.reason, events);
+        continue;
+      }
+      const result = applyTributeCancel(next, ownerId, targetCityId, at);
       next = result.world;
       events.push(...result.events);
       continue;

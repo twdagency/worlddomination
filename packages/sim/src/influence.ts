@@ -25,6 +25,13 @@ const WAR_PASSIVE_PER_DAY = -2;
 /** Trade routes are not implemented — source is reserved for Sprint 10. */
 const TRADE_CONTRIBUTION_PER_DAY = 0;
 
+export function ensureWorldTributes(world: WorldState): WorldState {
+  if (world.activeTributes === undefined) {
+    return { ...world, activeTributes: [] };
+  }
+  return world;
+}
+
 export function ensureWorldInfluence(world: WorldState): WorldState {
   let next = world;
   if (next.influence === undefined) {
@@ -36,7 +43,7 @@ export function ensureWorldInfluence(world: WorldState): WorldState {
   if (next.culturalCampaigns === undefined) {
     next = { ...next, culturalCampaigns: [] };
   }
-  return next;
+  return ensureWorldTributes(next);
 }
 
 function hasActiveDiplomaticMission(

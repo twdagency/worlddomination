@@ -433,6 +433,18 @@ export function dispatchLineForEvent(
       return `SUBVERSION EXPOSED — ${factionName(world, event.ownerId)} caught influencing ${factionName(world, event.targetCountryId)}`;
     case 'diplomaticPressureApplied':
       return `DIPLOMATIC PRESSURE — ${factionName(world, event.actorId)} forced ${factionName(world, event.targetCountryId)} to accept ${formatDiplomaticPressureProposalLabel(event.proposalKind)}`;
+    case 'tributeStarted':
+      return `TRIBUTE — extraction begins in ${territoryName(world, event.targetCityId)}`;
+    case 'tributeAccrued':
+      return `TRIBUTE INCOME — +${Math.round(event.goldTransferred)} gold from ${territoryName(world, event.targetCityId)}`;
+    case 'tributeMinorRebellion':
+      return `TRIBUTE UNREST — resentment rising in ${territoryName(world, event.targetCityId)}`;
+    case 'tributeMajorRebellion':
+      return `TRIBUTE REBELLION — ${territoryName(world, event.targetCityId)} revolts against ${factionName(world, event.actorId)}`;
+    case 'tributeAutoEnded':
+      return `TRIBUTE ENDED — extraction in ${territoryName(world, event.targetCityId)} (${event.reason})`;
+    case 'tributeVoluntarilyEnded':
+      return `TRIBUTE ENDED — ${factionName(world, event.actorId)} withdrew extraction from ${territoryName(world, event.targetCityId)}`;
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'allyArrivalPeaceful':
@@ -660,6 +672,16 @@ export function isDispatchVisibleToFaction(
       return true;
 
     case 'diplomaticPressureApplied':
+      return true;
+
+    case 'tributeAccrued':
+      return event.actorId === factionId;
+
+    case 'tributeStarted':
+    case 'tributeMinorRebellion':
+    case 'tributeMajorRebellion':
+    case 'tributeAutoEnded':
+    case 'tributeVoluntarilyEnded':
       return true;
 
     default:

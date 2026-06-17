@@ -221,6 +221,7 @@ export {
   computePassiveInfluenceSources,
   computeInfluenceDecay,
   ensureWorldInfluence,
+  ensureWorldTributes,
   getInfluence,
   getInfluenceSources,
   getInfluenceState,
@@ -232,6 +233,10 @@ export {
 } from './influence';
 export {
   applyDiplomaticPressure,
+  applyTributeCancel,
+  applyTributeExtraction,
+  accrueTributes,
+  cancelTributesForDefeatedCountry,
   DIPLOMATIC_PRESSURE_ALLY_OF_TARGET_REPUTATION_PENALTY,
   DIPLOMATIC_PRESSURE_COST,
   DIPLOMATIC_PRESSURE_INFLUENCE_COST,
@@ -239,8 +244,19 @@ export {
   DIPLOMATIC_PRESSURE_OBSERVER_REPUTATION_PENALTY,
   DIPLOMATIC_PRESSURE_TARGET_REPUTATION_PENALTY,
   findPendingProposalForPressure,
+  findActiveTribute,
   formatDiplomaticPressureProposalLabel,
+  TRIBUTE_EXTRACTION_COST,
+  TRIBUTE_INFLUENCE_DRAIN_PER_DAY,
+  TRIBUTE_INFLUENCE_FLOOR,
+  TRIBUTE_MAJOR_REBELLION_OBSERVER_REPUTATION_PENALTY,
+  TRIBUTE_MAJOR_REBELLION_TARGET_REPUTATION_PENALTY,
+  TRIBUTE_RESENTMENT_GROWTH_PER_DAY,
+  TRIBUTE_RESENTMENT_MAJOR_REBELLION,
+  TRIBUTE_RESENTMENT_MINOR_REBELLION,
   validateDiplomaticPressure,
+  validateTributeCancel,
+  validateTributeExtraction,
 } from './influenceActions';
 export {
   applyInfluenceOrders,

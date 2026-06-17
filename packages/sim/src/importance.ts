@@ -35,6 +35,9 @@ const HIGH_KINDS = new Set<SimEvent['kind']>([
   'countryDefeated',
   'subversionDiscovered',
   'diplomaticPressureApplied',
+  'tributeStarted',
+  'tributeMinorRebellion',
+  'tributeMajorRebellion',
 ]);
 
 const MEDIUM_KINDS = new Set<SimEvent['kind']>([
@@ -51,6 +54,8 @@ const MEDIUM_KINDS = new Set<SimEvent['kind']>([
   'diplomaticMissionStarted',
   'diplomaticMissionExpelled',
   'culturalCampaignApplied',
+  'tributeAutoEnded',
+  'tributeVoluntarilyEnded',
 ]);
 
 export function resolveEventImportance(world: WorldState, event: SimEvent): DispatchImportance {

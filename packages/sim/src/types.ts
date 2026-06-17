@@ -235,9 +235,17 @@ export type Order =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+    }
+  | {
+      kind: 'tribute-extraction' | 'tribute-cancel';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     };
 
-export type InfluenceActionKind = 'diplomatic-pressure';
+export type InfluenceActionKind = 'diplomatic-pressure' | 'tribute-extraction' | 'tribute-cancel';
 
 export type PressureProposalKind =
   | 'accept-alliance'
@@ -264,6 +272,25 @@ export interface CulturalCampaignRecord {
   appliedAt: Millis;
   cooldownUntil: Millis;
 }
+
+export interface ActiveTribute {
+  actorId: Id;
+  targetCityId: Id;
+  /** Captured at setup; does not track ownership changes. */
+  targetCountryId: Id;
+  startedAt: Millis;
+  lastAccrualAt: Millis;
+  resentment: number;
+  minorRebellionEmitted: boolean;
+  totalGoldExtracted: number;
+  totalResourceExtracted: Partial<Record<ResourceId, number>>;
+}
+
+export type TributeAutoEndReason =
+  | 'influence-floor'
+  | 'target-defeated'
+  | 'ownership-changed'
+  | 'alliance-formed';
 
 export type CovertOpKind = 'recon' | 'sabotage' | 'subvert' | 'counterintel';
 
@@ -646,6 +673,54 @@ export type SimEventKind =
       goldCost: number;
       reputationDeltas: Record<Id, number>;
       importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeStarted';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeAccrued';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      goldTransferred: number;
+      resourcesTransferred: Partial<Record<ResourceId, number>>;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeMinorRebellion';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeMajorRebellion';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      reputationDeltas: Record<Id, number>;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeAutoEnded';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      reason: TributeAutoEndReason;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeVoluntarilyEnded';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      importance?: DispatchImportance;
     };
 
 /** Stable unique identifier assigned at emission time (see `emit` / `stampEvents`). */
@@ -789,4 +864,6 @@ export interface WorldState {
   activeDiplomaticMissions?: ActiveDiplomaticMission[];
   /** Cultural campaign cooldown records per (actor, city). */
   culturalCampaigns?: CulturalCampaignRecord[];
+  /** Ongoing tribute extractions with resentment tracking. */
+  activeTributes?: ActiveTribute[];
 }
