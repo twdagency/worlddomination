@@ -620,6 +620,32 @@ export interface PendingDilemma {
   offeredAt: Millis;
 }
 
+export type InfluenceSourceKind =
+  | 'proximity'
+  | 'alliance'
+  | 'treaty'
+  | 'trade'
+  | 'culture'
+  | 'scout-presence';
+
+export interface InfluenceSource {
+  kind: InfluenceSourceKind;
+  /** Influence per game-day from this source at the current snapshot. */
+  contribution: number;
+  lastAccrualAt: Millis;
+}
+
+export interface InfluenceState {
+  /** 0–100 cap for threshold actions; floor INFLUENCE_FLOOR for war pressure. */
+  value: number;
+  lastAccrualAt: Millis;
+  lastDecayAt: Millis;
+  sources: InfluenceSource[];
+}
+
+/** Per target city, per influencing faction. */
+export type InfluenceStore = Record<Id, Record<Id, InfluenceState>>;
+
 export interface WorldState {
   nowMs: Millis;
   day: number;
@@ -646,4 +672,6 @@ export interface WorldState {
   timeMultiplier?: number;
   /** Monotonic counter for deterministic `eventId` assignment. Starts at 0 on new worlds. */
   nextEventId?: number;
+  /** Per-city, per-actor influence. Backfilled to `{}` by `ensureWorldInfluence`. */
+  influence?: InfluenceStore;
 }

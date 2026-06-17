@@ -214,6 +214,21 @@ export {
 } from './events';
 export type { WorldMigrationCatalog } from './migrations';
 export {
+  accruePassiveInfluence,
+  applyInfluenceDelta,
+  clearInfluenceForCity,
+  clearInfluenceForCountry,
+  computePassiveInfluenceSources,
+  ensureWorldInfluence,
+  getInfluence,
+  getInfluenceSources,
+  getInfluenceState,
+  INFLUENCE_ADJACENCY_THRESHOLD_KM,
+  INFLUENCE_CAP,
+  INFLUENCE_FLOOR,
+  setInfluence,
+} from './influence';
+export {
   areAllied,
   breakAlliance,
   diplomacyDefaults,

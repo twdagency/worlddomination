@@ -4,6 +4,7 @@ import {
   expireTreatiesForDefeatedCountry,
   getAlliancesFor,
 } from './diplomacy';
+import { clearInfluenceForCountry } from './influence';
 
 /**
  * Scenario-specific capital assignments. Same faction ID may map to different
@@ -261,6 +262,7 @@ export function defeatCountry(
   events.push(...treaties.events);
 
   w = clearPendingDilemmasForCountry(w, countryId);
+  w = clearInfluenceForCountry(w, countryId);
   events.push(buildCountryDefeatedEvent(at, preDefeatSnapshot, formerAllianceIds));
 
   return { world: w, events };

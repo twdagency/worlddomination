@@ -16,6 +16,7 @@ import { syncCountriesFromFactions } from './country';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
+import { accruePassiveInfluence } from './influence';
 import { stampEvents } from './events';
 
 /**
@@ -28,6 +29,7 @@ import { stampEvents } from './events';
  * 3. resolveProductionCompletions — infra/build finishes at nowMs
  * 4. resolveArrivals — combat, captures; ownership transitions complete
  * 5. accrueEconomy + accrueManpower — income/regen from post-combat ownership
+ * 5b. accruePassiveInfluence — passive influence from proximity, diplomacy, culture, scouts
  * 6. pruneExpiredTreaties
  * 7. recordIntelObservations → recordAlliedObservations → recordTreatyObservations
  * 8. emitIntelReportEvents
@@ -115,7 +117,9 @@ export function tick(
     territories: economy.territories,
   };
 
-  const afterDiplomacy = pruneExpiredTreaties(afterEconomy, nowMs);
+  const afterInfluence = accruePassiveInfluence(afterEconomy, nowMs);
+
+  const afterDiplomacy = pruneExpiredTreaties(afterInfluence, nowMs);
   events.push(...expiredTreatyEvents(afterEconomy.treaties, afterDiplomacy.treaties, nowMs));
 
   const priorIntel = ensureIntelStore(afterDiplomacy);
