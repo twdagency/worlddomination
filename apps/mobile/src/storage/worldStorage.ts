@@ -4,6 +4,12 @@ import { ensureWorldMigrations, backfillLegacyDispatchEventIds } from 'sim';
 import { LEADERS_BY_ID } from 'shared';
 import { UNIT_TYPES_BY_ID } from 'shared';
 import { STORAGE_KEYS } from '../theme/terminal';
+import {
+  DEFAULT_DISPATCH_READ_STATE,
+  parseDispatchReadState,
+  serializeDispatchReadState,
+  type DispatchReadState,
+} from '../game/dispatchReadState';
 
 export async function loadWorld(): Promise<WorldState | null> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.world);
@@ -37,6 +43,26 @@ export async function saveLastActiveMs(ms: number): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.lastActiveMs, String(ms));
 }
 
+export async function loadDispatchReadState(): Promise<DispatchReadState | null> {
+  const raw = await AsyncStorage.getItem(STORAGE_KEYS.lastViewedDispatchesAt);
+  return parseDispatchReadState(raw);
+}
+
+export async function saveDispatchReadState(read: DispatchReadState): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEYS.lastViewedDispatchesAt, serializeDispatchReadState(read));
+}
+
+/** @deprecated Use loadDispatchReadState */
+export async function loadLastViewedDispatchesAt(): Promise<number | null> {
+  const read = await loadDispatchReadState();
+  return read?.atMs ?? null;
+}
+
+/** @deprecated Use saveDispatchReadState */
+export async function saveLastViewedDispatchesAt(ms: number): Promise<void> {
+  await saveDispatchReadState({ atMs: ms, throughEventSerial: -1 });
+}
+
 export async function loadScenarioId(): Promise<string | null> {
   return AsyncStorage.getItem(STORAGE_KEYS.scenarioId);
 }
@@ -59,5 +85,6 @@ export async function clearCampaignStorage(): Promise<void> {
     STORAGE_KEYS.world,
     STORAGE_KEYS.dispatches,
     STORAGE_KEYS.lastActiveMs,
+    STORAGE_KEYS.lastViewedDispatchesAt,
   ]);
 }

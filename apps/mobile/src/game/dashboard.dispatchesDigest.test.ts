@@ -69,6 +69,6 @@ describe('dashboard dispatches digest', () => {
       }),
     ]);
 
-    expect(getDashboardUnreadDispatchCount(world, events)).toBe(1);
+    expect(getDashboardUnreadDispatchCount(world, events, { atMs: 0, throughEventSerial: -1 })).toBe(1);
   });
 });

@@ -20,6 +20,7 @@ export function PersistentHeader() {
     world,
     dispatches,
     awayMs,
+    dispatchReadState,
     isTutorialActive,
     isBannerDismissed,
     restoreBanner,
@@ -27,7 +28,11 @@ export function PersistentHeader() {
 
   const playerId = resolvePlayerFactionId(world);
   const faction = playerId ? world.factions[playerId] : undefined;
-  const urgentCount = getDashboardUnreadDispatchCount(world, dispatches);
+  const urgentCount = getDashboardUnreadDispatchCount(
+    world,
+    dispatches,
+    dispatchReadState,
+  );
   const showTutorialRestore = isTutorialActive && isBannerDismissed;
 
   const model = buildPersistentHeaderModel({

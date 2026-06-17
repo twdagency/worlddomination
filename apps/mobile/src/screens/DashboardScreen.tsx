@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGame } from '../game/GameContext';
 import { selectPlayerCountry } from '../game/countrySelector';
@@ -25,8 +25,15 @@ type DashboardNavigation = NativeStackNavigationProp<HomeStackParamList, 'Dashbo
 
 export function DashboardScreen() {
   const navigation = useNavigation<DashboardNavigation>();
-  const { world, dispatches, openDilemmaModal } = useGame();
+  const { world, dispatches, dispatchReadState, markDispatchesViewed, openDilemmaModal } =
+    useGame();
   const [fallenAcknowledged, setFallenAcknowledged] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      markDispatchesViewed();
+    }, [markDispatchesViewed]),
+  );
 
   const pendingDilemmas = useMemo(() => selectPendingDilemmaCards(world), [world]);
   const playerCountry = useMemo(() => selectPlayerCountry(world), [world]);
@@ -36,8 +43,8 @@ export function DashboardScreen() {
     [world, dispatches],
   );
   const unreadDispatchCount = useMemo(
-    () => getDashboardUnreadDispatchCount(world, dispatches),
-    [world, dispatches],
+    () => getDashboardUnreadDispatchCount(world, dispatches, dispatchReadState),
+    [world, dispatches, dispatchReadState],
   );
   const activeForces = useMemo(() => getDashboardActiveForcesSummary(world), [world]);
 

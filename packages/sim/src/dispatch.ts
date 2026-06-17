@@ -1,5 +1,6 @@
 import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
 import { findCountry } from './country';
+import { formatOrderRejectedMessage } from './movement';
 import { isTerritoryVisible } from './visibility';
 import { isTreatyParty, otherParty } from './diplomaticDispatch';
 import {
@@ -410,6 +411,8 @@ export function dispatchLineForEvent(
       return formatProductionNarrative(world, event);
     case 'buildBlocked':
       return `BLOCKED — ${event.reason}`;
+    case 'orderRejected':
+      return `REJECTED — ${formatOrderRejectedMessage(event.reason)}`;
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'allyArrivalPeaceful':
@@ -610,6 +613,9 @@ export function isDispatchVisibleToFaction(
     case 'buildBlocked':
       if ('factionId' in event && event.factionId === factionId) return true;
       return isTerritoryVisible(world, factionId, event.territoryId);
+
+    case 'orderRejected':
+      return event.factionId === factionId;
 
     case 'battle':
     case 'withdrawal':

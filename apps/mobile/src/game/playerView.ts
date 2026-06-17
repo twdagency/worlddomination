@@ -21,6 +21,11 @@ import { resolvePlayerFactionId } from 'shared';
 import { formatDateTime, formatDuration } from '../utils/format';
 import { formatFactionIdentityLine, getFactionIdentity } from './factionDisplay';
 import { formatTransitEndpointLabel } from './territoryOwnerLabel';
+import {
+  DEFAULT_DISPATCH_READ_STATE,
+  isDispatchUnreadSince,
+  type DispatchReadState,
+} from './dispatchReadState';
 
 export { resolvePlayerFactionId } from 'shared';
 
@@ -142,6 +147,14 @@ export function playerMovableUnits(world: WorldState): Unit[] {
       !unit.transit &&
       unit.locationId,
   );
+}
+
+/** Stationed at a player-owned territory and not in transit — eligible for a new move order. */
+export function isPlayerForceMovable(world: WorldState, unit: Unit): boolean {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId || unit.ownerId !== playerId) return false;
+  if (unit.transit || !unit.locationId) return false;
+  return world.territories[unit.locationId]?.ownerId === playerId;
 }
 
 /** All player stacks visible under fog (stationed or in transit). */
@@ -597,10 +610,11 @@ export function getDashboardDispatchesDigest(
   return ranked.slice(0, limit);
 }
 
-/** High-importance dispatches in the crisis window — unread proxy for badges. */
+/** High-importance dispatches after last view — crisis window + read-state gated. */
 export function getDashboardUnreadDispatchCount(
   world: WorldState,
   events: SimEvent[],
+  readState: DispatchReadState = DEFAULT_DISPATCH_READ_STATE,
   factionId?: Id,
 ): number {
   const resolvedFactionId = factionId ?? resolvePlayerFactionId(world);
@@ -610,9 +624,10 @@ export function getDashboardUnreadDispatchCount(
   let count = 0;
   for (const event of filterDispatchesForFaction(world, events, resolvedFactionId)) {
     if (!isTimestampedEvent(event) || event.at < crisisSinceMs) continue;
+    if (!isDispatchUnreadSince(event, readState)) continue;
     if (resolveEventImportance(world, event) === 'high') count += 1;
   }
-  return count;
+  return Math.max(0, count);
 }
 
 /** Glance summary of player forces — prioritizes in-transit stacks. */

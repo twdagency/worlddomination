@@ -25,7 +25,10 @@ export {
   transitFraction,
   buildTransit,
   pendingArrivalMs,
+  validateAssaultOrder,
+  formatOrderRejectedMessage,
 } from './movement';
+export type { AssaultOrderRejectionReason } from './movement';
 export { advanceTo, mergeAccruedIncome, nextEventMs, unitPosition, previewMoveEtaMs, moveDistanceKm, getTimeMultiplier } from './clock';
 export {
   assertAiOrders,

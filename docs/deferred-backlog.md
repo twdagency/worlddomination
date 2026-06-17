@@ -355,6 +355,32 @@ Every new persisted `WorldState` field ships with:
 
 This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
 
+## Process — canon-shift audit
+
+When upstream canon changes (e.g. Sprint 8 Option β: France defeated in Beat 2
+regardless of pinch path), re-audit downstream design decisions that assumed the
+old canon. Sprint 7b deferred governance skip on non-conquest pinch paths; that
+decision became wrong after Option β and was fixed in Sprint 8.5 Phase 1.
+
+## Process — player action feedback (no silent failures)
+
+Sprint 7c established dispatch events for player-visible cancellations (e.g.
+`dispatchCancelledByAlliance`). Sprint 8.5 Phase 2 extends the same principle to
+rejections (`orderRejected`). Player-initiated actions that fail in sim should
+emit a dispatch or feedback event — never fail silently. AI/non-player failures
+may reject quietly.
+
+## Process — diagnostic-first (Sprint 8.5)
+
+Run a diagnostic pass before fixing suspected bugs when cold-play perception and
+code path are misaligned. Sprint 8.5 Issue #18: Phase 0 found sim/UI cost logic
+correct; Phase 4 construction tests confirmed — no fix required. Prevents
+fix-where-no-bug-exists work.
+
+**Require-cycle warnings during cold-play:** triage; do not auto-fix before ship
+unless symptomatic. Noise obscures real bugs. Fix when: undefined-at-import,
+flaky tests, or user-visible incorrect behavior tied to the cycled modules.
+
 ## Sprint 7b tutorial follow-ups
 
 ### Sprint 8 candidates
@@ -367,12 +393,31 @@ This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
   picker for New Game (tutorial + sandbox scenarios) deferred.
 
 ### Sprint 9 candidates (content depth)
-- **Dilemma triggers for treaty/infra pinch paths** — conquest path enqueues Foreign
-  Rule; treaty and food-infra paths auto-complete governance via side effect. Add
-  dilemmas such as "Treaty Terms" and "Foreign Investment."
+- ~~**Issue #18 per-city infra cost**~~ — **Verified Sprint 8.5 Phase 4.** Sim and
+  `costPreview` both scale by target `territory.infraLevel`; cold-play same-cost
+  perception was not reproduced in tests. Regression guards in
+  `production.infraCost.test.ts` and `infraCost.perTerritory.test.ts`.
+- ~~**Dilemma triggers for treaty/infra pinch paths**~~ — **Resolved Sprint 8.5 Phase 1.**
+  All pinch paths enqueue Foreign Rule per Option β; no separate Treaty Terms /
+  Foreign Investment dilemmas for Beat 4 completion.
+- **Treaty pinch UX feedback (Sprint 8.5 cold-play)** — treaty offer/decline path
+  resolves Beat 4 without clear player feedback; coordinate with dilemma surfacing
+  fix (#14) and Sprint 9 dispatch/UX polish.
 - **Dilemma consequence preview UI tuning** — Phase 6 ships Choose without spelling out
   "+200 gold, -30 standing" on option cards (legibility B: constraints visible,
   consequences hinted).
+
+### Sprint 9 — engineering hygiene (symptom-triggered)
+
+- **`diplomaticAi` ↔ `playerDiplomacy` require cycle (sim)** — Promote to active work
+  if diplomacy proposals show non-deterministic accept/decline behavior,
+  undefined-at-import errors, or test flakiness. Fix scope: extract
+  scoring/thresholds to `diplomaticScoring.ts` (~30–60 min refactor). No symptom
+  as of Sprint 8.5 cold-play prep.
+- **VirtualizedList slow-update warnings (mobile)** — Promote if scroll jank is
+  reported during cold-play on World, Diplomacy, Dispatches, or Forces screens.
+  Fix scope: `React.memo` row components, stable `keyExtractor`, avoid inline
+  objects in `renderItem`. Dev warning alone is not sufficient trigger.
 
 ## UI — Diplomacy identity axes (Sprint 8+)
 
@@ -402,6 +447,9 @@ Tier-locked orders surface as greyed-out with tooltips
 Combined-force orders show combat unit's order list; scout auto-screens
 Scout order list: Recon / Infiltrate / Shadow / Screen / Sabotage(T2)
 Levy order list: Assault / Secure / Hold / Reinforce / Withdraw
+**Note (Sprint 8.5):** `Reinforce` and other unit-specific verbs are design targets for
+this redesign. The live sim stance type remains `assault | secure | hold` only until
+that work ships; do not reference `reinforce` as an implemented order stance.
 Future units (when roster expands): Men-at-Arms (Assault/Storm/Hold/Reinforce), Cavalry (Charge/Raid/Pursue/Hold/Screen), Archers (Assault/Garrison/Hold/Withdraw), Siege (Besiege/Bombard/Hold)
 "Raid" and "Pursue" verbs touch the in-transit interception system — far-future backlog item; coordinate when prioritized
 Source: 7c-era design session with other agent, 2026-06-16

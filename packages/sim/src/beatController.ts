@@ -5,11 +5,7 @@ import {
   markBeatComplete,
   PLAYER_TUTORIAL_FACTION_ID,
 } from './tutorial';
-import {
-  type BeatPredicate,
-  isPinchConquestEvent,
-  TUTORIAL_BEAT_PREDICATES,
-} from './tutorialBeats';
+import { type BeatPredicate, TUTORIAL_BEAT_PREDICATES } from './tutorialBeats';
 
 export interface BeatController {
   /** Returns world with tutorial state updated when the current beat predicate matches. */
@@ -22,13 +18,9 @@ function applyBeatSideEffects(
   event: SimEventKind,
 ): WorldState {
   if (beat === 'pinch') {
-    if (isPinchConquestEvent(event)) {
-      return enqueuePendingDilemma(world, 'foreign-rule', PLAYER_TUTORIAL_FACTION_ID, event.at);
-    }
-    if (world.tutorial) {
-      const skipped = markBeatComplete(world.tutorial, 'governance', event.at);
-      return { ...world, tutorial: skipped };
-    }
+    // All pinch resolution paths trigger Foreign Rule per Sprint 8 Option β.
+    // France was defeated in Beat 2 regardless of pinch path.
+    return enqueuePendingDilemma(world, 'foreign-rule', PLAYER_TUTORIAL_FACTION_ID, event.at);
   }
   return world;
 }

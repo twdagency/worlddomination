@@ -12,6 +12,29 @@ type TransitOrderFields = {
   decisionTickMs: Millis;
 };
 
+export type AssaultOrderRejectionReason = 'cannot-assault-own-territory';
+
+export function formatOrderRejectedMessage(reason: AssaultOrderRejectionReason | string): string {
+  if (reason === 'cannot-assault-own-territory') {
+    return 'Cannot issue assault on own territory.';
+  }
+  return reason;
+}
+
+export function validateAssaultOrder(
+  world: WorldState,
+  order: Extract<Order, { kind: 'move' }>,
+): { valid: true } | { valid: false; reason: AssaultOrderRejectionReason } {
+  if (order.stanceOnArrival !== 'assault') return { valid: true };
+
+  const unit = world.units[order.unitId];
+  const destinationOwner = world.territories[order.toTerritoryId]?.ownerId;
+  if (unit && destinationOwner && destinationOwner === unit.ownerId) {
+    return { valid: false, reason: 'cannot-assault-own-territory' };
+  }
+  return { valid: true };
+}
+
 function speedTraitKey(unitTypeDomain: string): TraitKey {
   if (unitTypeDomain === 'sea') return 'seaSpeedMult';
   return 'landSpeedMult';
@@ -105,6 +128,23 @@ export function applyMoveOrders(
     const unit = units[order.unitId];
     if (!unit || unit.transit) continue;
     if (unit.locationId === order.toTerritoryId) continue;
+
+    const assaultValidation = validateAssaultOrder(world, order);
+    if (!assaultValidation.valid) {
+      // Player-facing rejections emit orderRejected (Sprint 7c: no silent failures for player actions).
+      if (world.factions[unit.ownerId]?.isPlayer) {
+        events.push({
+          kind: 'orderRejected',
+          at: world.nowMs,
+          factionId: unit.ownerId,
+          unitId: order.unitId,
+          attemptedDestinationId: order.toTerritoryId,
+          reason: assaultValidation.reason,
+          importance: 'medium',
+        });
+      }
+      continue;
+    }
 
     const moveCount = order.count ?? unit.count;
     if (moveCount <= 0 || moveCount > unit.count) continue;
