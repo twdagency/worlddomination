@@ -31,7 +31,7 @@ import { stampEvents } from './events';
  * 3. resolveProductionCompletions — infra/build finishes at nowMs
  * 4. resolveArrivals — combat, captures; ownership transitions complete
  * 5. accrueEconomy + accrueManpower — income/regen from post-combat ownership
- * 5b. accruePassiveInfluence — passive influence from proximity, diplomacy, culture, scouts
+ * 5b. accruePassiveInfluence — passive accrual + decay toward neutrality when unsourced
  * 5c. expireActiveInfluenceEffects — mission expiry, expulsion, campaign cooldown prune
  * 6. pruneExpiredTreaties
  * 7. recordIntelObservations → recordAlliedObservations → recordTreatyObservations

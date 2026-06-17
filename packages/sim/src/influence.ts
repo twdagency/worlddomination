@@ -14,6 +14,7 @@ import type {
 
 export const INFLUENCE_CAP = 100;
 export const INFLUENCE_FLOOR = -10;
+export const INFLUENCE_DECAY_PER_DAY = 1;
 
 /** Great-circle distance below which an owned city is "adjacent" to a target city. */
 export const INFLUENCE_ADJACENCY_THRESHOLD_KM = 800;
@@ -344,6 +345,25 @@ function ratePerDayFromSources(sources: InfluenceSource[]): number {
   return sources.reduce((sum, source) => sum + source.contribution, 0);
 }
 
+/** Per-day decay magnitude toward 0 when no passive source or active mission maintains the relationship. */
+export function computeInfluenceDecay(
+  world: WorldState,
+  cityId: Id,
+  actorId: Id,
+  at: Millis = world.nowMs,
+): number {
+  const sources = computePassiveInfluenceSources(world, cityId, actorId, at);
+  const hasActiveMission = hasActiveDiplomaticMission(world, actorId, cityId, at);
+  const hasActiveSource = sources.some((source) => source.contribution !== 0) || hasActiveMission;
+
+  if (hasActiveSource) return 0;
+
+  const value = getInfluence(world, cityId, actorId);
+  if (value === 0) return 0;
+
+  return INFLUENCE_DECAY_PER_DAY;
+}
+
 function shouldAccruePair(
   world: WorldState,
   cityId: Id,
@@ -370,19 +390,31 @@ export function accruePassiveInfluence(world: WorldState, at: Millis = world.now
       if (elapsedMs === 0 && prior) continue;
 
       const sources = computePassiveInfluenceSources(next, cityId, actorId, at);
-      let ratePerDay = ratePerDayFromSources(sources);
-      if (hasActiveDiplomaticMission(next, actorId, cityId, at)) {
-        ratePerDay *= 2;
-      }
-      const delta = ratePerDay * (elapsedMs / MS_PER_DAY);
+      const ratePerDay = ratePerDayFromSources(sources);
+      const missionActive = hasActiveDiplomaticMission(next, actorId, cityId, at);
+      const daysElapsed = elapsedMs / MS_PER_DAY;
       const priorValue = prior?.value ?? 0;
+
+      let delta = 0;
+      if (ratePerDay !== 0 || missionActive) {
+        let effectiveRate = ratePerDay;
+        if (missionActive) {
+          effectiveRate *= 2;
+        }
+        delta = effectiveRate * daysElapsed;
+      } else if (priorValue > 0) {
+        delta = -Math.min(priorValue, INFLUENCE_DECAY_PER_DAY * daysElapsed);
+      } else if (priorValue < 0) {
+        delta = Math.min(-priorValue, INFLUENCE_DECAY_PER_DAY * daysElapsed);
+      }
 
       const store = { ...(next.influence ?? {}) };
       const cityRow = { ...(store[cityId] ?? {}) };
       cityRow[actorId] = {
         value: clampInfluence(priorValue + delta),
         lastAccrualAt: at,
-        lastDecayAt: prior?.lastDecayAt ?? at,
+        lastDecayAt:
+          delta < 0 || (priorValue < 0 && delta > 0) ? at : (prior?.lastDecayAt ?? at),
         sources,
       };
       store[cityId] = cityRow;
