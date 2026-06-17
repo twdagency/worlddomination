@@ -314,6 +314,7 @@ export function applyBuildOrders(
       const faction = factions[factionId];
       if (!faction) continue;
 
+      // Per-territory: cost scales with target territory.infraLevel (not faction-wide).
       const cost = INFRA_UPGRADE_BASE_COST * territory.infraLevel;
       if (faction.funding < cost) {
         events.push({

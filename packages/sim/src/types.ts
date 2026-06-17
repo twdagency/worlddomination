@@ -162,6 +162,27 @@ export interface Faction {
   identityTags?: string[];
 }
 
+/** Political entity — 1:1 with legacy `Faction` IDs during the Sprint 8 alias period. */
+export interface Country {
+  id: Id;
+  /** Display name — typically the leader's region (e.g. England, France). */
+  name: string;
+  leaderId: Id;
+  /** Designated capital city; empty when the country holds no cities. */
+  capitalTerritoryId: Id;
+  defeated: boolean;
+  isPlayer: boolean;
+  diplomaticPosture?: DiplomaticPosture;
+  /** Faction that captured the most recently lost city (defeat attribution). */
+  lastConquerorId?: Id;
+  /** Territory ID of the most recently lost city (defeat narrative). */
+  lastLostTerritoryId?: Id;
+  /** Wall-clock time when defeat was recorded (undefined for pre-Phase-9 saves). */
+  defeatedAt?: Millis;
+  /** Alliance partner IDs at the moment of defeat (empty for migrated saves). */
+  formerAllianceIds?: Id[];
+}
+
 export type Order =
   | {
       kind: 'move';
@@ -418,6 +439,15 @@ export type SimEventKind =
       missing?: ResourceId;
       importance?: DispatchImportance;
     }
+  | {
+      kind: 'orderRejected';
+      at: Millis;
+      factionId: Id;
+      unitId: Id;
+      attemptedDestinationId: Id;
+      reason: string;
+      importance?: DispatchImportance;
+    }
   | { kind: 'procedural'; at: Millis; catalogEventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
   | { kind: 'victory'; at: Millis; factionId: Id }
@@ -486,6 +516,24 @@ export type SimEventKind =
       newOwnerId: Id;
       unitId: Id;
       fromTerritoryId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'capitalRelocated';
+      at: Millis;
+      countryId: Id;
+      oldCapitalTerritoryId: Id;
+      newCapitalTerritoryId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'countryDefeated';
+      at: Millis;
+      countryId: Id;
+      defeatedBy?: Id;
+      finalTerritoryId: Id;
+      /** Alliance partners at the moment of defeat. */
+      formerAlliances?: Id[];
       importance?: DispatchImportance;
     };
 
@@ -580,6 +628,8 @@ export interface WorldState {
   territories: Record<Id, Territory>;
   units: Record<Id, Unit>;
   factions: Record<Id, Faction>;
+  /** Populated by `ensureWorldCountries` — parallel to `factions` during alias period. */
+  countries?: Record<Id, Country>;
   leaders: Record<Id, Leader>;
   unitTypes: Record<Id, UnitType>;
   intel: IntelStore;

@@ -29,6 +29,24 @@ describe('scenario tutorial', () => {
     expect(world.tutorial?.active).toBe(true);
     expect(world.tutorial?.currentBeat).toBe('movement');
     expect(world.scenarioId).toBe('tutorial');
+    expect(world.countries).toBeDefined();
+    expect(Object.keys(world.countries ?? {})).toHaveLength(3);
+  });
+
+  it('constructs countries with canonical tutorial capitals at creation', () => {
+    const world = createTutorialWorld(START_MS);
+    expect(world.countries!['faction-britain-tutorial']?.capitalTerritoryId).toBe(
+      'territory-london-tutorial',
+    );
+    expect(world.countries!['faction-france-tutorial']?.capitalTerritoryId).toBe(
+      'territory-paris-tutorial',
+    );
+    expect(world.countries!['faction-burgundy-tutorial']?.capitalTerritoryId).toBe(
+      'territory-burgundy-tutorial',
+    );
+    for (const country of Object.values(world.countries ?? {})) {
+      expect(country.defeated).toBe(false);
+    }
   });
 
   it('createTutorialWorld sets timeMultiplier to 30', () => {

@@ -208,6 +208,10 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
     return `BLOCKED — ${event.reason}`;
   }
 
+  if (event.kind === 'orderRejected') {
+    return `REJECTED — ${event.reason === 'cannot-assault-own-territory' ? 'Cannot issue assault on own territory.' : event.reason}`;
+  }
+
   return `${event.kind} event`;
 }
 

@@ -54,7 +54,7 @@ describe('dispatch intent phrasing', () => {
       source: 'direct',
       ...tags,
     });
-    expect(line).toBe('INTEL — Genghis forces advancing from London toward Paris');
+    expect(line).toBe('INTEL — Genghis forces advancing from London (Test) toward Paris (unclaimed)');
   });
 
   it('defend departure uses repositioning phrasing', () => {
@@ -72,7 +72,7 @@ describe('dispatch intent phrasing', () => {
       source: 'direct',
       ...taggedOrderFields('faction-steppe', world.nowMs, 'defend'),
     });
-    expect(line).toBe('INTEL — Genghis forces repositioning to New York');
+    expect(line).toBe('INTEL — Genghis forces repositioning to New York (unclaimed)');
   });
 
   it('expand departure uses claim phrasing', () => {
@@ -90,7 +90,7 @@ describe('dispatch intent phrasing', () => {
       source: 'direct',
       ...taggedOrderFields('faction-steppe', world.nowMs, 'expand'),
     });
-    expect(line).toBe('INTEL — Genghis forces moving to claim New York');
+    expect(line).toBe('INTEL — Genghis forces moving to claim New York (unclaimed)');
   });
 
   it('build started and infra upgraded are distinct', () => {
@@ -115,8 +115,8 @@ describe('dispatch intent phrasing', () => {
       source: 'direct',
       ...taggedOrderFields('faction-britain', world.nowMs, 'build'),
     });
-    expect(buildLine).toBe('INTEL — Construction begun at London (Elizabeth)');
-    expect(infraLine).toBe('INTEL — Infrastructure upgraded at London (Elizabeth)');
+    expect(buildLine).toBe('INTEL — Construction begun at London (Test) (Elizabeth)');
+    expect(infraLine).toBe('INTEL — Infrastructure upgraded at London (Test) (Elizabeth)');
     expect(buildLine).not.toEqual(infraLine);
   });
 
@@ -135,6 +135,6 @@ describe('dispatch intent phrasing', () => {
       source: 'direct',
       ...tags,
     });
-    expect(line).toBe('INTEL — Genghis forces arrived at Paris — contact expected');
+    expect(line).toBe('INTEL — Genghis forces arrived at Paris (unclaimed) — contact expected');
   });
 });

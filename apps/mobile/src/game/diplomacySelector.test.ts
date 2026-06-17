@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { createSprint4World } from 'shared';
-import { createTutorialWorld } from 'shared';
+import { createSprint4World, createTutorialWorld } from 'shared';
+import { LEADERS_BY_ID, UNIT_TYPES_BY_ID } from 'shared';
+import {
+  ensureWorldMigrations,
+  recordConquerorOnTerritoryCapture,
+  syncCountriesFromFactions,
+} from 'sim';
 import { diplomacyTargetFactionIds, diplomacyTargetFactions } from './diplomacySelector';
+import { selectDiplomacyTargets } from './countrySelector';
 
 const START_MS = 1_700_000_000_000;
+const PARIS = 'territory-paris';
+const ROME = 'faction-rome';
+
+function migrate(world: ReturnType<typeof createSprint4World>) {
+  return ensureWorldMigrations(world, {
+    leaders: LEADERS_BY_ID,
+    unitTypes: UNIT_TYPES_BY_ID,
+  });
+}
 
 describe('diplomacySelector', () => {
   it('excludes the sprint-4 player faction from diplomacy targets', () => {
@@ -33,5 +48,19 @@ describe('diplomacySelector', () => {
     };
 
     expect(diplomacyTargetFactionIds(lonePlayer)).toEqual([]);
+  });
+
+  it('excludes defeated countries from diplomacy targets', () => {
+    const world = migrate(createSprint4World(START_MS));
+    const defeated = syncCountriesFromFactions({
+      ...recordConquerorOnTerritoryCapture(world, PARIS, ROME, 'faction-player'),
+      territories: {
+        ...world.territories,
+        [PARIS]: { ...world.territories[PARIS]!, ownerId: 'faction-player' },
+      },
+    }).world;
+
+    expect(diplomacyTargetFactionIds(defeated)).not.toContain(ROME);
+    expect(selectDiplomacyTargets(defeated).some((country) => country.id === ROME)).toBe(false);
   });
 });

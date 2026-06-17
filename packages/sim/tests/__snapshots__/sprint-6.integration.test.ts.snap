@@ -11,27 +11,27 @@ DIPLOMACY — Caesar declined alliance with Philip II.
 Genghis — tick 1700921600000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700921600000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 INCOME — funding 3355.5000000000005
 DIPLOMACY — Alliance formed with Genghis.
 Caesar — tick 1700943200000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 Philip II — tick 1700943200000
-INTEL — Genghis's forces report Genghis activity at Berlin
+INTEL — Genghis's forces report Genghis activity at Berlin (Steppe)
 Caesar — tick 1700964800000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 Caesar — tick 1700986400000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 Caesar — tick 1701008000000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 Caesar — tick 1701029600000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 Caesar — tick 1701051200000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 Caesar — tick 1701072800000
-INTEL — Caesar forces advancing from Paris toward London
+INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 Caesar — tick 1701094400000
-INTEL — Infrastructure upgraded at Paris (Caesar)
+INTEL — Infrastructure upgraded at Paris (Rome) (Caesar)
 INCOME — funding 28012.500000000004
 Philip II — tick 1701094400000
 DIPLOMACY — Philip II has broken alliance with Genghis.",
@@ -50,78 +50,78 @@ Suleiman — tick 1700981600000
 DIPLOMACY — Suleiman proposes alliance. (Expires in 6h.)
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700981600000
-INTEL — Caesar forces advancing from Bucharest toward Belgrade
-INTEL — Genghis forces advancing from Sofia toward Belgrade
+INTEL — Caesar forces advancing from Bucharest (Rome) toward Belgrade (Britain)
+INTEL — Genghis forces advancing from Sofia (Steppe) toward Belgrade (Britain)
 INCOME — funding 3527.25
 DIPLOMACY — Alliance formed with Suleiman.
-INTEL — Genghis forces arrived at Belgrade — contact expected
+INTEL — Genghis forces arrived at Belgrade (Britain) — contact expected
 Bloody clash at Belgrade: Elizabeth prevailed over Genghis (3 casualties, enemy 6 fallen).
 Elizabeth — tick 1701003200000
 DIPLOMACY — You declined alliance with Genghis.
 Genghis — tick 1701003200000
 DIPLOMACY — Genghis has broken alliance with Suleiman.
 Caesar — tick 1701003200000
-INTEL — Caesar forces advancing from Bucharest toward Belgrade
-INTEL — Genghis forces advancing from Sofia toward Belgrade
+INTEL — Caesar forces advancing from Bucharest (Rome) toward Belgrade (Britain)
+INTEL — Genghis forces advancing from Sofia (Steppe) toward Belgrade (Britain)
 Elizabeth — tick 1701003200000
-INTEL — Suleiman's forces report Caesar forces massing at Bucharest
-INTEL — Genghis forces arrived at Belgrade — contact expected
+INTEL — Suleiman's forces report Caesar forces massing at Bucharest (Rome)
+INTEL — Genghis forces arrived at Belgrade (Britain) — contact expected
 Elizabeth at Belgrade — Genghis annihilated, no casualties.
 Caesar — tick 1701024800000
-INTEL — Caesar forces advancing from Bucharest toward Belgrade
+INTEL — Caesar forces advancing from Bucharest (Rome) toward Belgrade (Britain)
 Genghis — tick 1701024800000
-INTEL — Genghis forces advancing from Sofia toward Belgrade
+INTEL — Genghis forces advancing from Sofia (Steppe) toward Belgrade (Britain)
 Elizabeth — tick 1701024800000
-INTEL — Suleiman's forces report Caesar forces massing at Bucharest
-INTEL — Suleiman's forces report Genghis activity at Sofia
-INTEL — Suleiman's forces report construction at Istanbul
+INTEL — Suleiman's forces report Caesar forces massing at Bucharest (Rome)
+INTEL — Suleiman's forces report Genghis activity at Sofia (Steppe)
+INTEL — Suleiman's forces report construction at Istanbul (Ottoman Empire)
 Elizabeth — tick 1701026772976.8318
-INTEL — Suleiman's forces report construction at Istanbul
-INTEL — Genghis forces arrived at Belgrade — contact expected
+INTEL — Suleiman's forces report construction at Istanbul (Ottoman Empire)
+INTEL — Genghis forces arrived at Belgrade (Britain) — contact expected
 Elizabeth at Belgrade — Genghis annihilated, no casualties.
 Caesar — tick 1701046400000
-INTEL — Caesar forces advancing from Bucharest toward Belgrade
+INTEL — Caesar forces advancing from Bucharest (Rome) toward Belgrade (Britain)
 Genghis — tick 1701046400000
-INTEL — Infrastructure upgraded at Sofia (Genghis)
+INTEL — Infrastructure upgraded at Sofia (Steppe) (Genghis)
 Elizabeth — tick 1701046400000
-INTEL — Suleiman's forces report Caesar forces massing at Bucharest
-INTEL — Suleiman's forces report Genghis activity at Sofia
+INTEL — Suleiman's forces report Caesar forces massing at Bucharest (Rome)
+INTEL — Suleiman's forces report Genghis activity at Sofia (Steppe)
 Elizabeth — tick 1701050345953.6636
-INTEL — Suleiman's forces report construction at Istanbul
+INTEL — Suleiman's forces report construction at Istanbul (Ottoman Empire)
 Caesar — tick 1701068000000
-INTEL — Caesar forces advancing from Bucharest toward Belgrade
+INTEL — Caesar forces advancing from Bucharest (Rome) toward Belgrade (Britain)
 Genghis — tick 1701068000000
-INTEL — Infrastructure upgraded at Sofia (Genghis)
+INTEL — Infrastructure upgraded at Sofia (Steppe) (Genghis)
 Elizabeth — tick 1701068000000
-INTEL — Suleiman's forces report Caesar forces massing at Bucharest
-INTEL — Suleiman's forces report Genghis activity at Sofia
+INTEL — Suleiman's forces report Caesar forces massing at Bucharest (Rome)
+INTEL — Suleiman's forces report Genghis activity at Sofia (Steppe)
 Elizabeth — tick 1701073918930.4954
-INTEL — Suleiman's forces report construction at Istanbul
+INTEL — Suleiman's forces report construction at Istanbul (Ottoman Empire)
 Caesar — tick 1701089600000
-INTEL — Caesar forces advancing from Bucharest toward Sofia
+INTEL — Caesar forces advancing from Bucharest (Rome) toward Sofia (Steppe)
 Elizabeth — tick 1701089600000
-INTEL — Suleiman's forces report Caesar forces massing at Bucharest
-INTEL — Suleiman's forces report Genghis forces massing at Sofia
+INTEL — Suleiman's forces report Caesar forces massing at Bucharest (Rome)
+INTEL — Suleiman's forces report Genghis forces massing at Sofia (Steppe)
 Elizabeth — tick 1701093545953.6636
-INTEL — Suleiman's forces report construction at Istanbul
+INTEL — Suleiman's forces report construction at Istanbul (Ottoman Empire)
 Caesar — tick 1701111200000
-INTEL — Caesar forces advancing from Bucharest toward Sofia
+INTEL — Caesar forces advancing from Bucharest (Rome) toward Sofia (Steppe)
 Elizabeth — tick 1701111200000
-INTEL — Suleiman's forces report Caesar forces massing at Bucharest
-INTEL — Suleiman's forces report Genghis forces massing at Sofia
+INTEL — Suleiman's forces report Caesar forces massing at Bucharest (Rome)
+INTEL — Suleiman's forces report Genghis forces massing at Sofia (Steppe)
 Elizabeth — tick 1701117118930.4954
-INTEL — Suleiman's forces report construction at Istanbul
+INTEL — Suleiman's forces report construction at Istanbul (Ottoman Empire)
 Caesar — tick 1701132800000
-INTEL — Caesar forces advancing from Bucharest toward Sofia
+INTEL — Caesar forces advancing from Bucharest (Rome) toward Sofia (Steppe)
 Elizabeth — tick 1701132800000
-INTEL — Suleiman's forces report Caesar activity at Bucharest
-INTEL — Suleiman's forces report Genghis forces massing at Sofia
+INTEL — Suleiman's forces report Caesar activity at Bucharest (Rome)
+INTEL — Suleiman's forces report Genghis forces massing at Sofia (Steppe)
 Elizabeth — tick 1701136745953.6636
-INTEL — Suleiman's forces report construction at Istanbul
+INTEL — Suleiman's forces report construction at Istanbul (Ottoman Empire)
 Caesar — tick 1701154400000
-INTEL — Infrastructure upgraded at Bucharest (Caesar)
+INTEL — Infrastructure upgraded at Bucharest (Rome) (Caesar)
 Elizabeth — tick 1701154400000
-INTEL — Suleiman's forces report Caesar activity at Bucharest
+INTEL — Suleiman's forces report Caesar activity at Bucharest (Rome)
 INCOME — funding 29690.38421448937",
   "genghisReputationLabel": "Neutral",
   "playerAlliedWithGenghis": true,

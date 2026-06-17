@@ -1,5 +1,5 @@
-/** Primary bottom-tab destinations (max 4 per design canon). */
-export const PRIMARY_TAB_SCREENS = ['Dashboard', 'Dispatches', 'World', 'Actions'] as const;
+/** Primary bottom-tab destinations (design canon Layer 5 — three-tab hub). */
+export const PRIMARY_TAB_SCREENS = ['Dashboard', 'World', 'Actions'] as const;
 
 export type PrimaryTabScreen = (typeof PRIMARY_TAB_SCREENS)[number];
 
@@ -28,13 +28,35 @@ export interface PrimaryTabIconConfig {
   label: string;
   iconName: string;
   activeIconName: string;
+  testID: string;
+  accessibilityLabel: string;
 }
 
 export const PRIMARY_TAB_ICONS: readonly PrimaryTabIconConfig[] = [
-  { screen: 'Dashboard', label: 'Home', iconName: 'home-outline', activeIconName: 'home' },
-  { screen: 'Dispatches', label: 'Dispatches', iconName: 'mail-outline', activeIconName: 'mail' },
-  { screen: 'World', label: 'World', iconName: 'globe-outline', activeIconName: 'globe' },
-  { screen: 'Actions', label: 'Actions', iconName: 'grid-outline', activeIconName: 'grid' },
+  {
+    screen: 'Dashboard',
+    label: 'Home',
+    iconName: 'home-outline',
+    activeIconName: 'home',
+    testID: 'tab-home',
+    accessibilityLabel: 'Home tab',
+  },
+  {
+    screen: 'World',
+    label: 'World',
+    iconName: 'globe-outline',
+    activeIconName: 'globe',
+    testID: 'tab-world',
+    accessibilityLabel: 'World tab',
+  },
+  {
+    screen: 'Actions',
+    label: 'Actions',
+    iconName: 'grid-outline',
+    activeIconName: 'grid',
+    testID: 'tab-actions',
+    accessibilityLabel: 'Actions tab',
+  },
 ] as const;
 
 export function isPrimaryTabScreen(value: string): value is PrimaryTabScreen {
@@ -47,4 +69,11 @@ export function isActionMenuScreen(value: string): value is ActionMenuScreen {
 
 export function actionMenuItemForScreen(screen: ActionMenuScreen): ActionMenuItem | undefined {
   return ACTION_MENU_ITEMS.find((item) => item.screen === screen);
+}
+
+/** Maps legacy persisted tab names onto the Phase 6 three-tab structure. */
+export function normalizePersistedTabName(tab: string | null | undefined): PrimaryTabScreen {
+  if (tab === 'Dispatches') return 'Dashboard';
+  if (isPrimaryTabScreen(tab ?? '')) return tab as PrimaryTabScreen;
+  return 'Dashboard';
 }

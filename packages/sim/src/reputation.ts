@@ -6,6 +6,9 @@ export const REPUTATION_PENALTY_ALLIANCE_BREAK_OBSERVER = -20;
 /** Reputation hit seen by the betrayed party when an alliance is broken. */
 export const REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED = -40;
 
+/** Mild hit for surviving allies when a defeated country dissolves an alliance (force majeure). */
+export const REPUTATION_PENALTY_ALLY_DEFEATED = -10;
+
 /** All-pairs-zero reputation matrix (excludes self-pairs). Materialized at world creation. */
 export function createInitialReputation(factions: Record<Id, Faction>): Reputation {
   const factionIds = Object.keys(factions).sort();
@@ -62,6 +65,27 @@ export function applyAllianceBreakReputationPenalty(
 
     adjustReputation(reputation, observer, breakerFactionId, delta);
   }
+
+  return { ...world, reputation };
+}
+
+/**
+ * Force-majeure alliance dissolution when a country is defeated.
+ * Only the surviving ally's view of the defeated country shifts (-10); observers unchanged.
+ */
+export function applyDefeatAllianceDissolutionReputationPenalty(
+  world: WorldState,
+  defeatedCountryId: Id,
+  allyId: Id,
+): WorldState {
+  if (defeatedCountryId === allyId) return world;
+
+  const reputation: Reputation = {};
+  for (const observer of Object.keys(world.factions).sort()) {
+    reputation[observer] = { ...world.reputation[observer] };
+  }
+
+  adjustReputation(reputation, allyId, defeatedCountryId, REPUTATION_PENALTY_ALLY_DEFEATED);
 
   return { ...world, reputation };
 }

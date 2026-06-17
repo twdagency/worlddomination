@@ -20,5 +20,6 @@ export type {
   Dilemma,
   DilemmaOption,
   DilemmaConsequence,
+  DilemmaUrgency,
   IdentityShift,
 } from './dilemmas';

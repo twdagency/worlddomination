@@ -32,7 +32,7 @@ describe('dilemma selector', () => {
     expect(selectPendingDilemmaCards(withDilemma)).toEqual([
       {
         dilemmaId: 'foreign-rule',
-        title: 'How will you rule Paris?',
+        title: 'The fall of France',
         factionId: PLAYER_TUTORIAL_FACTION_ID,
       },
     ]);

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import type { BeatCopy } from 'shared';
-import type { SimEvent, TransitOrder, TutorialBeatId, WorldState } from 'sim';
+import type { SimEvent, TransitOrder, TutorialBeatId, WorldState, Millis } from 'sim';
 import {
   evaluateBeatProgression,
   getDilemmaById,
@@ -44,16 +44,27 @@ import {
 import {
   clearCampaignStorage,
   loadDispatches,
+  loadDispatchReadState,
   loadLastActiveMs,
   loadScenarioId,
   loadWorld,
   saveDispatches,
+  saveDispatchReadState,
   saveLastActiveMs,
   saveScenarioId,
   saveTutorialOnboarded,
   saveWorld,
 } from '../storage/worldStorage';
+import {
+  computeDispatchReadState,
+  DEFAULT_DISPATCH_READ_STATE,
+  type DispatchReadState,
+} from './dispatchReadState';
 import { selectTutorialState, type TutorialBannerMode } from './tutorialSelector';
+import {
+  resolveDilemmaModalState,
+  type DilemmaModalState,
+} from './dilemmaModalController';
 
 export interface TutorialContextSlice {
   isTutorialActive: boolean;
@@ -75,6 +86,8 @@ interface GameContextValue extends TutorialContextSlice {
   world: WorldState;
   dispatches: SimEvent[];
   awayMs: number;
+  dispatchReadState: DispatchReadState;
+  markDispatchesViewed: () => void;
   scenarioId: ScenarioId;
   wallNowMs: number;
   actionFeedback: ActionFeedback | null;
@@ -94,6 +107,9 @@ interface GameContextValue extends TutorialContextSlice {
   proposeTreaty: (targetFactionId: string, territoryId: string) => Promise<void>;
   acceptProposal: (proposalId: string) => Promise<void>;
   declineProposal: (proposalId: string) => Promise<void>;
+  dilemmaModalState: DilemmaModalState;
+  dismissDilemmaModal: () => void;
+  openDilemmaModal: (dilemmaId: string) => void;
 }
 
 const GameContext = React.createContext<GameContextValue | null>(null);
@@ -115,9 +131,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   );
   const [dispatches, setDispatches] = useState<SimEvent[]>([]);
   const [awayMs, setAwayMs] = useState(0);
+  const [dispatchReadState, setDispatchReadState] = useState<DispatchReadState>(
+    DEFAULT_DISPATCH_READ_STATE,
+  );
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [lastDismissedBeat, setLastDismissedBeat] = useState<TutorialBeatId | null>(null);
+  const [dismissedDilemmaIds, setDismissedDilemmaIds] = useState<Set<string>>(() => new Set());
+  const [manualDilemmaId, setManualDilemmaId] = useState<string | null>(null);
   const [bannerCollapsedBeat, setBannerCollapsedBeat] = useState<TutorialBeatId | null>(null);
   const worldRef = useRef(world);
   const dispatchesRef = useRef(dispatches);
@@ -161,6 +182,30 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     showToast('Your tutorial is complete. The campaign continues at standard speed.', 'success');
   }, [showToast]);
 
+  const dilemmaModalState = useMemo(
+    () =>
+      resolveDilemmaModalState({
+        world: ready ? world : null,
+        dismissedDilemmaIds,
+        manualDilemmaId,
+      }),
+    [ready, world, dismissedDilemmaIds, manualDilemmaId],
+  );
+
+  const dismissDilemmaModal = useCallback(() => {
+    if (!dilemmaModalState.dilemmaId || !dilemmaModalState.canDismiss) return;
+    setDismissedDilemmaIds((current) => {
+      const next = new Set(current);
+      next.add(dilemmaModalState.dilemmaId!);
+      return next;
+    });
+    setManualDilemmaId(null);
+  }, [dilemmaModalState.canDismiss, dilemmaModalState.dilemmaId]);
+
+  const openDilemmaModal = useCallback((dilemmaId: string) => {
+    setManualDilemmaId(dilemmaId);
+  }, []);
+
   const resolvePendingDilemma = useCallback(
     async (dilemmaId: string, optionId: string) => {
       const playerId = playerFactionId(worldRef.current);
@@ -182,6 +227,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const merged = mergeDispatches(nextWorld, dispatchesRef.current, allEvents);
       setWorld(nextWorld);
       setDispatches(merged);
+      setManualDilemmaId(null);
+      setDismissedDilemmaIds((current) => {
+        if (!current.has(dilemmaId)) return current;
+        const next = new Set(current);
+        next.delete(dilemmaId);
+        return next;
+      });
       await persist(nextWorld, merged);
       if (option) {
         showToast(`Decision made: ${option.label}`, 'success');
@@ -210,6 +262,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const clearActionFeedback = useCallback(() => {
     setActionFeedback(null);
+  }, []);
+
+  const markDispatchesViewed = useCallback(() => {
+    const read = computeDispatchReadState(worldRef.current.nowMs, dispatchesRef.current);
+    setDispatchReadState(read);
+    void saveDispatchReadState(read);
   }, []);
 
   const applyAction = useCallback(
@@ -265,13 +323,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [storedWorld, storedDispatches, lastActive, storedScenarioId] = await Promise.all([
+      const [storedWorld, storedDispatches, lastActive, storedScenarioId, storedReadState] =
+        await Promise.all([
         loadWorld(),
         loadDispatches(),
         loadLastActiveMs(),
         loadScenarioId(),
+        loadDispatchReadState(),
       ]);
       if (cancelled) return;
+
+      if (storedReadState !== null) {
+        setDispatchReadState(storedReadState);
+      }
 
       const hasStoredWorld = storedWorld !== null;
       const id = resolveScenarioId(storedScenarioId, hasStoredWorld);
@@ -388,6 +452,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setScenarioId(id);
     setAwayMs(0);
     setDispatches([]);
+    setDispatchReadState(DEFAULT_DISPATCH_READ_STATE);
     setActionFeedback(null);
     setLastDismissedBeat(null);
     setBannerCollapsedBeat(null);
@@ -475,6 +540,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         world,
         dispatches,
         awayMs,
+        dispatchReadState,
+        markDispatchesViewed,
         scenarioId,
         wallNowMs,
         actionFeedback,
@@ -505,6 +572,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         proposeTreaty,
         acceptProposal,
         declineProposal,
+        dilemmaModalState,
+        dismissDilemmaModal,
+        openDilemmaModal,
       }}
     >
       {children}

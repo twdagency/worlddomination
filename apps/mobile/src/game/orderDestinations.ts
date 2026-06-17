@@ -1,6 +1,12 @@
-import { areAllied, type Id, type WorldState } from 'sim';
+import { areAllied, type Id, type TransitOrder, type WorldState } from 'sim';
 
 export type DestinationStance = 'friendly' | 'neutral' | 'allied' | 'hostile';
+
+export interface OrderDestinationIntel {
+  territoryId: Id;
+  state: 'live' | 'stale' | 'unknown';
+  snapshot?: { ownerId?: Id };
+}
 
 export function classifyDestination(
   world: WorldState,
@@ -17,19 +23,20 @@ export function classifyDestination(
   return 'hostile';
 }
 
-export function formatDestinationRowTitle(
-  territoryName: string,
-  stance: DestinationStance,
-  ownerLeaderName?: string,
-  recommended?: boolean,
-): string {
-  let title = territoryName;
-  if (recommended) title += ' · Suggested';
-  if (stance === 'hostile' || stance === 'allied') {
-    title += ` · ${stance.toUpperCase()}`;
-    if (ownerLeaderName) title += ` · ${ownerLeaderName}`;
-  } else if (stance === 'neutral') {
-    title += ' · NEUTRAL';
-  }
-  return title;
+/** Assault stance cannot target player-owned territories; other stances may. */
+export function filterOrderDestinationsForStance<T extends OrderDestinationIntel>(
+  world: WorldState,
+  playerId: Id | undefined,
+  stance: TransitOrder['stanceOnArrival'],
+  destinations: readonly T[],
+): T[] {
+  if (!playerId || stance !== 'assault') return [...destinations];
+
+  return destinations.filter((display) => {
+    const ownerId =
+      display.state === 'live'
+        ? world.territories[display.territoryId]?.ownerId
+        : display.snapshot?.ownerId;
+    return ownerId !== playerId;
+  });
 }

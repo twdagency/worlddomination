@@ -38,9 +38,13 @@ export interface DilemmaOption {
   identityShift: IdentityShift;
 }
 
+/** How prominently a dilemma surfaces in the mobile UI. */
+export type DilemmaUrgency = 'crisis' | 'standard' | 'background';
+
 export interface Dilemma {
   id: string;
   title: string;
   prompt: string;
   options: DilemmaOption[];
+  urgency: DilemmaUrgency;
 }

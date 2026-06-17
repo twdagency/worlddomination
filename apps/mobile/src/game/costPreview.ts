@@ -52,6 +52,7 @@ export function infraUpgradeCostPreview(
     return { lines: [], affordable: false, shortfallLabel: 'Infrastructure already at maximum level' };
   }
 
+  // Per-target territory: upgrade cost uses this territory's infraLevel only (not faction-wide).
   const required = INFRA_UPGRADE_BASE_COST * territory.infraLevel;
   return evaluateCostLines([
     {

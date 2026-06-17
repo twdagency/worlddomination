@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRoute, type RouteProp } from '@react-navigation/native';
 import type { TransitOrder } from 'sim';
 import { moveDistanceKm, previewMoveEtaMs, TUTORIAL_PARIS_TERRITORY_ID } from 'sim';
 import { useGame } from '../game/GameContext';
@@ -8,19 +9,19 @@ import { toggleExpandedRow } from '../game/expandableRowState';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
-import {
-  getPlayerVisibleTerritory,
+import { getPlayerVisibleTerritory,
   ownerIdForIntelDisplay,
   playerMovableUnits,
   playerOrderDestinations,
   resolvePlayerFactionId,
 } from '../game/playerView';
-import { getFactionIdentity } from '../game/factionDisplay';
 import {
   classifyDestination,
-  formatDestinationRowTitle,
+  filterOrderDestinationsForStance,
   type DestinationStance,
 } from '../game/orderDestinations';
+import { TerritoryOwnerLabel } from '../components/TerritoryOwnerLabel';
+import type { ActionStackParamList } from '../navigation/types';
 import { IntelSourceHint } from '../components/IntelSourceHint';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -44,7 +45,10 @@ function stancesForDestination(stance: DestinationStance) {
   return STANCES;
 }
 
+type OrderRoute = RouteProp<ActionStackParamList, 'Order'>;
+
 export function OrderScreen() {
+  const route = useRoute<OrderRoute>();
   const { world, confirmMove, actionFeedback, isTutorialActive, currentBeat } = useGame();
   const playerId = resolvePlayerFactionId(world);
   const movableUnits = playerMovableUnits(world);
@@ -54,6 +58,21 @@ export function OrderScreen() {
   const [destinationId, setDestinationId] = useState<string>('');
   const [stance, setStance] = useState<TransitOrder['stanceOnArrival']>('assault');
   const [expandedSection, setExpandedSection] = useState<string | null>('confirm');
+  const [presetLocked, setPresetLocked] = useState(false);
+  const [presetDestinationId, setPresetDestinationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const presetDestination = route.params?.presetDestinationId;
+    const presetForce = route.params?.presetForceId;
+    if (presetDestination) {
+      setPresetDestinationId(presetDestination);
+      setDestinationId(presetDestination);
+      setPresetLocked(true);
+    }
+    if (presetForce) {
+      setUnitId(presetForce);
+    }
+  }, [route.params?.presetDestinationId, route.params?.presetForceId]);
 
   useEffect(() => {
     if (isMovementBeat && movableUnits.length === 1) {
@@ -62,12 +81,13 @@ export function OrderScreen() {
   }, [isMovementBeat, movableUnits]);
 
   const unit = movableUnits.find((u) => u.id === unitId);
-  const availableDestinations = useMemo(
-    () => playerOrderDestinations(world, unit?.locationId),
-    [world, unit?.locationId],
-  );
+  const availableDestinations = useMemo(() => {
+    const destinations = playerOrderDestinations(world, unit?.locationId);
+    return filterOrderDestinationsForStance(world, playerId, stance, destinations);
+  }, [world, unit?.locationId, playerId, stance]);
 
   useEffect(() => {
+    if (presetLocked) return;
     if (!unitId || availableDestinations.length === 0) {
       setDestinationId('');
       return;
@@ -88,7 +108,7 @@ export function OrderScreen() {
         ? prev
         : availableDestinations[0]!.territoryId,
     );
-  }, [unitId, availableDestinations, isMovementBeat]);
+  }, [unitId, availableDestinations, isMovementBeat, presetLocked]);
 
   const selectedDestination = availableDestinations.find((t) => t.territoryId === destinationId);
   const selectedDestOwner = selectedDestination
@@ -155,6 +175,26 @@ export function OrderScreen() {
 
       <ActionFeedbackBanner action="move" feedback={actionFeedback} />
 
+      {presetLocked && presetDestinationId ? (
+        <TerminalCard style={styles.presetBanner} testID="order-preset-banner">
+          <Text style={styles.presetTitle}>
+            Issuing order for{' '}
+            {world.territories[presetDestinationId]?.name ?? presetDestinationId}
+          </Text>
+          <Pressable
+            onPress={() => {
+              setPresetLocked(false);
+              setPresetDestinationId(null);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Change destination"
+            testID="order-preset-change"
+          >
+            <Text style={styles.presetChange}>Change destination</Text>
+          </Pressable>
+        </TerminalCard>
+      ) : null}
+
       <Text style={styles.section}>Force</Text>
       {movableUnits.length === 0 ? (
         <TerminalCard>
@@ -176,7 +216,7 @@ export function OrderScreen() {
       )}
 
       <Text style={styles.section}>Destination</Text>
-      {availableDestinations.length === 0 ? (
+      {presetLocked ? null : availableDestinations.length === 0 ? (
         <TerminalCard>
           <Text style={styles.muted}>{destinationEmptyCopy}</Text>
         </TerminalCard>
@@ -189,9 +229,6 @@ export function OrderScreen() {
             destination.territoryId,
             ownerId,
           );
-          const ownerName = ownerId
-            ? getFactionIdentity(world, ownerId).leaderName
-            : undefined;
           const selected = destination.territoryId === destinationId;
           const isStale = destination.state === 'stale';
           const recommended =
@@ -209,14 +246,18 @@ export function OrderScreen() {
                   recommended ? styles.recommendedCard : undefined,
                 ]}
               >
-                <Text style={[styles.optionTitle, isStale && styles.staleTitle]}>
-                  {formatDestinationRowTitle(
-                    destination.name,
-                    destinationStance,
-                    ownerName,
-                    recommended,
-                  )}
-                </Text>
+                <TerritoryOwnerLabel
+                  world={world}
+                  territoryId={destination.territoryId}
+                  ownerIdOverride={ownerId}
+                  playerId={playerId}
+                  variant="inline"
+                  showStance
+                  showLeader
+                  stance={destinationStance}
+                  recommended={recommended}
+                  style={[styles.optionTitle, isStale && styles.staleTitle]}
+                />
                 {isStale && destination.lastObservedAt !== undefined && (
                   <Text style={styles.staleSub}>
                     {formatIntelAge(world.nowMs, destination.lastObservedAt)}
@@ -301,6 +342,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 16,
+  },
+  presetBanner: {
+    borderColor: terminal.tutorial,
+    marginBottom: 12,
+    gap: 8,
+  },
+  presetTitle: {
+    color: terminal.text,
+    fontFamily: terminal.mono,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  presetChange: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 13,
+    fontWeight: '700',
   },
   section: {
     color: terminal.muted,

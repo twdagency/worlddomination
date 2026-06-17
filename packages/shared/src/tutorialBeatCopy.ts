@@ -34,8 +34,8 @@ export const TUTORIAL_BEAT_COPY: Record<TutorialBeatId, BeatCopy> = {
   },
   governance: {
     beat: 'governance',
-    title: 'How will you rule Paris?',
-    body: "A dilemma demands your decision. Your choice will shape your country's identity.",
+    title: 'France has fallen — how will you rule?',
+    body: "With Henry IV defeated, the French throne is yours to claim. Your decision will shape your country's identity.",
     hint: 'Why: You are not just a general — you are a leader. The policies you set and the dilemmas you resolve define what your empire becomes.',
   },
   handoff: {

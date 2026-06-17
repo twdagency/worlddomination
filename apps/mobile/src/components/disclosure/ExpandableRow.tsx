@@ -7,6 +7,8 @@ interface ExpandableRowProps {
   rowId: string;
   title: string;
   subtitle?: string;
+  titleContent?: React.ReactNode;
+  subtitleContent?: React.ReactNode;
   expanded: boolean;
   highlighted?: boolean;
   onToggle: (rowId: string) => void;
@@ -18,6 +20,8 @@ export function ExpandableRow({
   rowId,
   title,
   subtitle,
+  titleContent,
+  subtitleContent,
   expanded,
   highlighted = false,
   onToggle,
@@ -34,8 +38,9 @@ export function ExpandableRow({
       >
         <View style={styles.header}>
           <View style={styles.titles}>
-            <Text style={styles.title}>{title}</Text>
-            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+            {titleContent ?? <Text style={styles.title}>{title}</Text>}
+            {subtitleContent ??
+              (subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null)}
           </View>
           <Text style={styles.chevron}>{expanded ? '▾' : '▸'}</Text>
         </View>

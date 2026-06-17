@@ -11,7 +11,7 @@ import type { ResourceId, UnitType, WorldState } from 'sim';
 import { UNIT_TYPES } from 'shared';
 import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
-import { getFactionIdentity } from '../game/factionDisplay';
+import { selectPlayerCountry } from '../game/countrySelector';
 import { playerOwnedTerritories } from '../game/playerView';
 import {
   collectActiveBuilds,
@@ -25,6 +25,9 @@ import {
   unitBuildCostPreview,
 } from '../game/costPreview';
 import { buildWhyExplanation, infraWhyExplanation } from '../game/whyBlockText';
+import { LinkText } from '../components/navigation/LinkText';
+import { deepLinkForEntity } from '../navigation/deepLinks';
+import { useDeepLinkNavigation } from '../navigation/useDeepLinkNavigation';
 import type { ActionStackParamList } from '../navigation/types';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
@@ -58,6 +61,7 @@ type TerritoryRoute = RouteProp<ActionStackParamList, 'Territory'>;
 
 export function TerritoryScreen() {
   const route = useRoute<TerritoryRoute>();
+  const navigateDeep = useDeepLinkNavigation();
   const { world, issueBuild, issueUpgradeInfra, actionFeedback } = useGame();
   const playerId = resolvePlayerFactionId(world);
   const faction = playerId ? world.factions[playerId] : undefined;
@@ -115,15 +119,40 @@ export function TerritoryScreen() {
   const maxTier = maxBuildableTier(territory.infraLevel);
   const facilityLabel = territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
   const infraCost = infraUpgradeCostPreview(world, territoryId, playerId!);
-  const playerIdentity = getFactionIdentity(world, playerId!);
+  const playerCountry = selectPlayerCountry(world);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <ScreenBackButton />
       <Text style={styles.heading}>Territory</Text>
-      <Text style={styles.playerIdentity}>
-        {playerIdentity.compactLine} · {playerIdentity.citiesLine}
-      </Text>
+      {playerCountry ? (
+        <View style={styles.playerIdentityRow}>
+          <LinkText
+            testID="territory-player-country-link"
+            onPress={() => {
+              if (playerCountry.id === playerId) {
+                const target = deepLinkForEntity({ kind: 'country', id: playerCountry.id });
+                if (target) navigateDeep(target);
+                return;
+              }
+              const target = deepLinkForEntity(
+                { kind: 'country', id: playerCountry.id },
+                'diplomacy',
+              );
+              if (target) navigateDeep(target);
+            }}
+          >
+            {playerCountry.name}
+          </LinkText>
+          <Text style={styles.playerIdentitySuffix}>
+            {' '}
+            — led by {playerCountry.leaderName} ·{' '}
+            {playerCountry.cities.map((city) => city.name).join(', ')}
+          </Text>
+        </View>
+      ) : (
+        <Text style={styles.playerIdentity}>Your holdings</Text>
+      )}
 
       <ActionFeedbackBanner action={['build', 'upgradeInfra']} feedback={actionFeedback} />
 
@@ -149,12 +178,53 @@ export function TerritoryScreen() {
       ) : null}
 
       <Text style={styles.section}>Locations</Text>
-      {playerTerritories.map((t) => (
+      {playerTerritories.map((t) => {
+        const isCapital = playerCountry?.capitalTerritoryId === t.id;
+        return (
         <ExpandableRow
           key={t.id}
           rowId={t.id}
-          title={t.name}
-          subtitle={territoryGlanceSubtitle(t)}
+          title={isCapital ? `★ ${t.name} (capital)` : t.name}
+          subtitleContent={
+            <View style={styles.territorySubtitle}>
+              {playerCountry ? (
+                <>
+                  <LinkText
+                    testID={`territory-row-country-${t.id}`}
+                    onPress={() => {
+                      const target = deepLinkForEntity({ kind: 'country', id: playerCountry.id });
+                      if (target) navigateDeep(target);
+                    }}
+                  >
+                    {playerCountry.name}
+                  </LinkText>
+                  <Text style={styles.territorySubtitleSuffix}>
+                    {' '}
+                    — led by {playerCountry.leaderName} · {territoryGlanceSubtitle(t)}
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.territorySubtitleSuffix}>{territoryGlanceSubtitle(t)}</Text>
+              )}
+              {!isCapital && playerCountry?.capitalTerritoryId ? (
+                <View style={styles.capitalLinkRow}>
+                  <Text style={styles.territorySubtitleSuffix}>Capital: </Text>
+                  <LinkText
+                    testID={`territory-capital-link-${t.id}`}
+                    onPress={() => {
+                      const target = deepLinkForEntity({
+                        kind: 'territory',
+                        id: playerCountry.capitalTerritoryId,
+                      });
+                      if (target) navigateDeep(target);
+                    }}
+                  >
+                    {playerCountry.capitalName}
+                  </LinkText>
+                </View>
+              ) : null}
+            </View>
+          }
           expanded={expandedTerritoryId === t.id}
           highlighted={
             territoryHasFoodShortage(t) || (t.buildQueue?.length ?? 0) > 0
@@ -183,7 +253,8 @@ export function TerritoryScreen() {
             )
           }
         />
-      ))}
+        );
+      })}
 
       {showDevControls && <DevTimeSkip />}
     </ScrollView>
@@ -349,6 +420,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 16,
     lineHeight: 18,
+  },
+  playerIdentityRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  playerIdentitySuffix: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  territorySubtitle: {
+    marginTop: 4,
+    gap: 4,
+  },
+  territorySubtitleSuffix: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  capitalLinkRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
   },
   section: {
     color: terminal.muted,

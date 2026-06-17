@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -20,7 +20,6 @@ import {
 import { useGame } from '../game/GameContext';
 import { isTimestampedDispatch } from '../game/actions';
 import { formatStanceDetail, stanceColor } from '../game/diplomacyStanceDisplay';
-import { getFactionIdentity } from '../game/factionDisplay';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { evaluateCostLines, treatyOfferLine } from '../game/costPreview';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
@@ -28,7 +27,16 @@ import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { resolvePlayerFactionId } from 'shared';
-import { diplomacyTargetFactions } from '../game/diplomacySelector';
+import {
+  formatDiplomacyCountryTitle,
+  selectCountryById,
+  selectDiplomacyTargets,
+} from '../game/countrySelector';
+import { selectDefeatedCountries } from '../game/defeatedCountrySelector';
+import { LinkText } from '../components/navigation/LinkText';
+import { deepLinkForEntity } from '../navigation/deepLinks';
+import { useDeepLinkNavigation } from '../navigation/useDeepLinkNavigation';
+import { useFocusHighlight } from '../navigation/useFocusHighlight';
 import type { ActionStackParamList } from '../navigation/types';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -56,6 +64,8 @@ type DiplomacyRoute = RouteProp<ActionStackParamList, 'Diplomacy'>;
 
 export function DiplomacyScreen() {
   const route = useRoute<DiplomacyRoute>();
+  const navigateDeep = useDeepLinkNavigation();
+  const listRef = useRef<FlatList>(null);
   const {
     world,
     dispatches,
@@ -73,29 +83,32 @@ export function DiplomacyScreen() {
   const incoming = playerId ? pendingProposalsForFaction(world, playerId) : [];
   const timestampedDispatches = dispatches.filter(isTimestampedDispatch);
 
-  useEffect(() => {
-    if (route.params?.expandFactionId) {
-      setExpandedFactionId(route.params.expandFactionId);
-    }
-  }, [route.params?.expandFactionId]);
+  const focusCountryId = route.params?.focusCountryId ?? route.params?.expandFactionId;
+  const highlightedId = useFocusHighlight(focusCountryId);
 
-  const factions = useMemo(
+  useEffect(() => {
+    if (focusCountryId) {
+      setExpandedFactionId(focusCountryId);
+    }
+  }, [focusCountryId]);
+
+  const countries = useMemo(
     () =>
-      diplomacyTargetFactions(world)
-        .map((faction) => {
-          const reputation = playerId ? (world.reputation[playerId]?.[faction.id] ?? 0) : 0;
+      selectDiplomacyTargets(world)
+        .map((country) => {
+          const reputation = playerId ? (world.reputation[playerId]?.[country.id] ?? 0) : 0;
           const stance = computeStance(
             world,
-            faction.id,
+            country.id,
             timestampedDispatches,
             world.nowMs,
             STANCE_WINDOW_MS,
           );
           return {
-            id: faction.id,
-            identity: getFactionIdentity(world, faction.id),
+            id: country.id,
+            country,
             status: playerId
-              ? diplomaticRelationshipStatus(world, playerId, faction.id)
+              ? diplomaticRelationshipStatus(world, playerId, country.id)
               : ('neutral' as const),
             reputationLabel: reputationCategory(reputation),
             reputation,
@@ -104,12 +117,23 @@ export function DiplomacyScreen() {
         })
         .sort((a, b) => {
           const priority = diplomacySortPriority(a.status) - diplomacySortPriority(b.status);
-          return priority !== 0 ? priority : a.identity.leaderName.localeCompare(b.identity.leaderName);
+          return priority !== 0 ? priority : a.country.name.localeCompare(b.country.name);
         }),
     [world, playerId, timestampedDispatches],
   );
 
+  useEffect(() => {
+    if (!focusCountryId) return;
+    const index = countries.findIndex((entry) => entry.id === focusCountryId);
+    if (index < 0) return;
+    const timer = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.2 });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [focusCountryId, countries]);
+
   const activeTreaties = playerId ? getActiveTreaties(world, playerId, world.nowMs) : [];
+  const defeatedCountries = useMemo(() => selectDefeatedCountries(world), [world]);
 
   const treatyTerritories = Object.values(world.territories)
     .filter((territory) => territory.ownerId !== playerId)
@@ -125,10 +149,14 @@ export function DiplomacyScreen() {
 
   return (
     <FlatList
+      ref={listRef}
       style={styles.container}
       contentContainerStyle={styles.content}
-      data={factions}
+      data={countries}
       keyExtractor={(item) => item.id}
+      onScrollToIndexFailed={() => {
+        // Layout may not be ready on first paint.
+      }}
       ListHeaderComponent={
         <View>
           <ScreenBackButton />
@@ -144,9 +172,9 @@ export function DiplomacyScreen() {
             <TerminalCard style={styles.incomingCard}>
               <Text style={styles.sectionLabel}>Incoming proposals</Text>
               {incoming.map((proposal) => {
-                const fromName =
-                  world.leaders[world.factions[proposal.from]?.leaderId ?? '']?.name ??
-                  proposal.from;
+                const fromName = selectCountryById(world, proposal.from)?.name
+                  ?? world.leaders[world.factions[proposal.from]?.leaderId ?? '']?.name
+                  ?? proposal.from;
                 return (
                   <View key={proposal.id} style={styles.proposalRow}>
                     <Text style={styles.proposalText}>
@@ -174,7 +202,21 @@ export function DiplomacyScreen() {
         </View>
       }
       ListFooterComponent={
-        <TerminalCard style={styles.footer}>
+        <View style={styles.footerWrap}>
+          {defeatedCountries.length > 0 ? (
+            <Pressable
+              style={styles.historyLink}
+              onPress={() => navigateDeep({ tab: 'home', screen: 'defeatedCountries' })}
+              accessibilityRole="button"
+              testID="diplomacy-defeated-history-link"
+            >
+              <Text style={styles.historyLabel}>
+                Diplomatic history — View {defeatedCountries.length} defeated{' '}
+                {defeatedCountries.length === 1 ? 'country' : 'countries'}
+              </Text>
+            </Pressable>
+          ) : null}
+          <TerminalCard style={styles.footer}>
           <Text style={styles.sectionLabel}>Active treaties</Text>
           {activeTreaties.length === 0 ? (
             <Text style={styles.muted}>None</Text>
@@ -182,8 +224,9 @@ export function DiplomacyScreen() {
             activeTreaties.map((treaty) => {
               const other =
                 treaty.parties[0] === playerId ? treaty.parties[1] : treaty.parties[0];
-              const otherName =
-                world.leaders[world.factions[other]?.leaderId ?? '']?.name ?? other;
+              const otherName = selectCountryById(world, other)?.name
+                ?? world.leaders[world.factions[other]?.leaderId ?? '']?.name
+                ?? other;
               const places = treaty.scope.territoryIds
                 .map((id) => world.territories[id]?.name ?? id)
                 .join(', ');
@@ -199,18 +242,55 @@ export function DiplomacyScreen() {
             })
           )}
         </TerminalCard>
+        </View>
       }
       renderItem={({ item }) => {
         const expanded = expandedFactionId === item.id;
         const pending = item.status === 'proposal-incoming';
+        const isFocused = highlightedId === item.id;
 
         return (
           <ExpandableRow
             rowId={item.id}
-            title={item.identity.compactLine}
-            subtitle={`${statusLabel(item.status)} · ${item.identity.citiesLine}`}
+            title={formatDiplomacyCountryTitle(item.country)}
+            titleContent={
+              <View style={styles.titleRow}>
+                <LinkText
+                  testID={`diplomacy-country-link-${item.id}`}
+                  onPress={() => {
+                    const target = deepLinkForEntity({ kind: 'country', id: item.id });
+                    if (target) navigateDeep(target);
+                  }}
+                >
+                  {item.country.name}
+                </LinkText>
+                <Text style={styles.titleSuffix}> — led by {item.country.leaderName}</Text>
+              </View>
+            }
+            subtitleContent={
+              <View style={styles.subtitleRow}>
+                <Text style={styles.subtitlePrefix}>{statusLabel(item.status)} · Capital: </Text>
+                <LinkText
+                  testID={`diplomacy-capital-link-${item.id}`}
+                  onPress={() => {
+                    const target = deepLinkForEntity({
+                      kind: 'territory',
+                      id: item.country.capitalTerritoryId,
+                    });
+                    if (target) navigateDeep(target);
+                  }}
+                >
+                  {item.country.capitalName}
+                </LinkText>
+                <Text style={styles.subtitlePrefix}>
+                  {' '}
+                  ·{' '}
+                  {item.country.cities.map((city: { name: string }) => city.name).join(', ') || 'No holdings'}
+                </Text>
+              </View>
+            }
             expanded={expanded}
-            highlighted={pending}
+            highlighted={pending || isFocused}
             onToggle={(id) => setExpandedFactionId((prev) => toggleExpandedRow(prev, id))}
             secondary={
               <View style={styles.secondary}>
@@ -272,7 +352,8 @@ export function DiplomacyScreen() {
             }
             tertiary={
               <Text style={styles.tertiaryText}>
-                Reputation: {item.reputation} ({item.reputationLabel}) · {item.identity.primaryLine}
+                Reputation: {item.reputation} ({item.reputationLabel}) ·{' '}
+                {item.country.cities.map((city: { name: string }) => city.name).join(', ') || 'No holdings'}
               </Text>
             }
           />
@@ -298,6 +379,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  titleSuffix: {
+    color: terminal.text,
+    fontFamily: terminal.mono,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  subtitlePrefix: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    lineHeight: 16,
   },
   hint: {
     color: terminal.muted,
@@ -397,8 +501,24 @@ const styles = StyleSheet.create({
   territoryRow: {
     paddingVertical: 4,
   },
-  footer: {
+  footerWrap: {
+    gap: 8,
     marginTop: 8,
+  },
+  historyLink: {
+    borderColor: terminal.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+  },
+  historyLabel: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  footer: {
+    marginTop: 0,
   },
   treatyLine: {
     color: terminal.text,

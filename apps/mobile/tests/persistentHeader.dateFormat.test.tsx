@@ -22,6 +22,7 @@ vi.mock('../src/game/GameContext', () => ({
     world: createSprint4World(1_700_000_000_000),
     dispatches: [],
     awayMs: 0,
+    dispatchReadState: { atMs: 0, throughEventSerial: -1 },
     isTutorialActive: false,
     isBannerDismissed: false,
     restoreBanner: vi.fn(),

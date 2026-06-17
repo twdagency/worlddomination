@@ -10,8 +10,10 @@ import type {
   WorldState,
 } from './types';
 import { pruneAlliedIntelOnBreak } from './intel';
+import { allianceBrokenEvent, treatyExpiredEvent } from './diplomaticDispatch';
 import {
   applyAllianceBreakReputationPenalty,
+  applyDefeatAllianceDissolutionReputationPenalty,
   createInitialReputation,
 } from './reputation';
 
@@ -279,5 +281,87 @@ export function pruneExpiredTreaties(world: WorldState, gameTime: Millis): World
   return {
     ...world,
     treaties,
+  };
+}
+
+function removeAlliancePair(world: WorldState, factionA: Id, factionB: Id): WorldState {
+  const [a, b] = normalizeFactionPair(factionA, factionB);
+  const next = world.alliances.filter((pair) => !(pair.factionA === a && pair.factionB === b));
+  if (next.length === world.alliances.length) return world;
+  return { ...world, alliances: next };
+}
+
+/**
+ * Dissolve one alliance because `defeatedCountryId` was destroyed (force majeure).
+ * Does not use voluntary `breakAlliance` penalties; emits `allianceBroken` for dispatch.
+ */
+function dissolveAllianceOnDefeat(
+  world: WorldState,
+  defeatedCountryId: Id,
+  allyId: Id,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  if (defeatedCountryId === allyId || !areAllied(world, defeatedCountryId, allyId)) {
+    return { world, events: [] };
+  }
+
+  const [a, b] = normalizeFactionPair(defeatedCountryId, allyId);
+  const withoutAlliance = removeAlliancePair(world, a, b);
+  if (withoutAlliance === world) return { world, events: [] };
+
+  const pruned = pruneAlliedIntelOnBreak(withoutAlliance, a, b);
+  const next = applyDefeatAllianceDissolutionReputationPenalty(
+    pruned,
+    defeatedCountryId,
+    allyId,
+  );
+
+  return {
+    world: next,
+    events: [allianceBrokenEvent(defeatedCountryId, allyId, at)],
+  };
+}
+
+/** Remove all alliances involving a defeated country; deterministic ally order. */
+export function dissolveAlliancesForDefeatedCountry(
+  world: WorldState,
+  defeatedCountryId: Id,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  const allies = getAlliancesFor(world, defeatedCountryId);
+  let current = world;
+  const events: SimEventDraft[] = [];
+
+  for (const allyId of allies) {
+    const dissolved = dissolveAllianceOnDefeat(current, defeatedCountryId, allyId, at);
+    current = dissolved.world;
+    events.push(...dissolved.events);
+  }
+
+  return { world: current, events };
+}
+
+/** Expire all treaties where the defeated country is a party; emit `treatyExpired` for each. */
+export function expireTreatiesForDefeatedCountry(
+  world: WorldState,
+  defeatedCountryId: Id,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  const expiring = world.treaties
+    .filter(
+      (treaty) =>
+        treaty.parties[0] === defeatedCountryId || treaty.parties[1] === defeatedCountryId,
+    )
+    .sort((left, right) => left.id.localeCompare(right.id));
+
+  if (expiring.length === 0) return { world, events: [] };
+
+  const expiringIds = new Set(expiring.map((treaty) => treaty.id));
+  return {
+    world: {
+      ...world,
+      treaties: world.treaties.filter((treaty) => !expiringIds.has(treaty.id)),
+    },
+    events: expiring.map((treaty) => treatyExpiredEvent(treaty, at)),
   };
 }

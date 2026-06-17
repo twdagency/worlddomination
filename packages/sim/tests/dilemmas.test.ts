@@ -3,6 +3,7 @@ import { createTutorialWorld } from '../../shared/src/scenario-tutorial';
 import {
   enqueuePendingDilemma,
   evaluateBeatProgression,
+  FOREIGN_RULE_DILEMMA,
   PLAYER_TUTORIAL_FACTION_ID,
   resolveDilemma,
 } from '../src';
@@ -10,6 +11,10 @@ import {
 const START_MS = 1_700_600_000_000;
 
 describe('dilemmas', () => {
+  it('classifies Foreign Rule as a crisis dilemma', () => {
+    expect(FOREIGN_RULE_DILEMMA.urgency).toBe('crisis');
+  });
+
   it('enqueuePendingDilemma adds a pending entry idempotently', () => {
     const world = createTutorialWorld(START_MS);
     const first = enqueuePendingDilemma(world, 'foreign-rule', PLAYER_TUTORIAL_FACTION_ID, START_MS);

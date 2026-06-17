@@ -1,4 +1,5 @@
 import { AI_DECISION_INTERVAL_MS, INFRA_UPGRADE_BASE_COST, MAX_INFRA_LEVEL } from './constants';
+import { findCountry } from './country';
 import { areAllied } from './diplomacy';
 import { taggedOrderFields, assertActionableOrderTagged } from './dispatch';
 import { haversineKm } from './geo';
@@ -402,7 +403,7 @@ function scoreAttack(
     if (!unit.locationId) continue;
 
     for (const territory of Object.values(world.territories)) {
-      if (!territory.ownerId || territory.ownerId === factionId) continue;
+      if (!territory.ownerId || territory.ownerId === factionId) continue; // never assault own territory
       if (areAllied(world, factionId, territory.ownerId)) continue;
       if (!visibility.territoryIds.has(territory.id)) continue;
 
@@ -554,9 +555,15 @@ export function decideOrders(world: WorldState, factionId: Id, decisionTickMs: M
   return orders;
 }
 
+function isFactionDefeated(world: WorldState, factionId: Id): boolean {
+  if (!world.countries || Object.keys(world.countries).length === 0) return false;
+  return findCountry(world, factionId)?.defeated === true;
+}
+
 export function collectAiOrders(world: WorldState, decisionTickMs: Millis): Order[] {
   const orders = Object.values(world.factions)
     .filter((faction) => !faction.isPlayer)
+    .filter((faction) => !isFactionDefeated(world, faction.id))
     .flatMap((faction) => decideOrders(world, faction.id, decisionTickMs));
   assertAiOrders(orders);
   return orders;

@@ -18,8 +18,14 @@ import {
   type WorldState,
 } from 'sim';
 import { resolvePlayerFactionId } from 'shared';
-import { formatDateTime } from '../utils/format';
+import { formatDateTime, formatDuration } from '../utils/format';
 import { formatFactionIdentityLine, getFactionIdentity } from './factionDisplay';
+import { formatTransitEndpointLabel } from './territoryOwnerLabel';
+import {
+  DEFAULT_DISPATCH_READ_STATE,
+  isDispatchUnreadSince,
+  type DispatchReadState,
+} from './dispatchReadState';
 
 export { resolvePlayerFactionId } from 'shared';
 
@@ -143,6 +149,14 @@ export function playerMovableUnits(world: WorldState): Unit[] {
   );
 }
 
+/** Stationed at a player-owned territory and not in transit — eligible for a new move order. */
+export function isPlayerForceMovable(world: WorldState, unit: Unit): boolean {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId || unit.ownerId !== playerId) return false;
+  if (unit.transit || !unit.locationId) return false;
+  return world.territories[unit.locationId]?.ownerId === playerId;
+}
+
 /** All player stacks visible under fog (stationed or in transit). */
 export function playerForces(world: WorldState): Unit[] {
   const playerId = resolvePlayerFactionId(world);
@@ -254,6 +268,7 @@ export interface DashboardNavTarget {
   screen: DashboardScreenName;
   factionId?: string;
   territoryId?: string;
+  dispatchId?: string;
 }
 
 export interface DashboardCatchUpCriticalItem {
@@ -314,6 +329,31 @@ export interface DashboardNavCard {
   screen: Exclude<DashboardScreenName, 'Dashboard'>;
   label: string;
   badgeCount: number;
+}
+
+export const DASHBOARD_DISPATCHES_DIGEST_LIMIT = 5;
+
+const IMPORTANCE_RANK = { high: 3, medium: 2, low: 1 } as const;
+
+export interface DashboardDispatchDigestItem {
+  eventId: string;
+  line: string;
+  atMs: number;
+  kind: string;
+  importance: 'high' | 'medium' | 'low';
+}
+
+export interface DashboardActiveForceItem {
+  unitId: string;
+  label: string;
+  detail: string;
+  inTransit: boolean;
+}
+
+export interface DashboardActiveForcesSummary {
+  inTransitCount: number;
+  stationedCount: number;
+  items: DashboardActiveForceItem[];
 }
 
 function isTimestampedEvent(event: SimEvent): event is SimEvent & { at: number } {
@@ -430,7 +470,7 @@ export function getDashboardUrgentItems(
       label: dispatchLineForEvent(world, event, resolvedFactionId),
       urgencyScore: 800 - (world.nowMs - event.at) / 3_600_000,
       deadlineMs: event.at,
-      navigation: { screen: 'Dispatches' },
+      navigation: { screen: 'Dispatches', dispatchId: event.eventId },
     });
   }
 
@@ -531,13 +571,98 @@ export function getDashboardNavCards(
   const hostileAssaultsInTransit = playerHostileAssaultsInTransit(world);
 
   return [
-    { screen: 'Dispatches', label: 'Dispatches', badgeCount: 0 },
     { screen: 'World', label: 'World', badgeCount: staleIntel > 0 ? staleIntel : 0 },
     { screen: 'Order', label: 'Order', badgeCount: hostileAssaultsInTransit > 0 ? 1 : 0 },
     { screen: 'Diplomacy', label: 'Diplomacy', badgeCount: diplomacyBadge },
     { screen: 'Territory', label: 'Territory', badgeCount: territoryBadge },
     { screen: 'Forces', label: 'Forces', badgeCount: forcesInTransit },
   ];
+}
+
+/** Importance-ranked digest for the dashboard dispatches card (max 5). */
+export function getDashboardDispatchesDigest(
+  world: WorldState,
+  events: SimEvent[],
+  factionId?: Id,
+  limit = DASHBOARD_DISPATCHES_DIGEST_LIMIT,
+): DashboardDispatchDigestItem[] {
+  const resolvedFactionId = factionId ?? resolvePlayerFactionId(world);
+  if (!resolvedFactionId) return [];
+
+  const ranked = filterDispatchesForFaction(world, events, resolvedFactionId)
+    .filter((event): event is SimEvent & { at: number } => isTimestampedEvent(event))
+    .map((event) => {
+      const importance = resolveEventImportance(world, event);
+      return {
+        eventId: event.eventId,
+        line: dispatchLineForEvent(world, event, resolvedFactionId),
+        atMs: event.at,
+        kind: event.kind,
+        importance,
+      };
+    })
+    .sort((left, right) => {
+      const rankDiff = IMPORTANCE_RANK[right.importance] - IMPORTANCE_RANK[left.importance];
+      if (rankDiff !== 0) return rankDiff;
+      return right.atMs - left.atMs;
+    });
+
+  return ranked.slice(0, limit);
+}
+
+/** High-importance dispatches after last view — crisis window + read-state gated. */
+export function getDashboardUnreadDispatchCount(
+  world: WorldState,
+  events: SimEvent[],
+  readState: DispatchReadState = DEFAULT_DISPATCH_READ_STATE,
+  factionId?: Id,
+): number {
+  const resolvedFactionId = factionId ?? resolvePlayerFactionId(world);
+  if (!resolvedFactionId) return 0;
+
+  const crisisSinceMs = world.nowMs - CRISIS_WINDOW_MS;
+  let count = 0;
+  for (const event of filterDispatchesForFaction(world, events, resolvedFactionId)) {
+    if (!isTimestampedEvent(event) || event.at < crisisSinceMs) continue;
+    if (!isDispatchUnreadSince(event, readState)) continue;
+    if (resolveEventImportance(world, event) === 'high') count += 1;
+  }
+  return Math.max(0, count);
+}
+
+/** Glance summary of player forces — prioritizes in-transit stacks. */
+export function getDashboardActiveForcesSummary(world: WorldState): DashboardActiveForcesSummary {
+  const units = playerForces(world);
+  const inTransit = units.filter((unit) => unit.transit);
+  const stationed = units.filter((unit) => !unit.transit);
+  const playerId = resolvePlayerFactionId(world);
+
+  const items: DashboardActiveForceItem[] = inTransit.slice(0, 3).map((unit) => {
+    const unitType = world.unitTypes[unit.typeId];
+    const destId = unit.transit?.toTerritoryId;
+    const originId = unit.locationId;
+    const originLabel = originId
+      ? formatTransitEndpointLabel(world, originId, 'inline', playerId)
+      : 'unknown';
+    const destLabel = destId
+      ? formatTransitEndpointLabel(world, destId, 'compact', playerId, undefined, true)
+      : 'unknown';
+    const eta = formatDuration(
+      Math.max(0, (unit.transit?.arriveMs ?? 0) - world.nowMs),
+    );
+    return {
+      unitId: unit.id,
+      label: unitType?.name ?? unit.id,
+      detail: `×${unit.count} from ${originLabel} → ${destLabel} · ETA ${eta}`,
+      inTransit: true,
+    };
+  });
+
+  return {
+    inTransitCount: inTransit.length,
+    stationedCount: stationed.length,
+    items,
+  };
 }
 
 /** Count urgent items for header badge (Phase 2 persistent header). */

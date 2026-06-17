@@ -10,6 +10,16 @@ vi.mock('@expo/vector-icons', () => ({
 
 const showDevControlsRef = vi.hoisted(() => ({ value: true }));
 
+const goBackMock = vi.fn();
+
+vi.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ goBack: goBackMock }),
+  useRoute: () => ({ params: undefined, key: 'dispatches', name: 'Dispatches' }),
+  useFocusEffect: (callback: () => void) => {
+    callback();
+  },
+}));
+
 vi.mock('../src/game/devFlag', () => ({
   get isDevBuild() {
     return showDevControlsRef.value;
@@ -24,6 +34,7 @@ vi.mock('../src/game/GameContext', () => ({
     world: createSprint4World(),
     dispatches: [],
     awayMs: 0,
+    markDispatchesViewed: vi.fn(),
     skipNext: vi.fn(),
     scenarioId: 'sprint-4-ai-world',
     loadScenario: vi.fn(),

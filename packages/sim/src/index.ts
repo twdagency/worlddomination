@@ -25,7 +25,10 @@ export {
   transitFraction,
   buildTransit,
   pendingArrivalMs,
+  validateAssaultOrder,
+  formatOrderRejectedMessage,
 } from './movement';
+export type { AssaultOrderRejectionReason } from './movement';
 export { advanceTo, mergeAccruedIncome, nextEventMs, unitPosition, previewMoveEtaMs, moveDistanceKm, getTimeMultiplier } from './clock';
 export {
   assertAiOrders,
@@ -124,7 +127,9 @@ export { formatIntelSourceLabel } from './intelDisplay';
 export {
   REPUTATION_PENALTY_ALLIANCE_BREAK_BETRAYED,
   REPUTATION_PENALTY_ALLIANCE_BREAK_OBSERVER,
+  REPUTATION_PENALTY_ALLY_DEFEATED,
   applyAllianceBreakReputationPenalty,
+  applyDefeatAllianceDissolutionReputationPenalty,
   createInitialReputation,
 } from './reputation';
 export {
@@ -179,6 +184,26 @@ export { reputationCategory } from './reputationDisplay';
 export type { ReputationCategory } from './reputationDisplay';
 export { ensureWorldMigrations, ensureWorldTimeMultiplier } from './migrations';
 export {
+  activeCountries,
+  CANONICAL_CAPITALS,
+  CANONICAL_CAPITALS_BY_SCENARIO,
+  citiesOf,
+  countryToFaction,
+  defeatCountry,
+  ensureWorldCountries,
+  factionToCountry,
+  findCountry,
+  isCountryDefeated,
+  recordConquerorOnTerritoryCapture,
+  relocateCapitalIfNeeded,
+  resolveCanonicalCapital,
+  selectNewCapital,
+  setCountryCapital,
+  setCountryDefeated,
+  syncCountriesFromFactions,
+} from './country';
+export type { CountrySyncResult } from './country';
+export {
   backfillLegacyDispatchEventIds,
   DEFAULT_NEXT_EVENT_ID,
   emit,
@@ -192,7 +217,9 @@ export {
   areAllied,
   breakAlliance,
   diplomacyDefaults,
+  dissolveAlliancesForDefeatedCountry,
   ensureWorldDiplomacy,
+  expireTreatiesForDefeatedCountry,
   formAlliance,
   formTreaty,
   getActiveTreaties,

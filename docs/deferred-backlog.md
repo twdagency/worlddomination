@@ -355,6 +355,32 @@ Every new persisted `WorldState` field ships with:
 
 This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
 
+## Process — canon-shift audit
+
+When upstream canon changes (e.g. Sprint 8 Option β: France defeated in Beat 2
+regardless of pinch path), re-audit downstream design decisions that assumed the
+old canon. Sprint 7b deferred governance skip on non-conquest pinch paths; that
+decision became wrong after Option β and was fixed in Sprint 8.5 Phase 1.
+
+## Process — player action feedback (no silent failures)
+
+Sprint 7c established dispatch events for player-visible cancellations (e.g.
+`dispatchCancelledByAlliance`). Sprint 8.5 Phase 2 extends the same principle to
+rejections (`orderRejected`). Player-initiated actions that fail in sim should
+emit a dispatch or feedback event — never fail silently. AI/non-player failures
+may reject quietly.
+
+## Process — diagnostic-first (Sprint 8.5)
+
+Run a diagnostic pass before fixing suspected bugs when cold-play perception and
+code path are misaligned. Sprint 8.5 Issue #18: Phase 0 found sim/UI cost logic
+correct; Phase 4 construction tests confirmed — no fix required. Prevents
+fix-where-no-bug-exists work.
+
+**Require-cycle warnings during cold-play:** triage; do not auto-fix before ship
+unless symptomatic. Noise obscures real bugs. Fix when: undefined-at-import,
+flaky tests, or user-visible incorrect behavior tied to the cycled modules.
+
 ## Sprint 7b tutorial follow-ups
 
 ### Sprint 8 candidates
@@ -367,12 +393,31 @@ This discipline prevents recurrence of the Sprint 5.5 scout-build class of bugs.
   picker for New Game (tutorial + sandbox scenarios) deferred.
 
 ### Sprint 9 candidates (content depth)
-- **Dilemma triggers for treaty/infra pinch paths** — conquest path enqueues Foreign
-  Rule; treaty and food-infra paths auto-complete governance via side effect. Add
-  dilemmas such as "Treaty Terms" and "Foreign Investment."
+- ~~**Issue #18 per-city infra cost**~~ — **Verified Sprint 8.5 Phase 4.** Sim and
+  `costPreview` both scale by target `territory.infraLevel`; cold-play same-cost
+  perception was not reproduced in tests. Regression guards in
+  `production.infraCost.test.ts` and `infraCost.perTerritory.test.ts`.
+- ~~**Dilemma triggers for treaty/infra pinch paths**~~ — **Resolved Sprint 8.5 Phase 1.**
+  All pinch paths enqueue Foreign Rule per Option β; no separate Treaty Terms /
+  Foreign Investment dilemmas for Beat 4 completion.
+- **Treaty pinch UX feedback (Sprint 8.5 cold-play)** — treaty offer/decline path
+  resolves Beat 4 without clear player feedback; coordinate with dilemma surfacing
+  fix (#14) and Sprint 9 dispatch/UX polish.
 - **Dilemma consequence preview UI tuning** — Phase 6 ships Choose without spelling out
   "+200 gold, -30 standing" on option cards (legibility B: constraints visible,
   consequences hinted).
+
+### Sprint 9 — engineering hygiene (symptom-triggered)
+
+- **`diplomaticAi` ↔ `playerDiplomacy` require cycle (sim)** — Promote to active work
+  if diplomacy proposals show non-deterministic accept/decline behavior,
+  undefined-at-import errors, or test flakiness. Fix scope: extract
+  scoring/thresholds to `diplomaticScoring.ts` (~30–60 min refactor). No symptom
+  as of Sprint 8.5 cold-play prep.
+- **VirtualizedList slow-update warnings (mobile)** — Promote if scroll jank is
+  reported during cold-play on World, Diplomacy, Dispatches, or Forces screens.
+  Fix scope: `React.memo` row components, stable `keyExtractor`, avoid inline
+  objects in `renderItem`. Dev warning alone is not sufficient trigger.
 
 ## UI — Diplomacy identity axes (Sprint 8+)
 
@@ -389,3 +434,40 @@ migration backfills legacy dispatches with `legacy-{index}` IDs and starts
 full world JSON. If Sprint 8 introduces save slots or multiple campaigns,
 promote explicit campaign identity in storage (slot id, player faction id,
 scenario metadata) rather than inferring solely from `isPlayer`.
+
+
+Unit-aware order system redesign
+
+Rename UI section "STANCE ON ARRIVAL" → "ORDERS ON ARRIVAL" (or "MISSION")
+Reserve stance for AI faction posture (existing stance.ts)
+Per-unit-type order lists with shared verb pool (~8 verbs total)
+OrderOption data shape: { id, label, description, requiresTier?, validDestinations[] }
+Filter orders by destination status (no "Secure" on hostile territory)
+Tier-locked orders surface as greyed-out with tooltips
+Combined-force orders show combat unit's order list; scout auto-screens
+Scout order list: Recon / Infiltrate / Shadow / Screen / Sabotage(T2)
+Levy order list: Assault / Secure / Hold / Reinforce / Withdraw
+**Note (Sprint 8.5):** `Reinforce` and other unit-specific verbs are design targets for
+this redesign. The live sim stance type remains `assault | secure | hold` only until
+that work ships; do not reference `reinforce` as an implemented order stance.
+Future units (when roster expands): Men-at-Arms (Assault/Storm/Hold/Reinforce), Cavalry (Charge/Raid/Pursue/Hold/Screen), Archers (Assault/Garrison/Hold/Withdraw), Siege (Besiege/Bombard/Hold)
+"Raid" and "Pursue" verbs touch the in-transit interception system — far-future backlog item; coordinate when prioritized
+Source: 7c-era design session with other agent, 2026-06-16
+
+tructural integrity sprint candidates (from cold-play insights):
+
+#9 Defeated faction handling — when faction has zero territories, mark as defeated: true; remove from active diplomacy lists; preserve in dispatch history; coordinate with canon's "leader removed with country" (Option X)
+#10 Dilemma surfacing — promote from Dashboard card to modal popup with urgency window per design canon event-system Model C
+#11 Navigation IA redesign — Dispatches appears in both bottom nav and Home, Forces ambiguity, Home as parallel-paths-to-everywhere. Needs unified IA pass.
+#12 Deep linking — contextual cross-screen navigation: tap territory name in Diplomacy → navigate to that territory; tap "Move forces here" in World → opens Order with destination pre-set
+#13 Destination owner labels — territory ownership visible at decision points (Order screen, etc.)
+Order system unit-aware redesign — full Scout/Levy/Cavalry order verb system per other session's design pass
+#3a stack header pattern — if approach (2) wasn't fully clean, may need a navigation refactor pass to formalize "persistent header is the only header"
+
+## Sprint 9 documentation polish — country display naming (Sprint 8 Phase 10 note)
+
+Canonical pattern: **country display name derives from `leader.region`; faction/country ID is an opaque identifier.**
+
+Example: `faction-britain` led by Philip II renders as "Spain" (Philip's region), not "Britain". Same pattern as Sprint 7c country-led naming ("Rome — led by Caesar"). Document in player-facing glossary / dev onboarding so future agents do not treat ID slugs as display names.
+
+Source: Sprint 8 Phase 9 acceptance + Sprint 4 cold-play Spain naming flag.

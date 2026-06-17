@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createSprint4World, resolvePlayerFactionId } from 'shared';
 import { breakAlliance, formAlliance } from 'sim';
 import { classifyDestination } from '../src/game/orderDestinations';
+import { formatDestinationRowTitle } from '../src/game/territoryOwnerLabel';
 
 const START_MS = 1_700_000_000_000;
 const PLAYER = 'faction-player';
@@ -50,5 +51,17 @@ describe('order destination classifier', () => {
     world = breakAlliance(world, PLAYER, GENGHIS);
 
     expect(classifyDestination(world, PLAYER, BERLIN, GENGHIS)).toBe('hostile');
+  });
+
+  it('formats destination rows with country and leader context', () => {
+    expect(
+      formatDestinationRowTitle('Bucharest', 'hostile', 'Rome', 'Caesar'),
+    ).toBe('Bucharest (Rome) · HOSTILE · Caesar');
+  });
+
+  it('keeps allied destination labeling with country context', () => {
+    expect(
+      formatDestinationRowTitle('Berlin', 'allied', 'Steppe', 'Genghis'),
+    ).toBe('Berlin (Steppe) · ALLIED · Genghis');
   });
 });

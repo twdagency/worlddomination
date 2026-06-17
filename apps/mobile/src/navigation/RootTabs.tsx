@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme, type NavigationState } from '@react-navigation/native';
@@ -8,12 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGame } from '../game/GameContext';
 import { PersistentHeader } from '../components/PersistentHeader';
 import { TutorialBanner } from '../components/tutorial/TutorialBanner';
+import { DilemmaModalOverlay } from '../components/dilemma/DilemmaModalOverlay';
 import { ActionStackNavigator } from './ActionStackNavigator';
+import { HomeStackNavigator } from './HomeStackNavigator';
+import { WorldStackNavigator } from './WorldStackNavigator';
 import { maybeCollapseTutorialBannerOnNavigation } from './TutorialNavigationBridge';
 import { rootNavigationRef } from './navigationRef';
-import { DispatchesScreen } from '../screens/DispatchesScreen';
-import { DashboardScreen } from '../screens/DashboardScreen';
-import { WorldScreen } from '../screens/WorldScreen';
 import { PRIMARY_TAB_ICONS } from './tabConfig';
 import { terminal } from '../theme/terminal';
 import type { RootTabParamList } from './types';
@@ -67,19 +67,42 @@ export function RootTabs() {
     isHandoffReady,
     isTutorialActive,
     graduate,
+    dilemmaModalState,
+    dismissDilemmaModal,
+    resolvePendingDilemma,
   } = useGame();
 
   const tabBarStyle = useTabBarStyle();
+  const crisisModalOpen =
+    dilemmaModalState.visible && dilemmaModalState.urgency === 'crisis';
+  const skipNavDismissRef = useRef(true);
 
   const onNavigationStateChange = useCallback(
     (state: NavigationState | undefined) => {
+      if (skipNavDismissRef.current) {
+        skipNavDismissRef.current = false;
+      } else if (
+        dilemmaModalState.visible &&
+        dilemmaModalState.canDismiss &&
+        !dilemmaModalState.blocksNavigation
+      ) {
+        dismissDilemmaModal();
+      }
       maybeCollapseTutorialBannerOnNavigation(state, {
         isTutorialActive,
         currentBeat,
         collapseTutorialBanner,
       });
     },
-    [isTutorialActive, currentBeat, collapseTutorialBanner],
+    [
+      isTutorialActive,
+      currentBeat,
+      collapseTutorialBanner,
+      dilemmaModalState.visible,
+      dilemmaModalState.canDismiss,
+      dilemmaModalState.blocksNavigation,
+      dismissDilemmaModal,
+    ],
   );
 
   if (!ready) {
@@ -100,7 +123,7 @@ export function RootTabs() {
     >
       <View style={styles.appShell}>
         <PersistentHeader />
-        {bannerMode !== 'hidden' && currentBeatCopy ? (
+        {bannerMode !== 'hidden' && currentBeatCopy && !crisisModalOpen ? (
           <TutorialBanner
             copy={currentBeatCopy}
             mode={bannerMode}
@@ -113,9 +136,19 @@ export function RootTabs() {
         ) : null}
         <Tab.Navigator
           initialRouteName="Dashboard"
+          screenListeners={{
+            tabPress: (event) => {
+              if (dilemmaModalState.blocksNavigation) {
+                event.preventDefault();
+              }
+            },
+          }}
           screenOptions={{
             headerShown: false,
-            tabBarStyle,
+            tabBarStyle: [
+              tabBarStyle,
+              dilemmaModalState.blocksNavigation ? styles.tabBlocked : null,
+            ],
             tabBarActiveTintColor: terminal.accent,
             tabBarInactiveTintColor: terminal.muted,
             tabBarLabelStyle: styles.tabLabel,
@@ -127,32 +160,38 @@ export function RootTabs() {
               key={tab.screen}
               name={tab.screen}
               component={
-                tab.screen === 'Actions' ? ActionStackNavigator : screenForTab(tab.screen)
+                tab.screen === 'Actions'
+                  ? ActionStackNavigator
+                  : tab.screen === 'Dashboard'
+                    ? HomeStackNavigator
+                    : tab.screen === 'World'
+                      ? WorldStackNavigator
+                      : WorldStackNavigator
               }
               options={{
                 title: tab.label,
                 tabBarIcon: tabBarIcon(tab.iconName, tab.activeIconName),
                 tabBarLabel: tab.label,
+                tabBarButtonTestID: tab.testID,
+                tabBarAccessibilityLabel: tab.accessibilityLabel,
               }}
             />
           ))}
         </Tab.Navigator>
+        <DilemmaModalOverlay
+          visible={dilemmaModalState.visible}
+          dilemma={dilemmaModalState.dilemmaSnapshot}
+          urgency={dilemmaModalState.urgency}
+          canDismiss={dilemmaModalState.canDismiss}
+          onDismiss={dismissDilemmaModal}
+          onResolve={(optionId) => {
+            if (!dilemmaModalState.dilemmaId) return;
+            void resolvePendingDilemma(dilemmaModalState.dilemmaId, optionId);
+          }}
+        />
       </View>
     </NavigationContainer>
   );
-}
-
-function screenForTab(tab: Exclude<keyof RootTabParamList, 'Actions'>) {
-  switch (tab) {
-    case 'Dashboard':
-      return DashboardScreen;
-    case 'Dispatches':
-      return DispatchesScreen;
-    case 'World':
-      return WorldScreen;
-    default:
-      return DashboardScreen;
-  }
 }
 
 const styles = StyleSheet.create({
@@ -163,6 +202,9 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontFamily: terminal.mono,
     fontSize: 10,
+  },
+  tabBlocked: {
+    opacity: 0.35,
   },
   loading: {
     flex: 1,

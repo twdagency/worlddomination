@@ -1,4 +1,6 @@
 import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import { findCountry } from './country';
+import { formatOrderRejectedMessage } from './movement';
 import { isTerritoryVisible } from './visibility';
 import { isTreatyParty, otherParty } from './diplomaticDispatch';
 import {
@@ -61,6 +63,19 @@ function territoryName(world: WorldState, territoryId: Id): string {
   return world.territories[territoryId]?.name ?? territoryId;
 }
 
+/** Territory name with owning country (or unclaimed) for dispatch readability. */
+function territoryLabelWithOwner(world: WorldState, territoryId: Id): string {
+  const name = territoryName(world, territoryId);
+  const ownerId = world.territories[territoryId]?.ownerId;
+  if (!ownerId) return `${name} (unclaimed)`;
+  const country = findCountry(world, ownerId);
+  if (country) return `${name} (${country.name})`;
+  const leaderId = world.factions[ownerId]?.leaderId;
+  const region = world.leaders[leaderId ?? '']?.region;
+  if (region) return `${name} (${region})`;
+  return name;
+}
+
 function isPlayerFaction(world: WorldState, factionId: Id): boolean {
   return world.factions[factionId]?.isPlayer === true;
 }
@@ -75,8 +90,8 @@ export function formatIntentDepartureLine(
   event: Extract<SimEvent, { kind: 'departure' }>,
 ): string {
   const who = subject(world, event.ownerId);
-  const from = territoryName(world, event.fromTerritoryId);
-  const to = territoryName(world, event.toTerritoryId);
+  const from = territoryLabelWithOwner(world, event.fromTerritoryId);
+  const to = territoryLabelWithOwner(world, event.toTerritoryId);
   const prefix = isPlayerFaction(world, event.ownerId) ? 'DEPARTURE' : 'INTEL';
 
   switch (event.intent) {
@@ -96,7 +111,7 @@ export function formatIntentArrivalLine(
   event: Extract<SimEvent, { kind: 'arrival' }>,
 ): string {
   const who = subject(world, event.ownerId);
-  const place = territoryName(world, event.territoryId);
+  const place = territoryLabelWithOwner(world, event.territoryId);
   const prefix = isPlayerFaction(world, event.ownerId) ? 'ARRIVAL' : 'INTEL';
 
   switch (event.intent) {
@@ -115,7 +130,7 @@ export function formatBuildStartedLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'buildStarted' }>,
 ): string {
-  const place = territoryName(world, event.territoryId);
+  const place = territoryLabelWithOwner(world, event.territoryId);
   const who = subject(world, event.factionId);
   const prefix = isPlayerFaction(world, event.factionId) ? 'PRODUCTION' : 'INTEL';
   return `${prefix} — Construction begun at ${place} (${who})`;
@@ -125,7 +140,7 @@ export function formatInfraUpgradedLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'infraUpgraded' }>,
 ): string {
-  const place = territoryName(world, event.territoryId);
+  const place = territoryLabelWithOwner(world, event.territoryId);
   const who = subject(world, event.factionId);
   const prefix = isPlayerFaction(world, event.factionId) ? 'BUILD' : 'INTEL';
   return `${prefix} — Infrastructure upgraded at ${place} (${who})`;
@@ -136,7 +151,7 @@ export function formatIntelReportLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'intelReport' }>,
 ): string {
-  const place = territoryName(world, event.territoryId);
+  const place = territoryLabelWithOwner(world, event.territoryId);
   const prefix = 'INTEL';
 
   if (event.source === 'allied') {
@@ -244,8 +259,8 @@ function formatAllyArrivalPeacefulLine(
   event: Extract<SimEvent, { kind: 'allyArrivalPeaceful' }>,
 ): string {
   const allyName = factionName(world, event.allyFactionId);
-  const place = territoryName(world, event.territoryId);
-  const origin = territoryName(world, event.fromTerritoryId);
+  const place = territoryLabelWithOwner(world, event.territoryId);
+  const origin = territoryLabelWithOwner(world, event.fromTerritoryId);
   return `DIPLOMACY — Forces from ${allyName} arrived at ${place} — peaceful, returned to ${origin}.`;
 }
 
@@ -262,7 +277,7 @@ function formatOrderRedirectedToAllyLine(
   event: Extract<SimEvent, { kind: 'orderRedirectedToAlly' }>,
 ): string {
   const allyName = factionName(world, event.newOwnerId);
-  const place = territoryName(world, event.territoryId);
+  const place = territoryLabelWithOwner(world, event.territoryId);
   return `DIPLOMACY — Assault cancelled — ${place} now held by allied ${allyName}.`;
 }
 
@@ -293,7 +308,7 @@ export function formatTreatyProposedLine(
   event: Extract<SimEvent, { kind: 'treatyProposed' }>,
 ): string {
   const proposer = factionName(world, event.from);
-  const place = territoryName(world, event.territoryIds[0] ?? '');
+  const place = territoryLabelWithOwner(world, event.territoryIds[0] ?? '');
   const hours = hoursUntil(event.expiresAt, event.at);
   return `DIPLOMACY — ${proposer} proposes intel treaty on ${place}. (Expires in ${hours}h.)`;
 }
@@ -309,6 +324,31 @@ export function formatTreatyDeclinedLine(
     return `DIPLOMACY — You declined treaty with ${otherName}.`;
   }
   return `DIPLOMACY — ${factionName(world, event.declinedBy)} declined treaty with ${otherName}.`;
+}
+
+export function formatCapitalRelocatedLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'capitalRelocated' }>,
+): string {
+  const country = findCountry(world, event.countryId);
+  const countryLabel = country?.name ?? event.countryId;
+  const oldName = territoryLabelWithOwner(world, event.oldCapitalTerritoryId);
+  const newName = territoryLabelWithOwner(world, event.newCapitalTerritoryId);
+  return `Capital of ${countryLabel} relocated from ${oldName} to ${newName}.`;
+}
+
+export function formatCountryDefeatedLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'countryDefeated' }>,
+): string {
+  const country = findCountry(world, event.countryId);
+  const countryLabel = country?.name ?? event.countryId;
+  const leader = world.factions[event.countryId]?.leaderId
+    ? (world.leaders[world.factions[event.countryId]!.leaderId]?.name ??
+      factionName(world, event.countryId))
+    : factionName(world, event.countryId);
+  const finalCity = territoryLabelWithOwner(world, event.finalTerritoryId);
+  return `${countryLabel} has fallen. ${leader}'s reign ends at ${finalCity}.`;
 }
 
 export interface DispatchFeedItem {
@@ -371,6 +411,8 @@ export function dispatchLineForEvent(
       return formatProductionNarrative(world, event);
     case 'buildBlocked':
       return `BLOCKED — ${event.reason}`;
+    case 'orderRejected':
+      return `REJECTED — ${formatOrderRejectedMessage(event.reason)}`;
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'allyArrivalPeaceful':
@@ -379,6 +421,10 @@ export function dispatchLineForEvent(
       return formatDispatchCancelledByAllianceLine(world, event);
     case 'orderRedirectedToAlly':
       return formatOrderRedirectedToAllyLine(world, event);
+    case 'capitalRelocated':
+      return formatCapitalRelocatedLine(world, event);
+    case 'countryDefeated':
+      return formatCountryDefeatedLine(world, event);
     default:
       return `${event.kind} event`;
   }
@@ -528,6 +574,8 @@ export function isDispatchVisibleToFaction(
 
     case 'allianceFormed':
     case 'allianceBroken':
+    case 'capitalRelocated':
+    case 'countryDefeated':
       return true;
 
     case 'treatyFormed':
@@ -565,6 +613,9 @@ export function isDispatchVisibleToFaction(
     case 'buildBlocked':
       if ('factionId' in event && event.factionId === factionId) return true;
       return isTerritoryVisible(world, factionId, event.territoryId);
+
+    case 'orderRejected':
+      return event.factionId === factionId;
 
     case 'battle':
     case 'withdrawal':

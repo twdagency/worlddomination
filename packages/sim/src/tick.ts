@@ -12,6 +12,7 @@ import {
 } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import { evaluateBeatProgression } from './beatController';
+import { syncCountriesFromFactions } from './country';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
@@ -20,6 +21,18 @@ import { stampEvents } from './events';
 /**
  * Pure. Advances the world by `elapsedMs`, applies `orders`, resolves events in
  * chronological order. Never mutates `world`. Deterministic given inputs.
+ *
+ * Tick pipeline (Sprint 8.5 Phase 3 — capture before income):
+ * 1. applyMoveOrders — departures enter transit
+ * 2. applyBuildOrders — queued construction
+ * 3. resolveProductionCompletions — infra/build finishes at nowMs
+ * 4. resolveArrivals — combat, captures; ownership transitions complete
+ * 5. accrueEconomy + accrueManpower — income/regen from post-combat ownership
+ * 6. pruneExpiredTreaties
+ * 7. recordIntelObservations → recordAlliedObservations → recordTreatyObservations
+ * 8. emitIntelReportEvents
+ * 9. syncCountriesFromFactions — capital relocation + defeat detection
+ * 10. evaluateBeatProgression
  */
 export function tick(
   world: WorldState,
@@ -41,7 +54,7 @@ export function tick(
   const nowMs = world.nowMs + elapsedMs;
   const day = Math.floor((nowMs - world.startMs) / MS_PER_DAY) + 1;
 
-  const preAccrual: WorldState = {
+  const preCombat: WorldState = {
     ...world,
     units: unitsAfterMoves,
     factions: factionsAfterBuilds,
@@ -50,8 +63,37 @@ export function tick(
     day,
   };
 
-  const economy = accrueEconomy(preAccrual, elapsedMs);
-  const factionsAfterManpower = accrueManpower(preAccrual, elapsedMs);
+  const {
+    units: unitsAfterProduction,
+    territories: territoriesAfterProduction,
+    events: productionEvents,
+  } = resolveProductionCompletions(preCombat, nowMs);
+  events.push(...productionEvents);
+
+  const {
+    units: unitsAfterArrivals,
+    territories,
+    countries: countriesAfterArrivals,
+    rng,
+    events: arrivalEvents,
+    intel: intelAfterArrivals,
+  } = resolveArrivals(
+    { ...preCombat, units: unitsAfterProduction, territories: territoriesAfterProduction },
+    nowMs,
+  );
+  events.push(...arrivalEvents);
+
+  const postCombat: WorldState = {
+    ...preCombat,
+    units: unitsAfterArrivals,
+    territories,
+    countries: countriesAfterArrivals ?? preCombat.countries,
+    rng,
+    intel: intelAfterArrivals ?? ensureIntelStore(world),
+  };
+
+  const economy = accrueEconomy(postCombat, elapsedMs);
+  const factionsAfterManpower = accrueManpower(postCombat, elapsedMs);
 
   const factions: WorldState['factions'] = {};
   for (const id of new Set([
@@ -68,40 +110,13 @@ export function tick(
   }
 
   const afterEconomy: WorldState = {
-    ...preAccrual,
+    ...postCombat,
     factions,
     territories: economy.territories,
   };
 
-  const {
-    units: unitsAfterProduction,
-    territories: territoriesAfterProduction,
-    events: productionEvents,
-  } = resolveProductionCompletions(afterEconomy, nowMs);
-  events.push(...productionEvents);
-
-  const {
-    units: unitsAfterArrivals,
-    territories,
-    rng,
-    events: arrivalEvents,
-    intel: intelAfterArrivals,
-  } = resolveArrivals(
-    { ...afterEconomy, units: unitsAfterProduction, territories: territoriesAfterProduction },
-    nowMs,
-  );
-  events.push(...arrivalEvents);
-
-  const resolved: WorldState = {
-    ...afterEconomy,
-    units: unitsAfterArrivals,
-    territories,
-    rng,
-    intel: intelAfterArrivals ?? ensureIntelStore(world),
-  };
-
-  const afterDiplomacy = pruneExpiredTreaties(resolved, nowMs);
-  events.push(...expiredTreatyEvents(resolved.treaties, afterDiplomacy.treaties, nowMs));
+  const afterDiplomacy = pruneExpiredTreaties(afterEconomy, nowMs);
+  events.push(...expiredTreatyEvents(afterEconomy.treaties, afterDiplomacy.treaties, nowMs));
 
   const priorIntel = ensureIntelStore(afterDiplomacy);
   const afterDirectIntel = recordIntelObservations(afterDiplomacy);
@@ -117,18 +132,13 @@ export function tick(
 
   let next: WorldState = {
     ...afterDiplomacy,
-    units: unitsAfterArrivals,
-    territories,
-    rng,
     intel: nextIntel,
   };
 
-  // Tutorial beat progression (after intel emission; last step before tick return):
-  // 1. recordIntelObservations
-  // 2. recordAlliedObservations
-  // 3. recordTreatyObservations
-  // 4. emitIntelReportEvents
-  // 5. evaluateBeatProgression ← runs here
+  const countrySync = syncCountriesFromFactions(next);
+  next = countrySync.world;
+  events.push(...countrySync.events);
+
   const progression = evaluateBeatProgression(next, events);
   next = progression.world;
   events.push(...progression.events);

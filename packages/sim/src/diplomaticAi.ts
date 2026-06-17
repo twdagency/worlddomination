@@ -1,5 +1,6 @@
 import { getAlliancesFor } from './diplomacy';
 import { allianceBrokenEvent, allianceFormedEvent } from './diplomaticDispatch';
+import { activeCountries } from './country';
 import { stampEvents } from './events';
 import { expirePendingProposals, queueAllianceProposal } from './playerDiplomacy';
 import { hasPendingProposalBetween } from './pendingProposals';
@@ -238,7 +239,14 @@ function allFactionIds(world: WorldState): Id[] {
 
 /** AI factions may initiate diplomacy; player factions may accept proposals (Phase 6 adds player-initiated). */
 function aiFactionIds(world: WorldState): Id[] {
-  return allFactionIds(world).filter((factionId) => !world.factions[factionId]?.isPlayer);
+  if (!world.countries || Object.keys(world.countries).length === 0) {
+    return allFactionIds(world).filter((factionId) => !world.factions[factionId]?.isPlayer);
+  }
+
+  return activeCountries(world)
+    .filter((country) => !country.isPlayer)
+    .map((country) => country.id)
+    .sort();
 }
 
 // SPRINT-6 PHASE-4b: diplomatic decisions are not orders.

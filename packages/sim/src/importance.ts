@@ -32,6 +32,7 @@ const HIGH_KINDS = new Set<SimEvent['kind']>([
   'allianceProposed',
   'treatyProposed',
   'tutorialGraduated',
+  'countryDefeated',
 ]);
 
 const MEDIUM_KINDS = new Set<SimEvent['kind']>([
@@ -39,6 +40,7 @@ const MEDIUM_KINDS = new Set<SimEvent['kind']>([
   'infraUpgraded',
   'production',
   'buildBlocked',
+  'orderRejected',
   'treatyFormed',
   'treatyExpired',
   'allianceDeclined',
@@ -89,6 +91,8 @@ export function mediumCompactionCategory(event: SimEvent): MediumCompactionCateg
     case 'production':
       return 'production';
     case 'buildBlocked':
+      return 'blocked';
+    case 'orderRejected':
       return 'blocked';
     case 'departure':
       return event.intent === 'defend' ? 'repositioning' : null;

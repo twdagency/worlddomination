@@ -81,7 +81,7 @@ function primaryDispatchLine(world: WorldState, events: SimEvent[]): string | nu
 }
 
 function toneForEventKind(kind: SimEvent['kind']): ToastTone {
-  if (kind === 'buildBlocked') return 'error';
+  if (kind === 'buildBlocked' || kind === 'orderRejected') return 'error';
   if (
     kind === 'allianceDeclined' ||
     kind === 'treatyDeclined' ||
@@ -120,6 +120,25 @@ function buildMoveFeedback(
       inline: {
         summary,
         isError: false,
+        unitId: context.unitId,
+        territoryId: context.toTerritoryId,
+      },
+      dispatchEvents: playerVisibleEvents(world, events),
+    };
+  }
+
+  const rejected = events.find((event) => event.kind === 'orderRejected');
+  if (rejected && rejected.kind === 'orderRejected') {
+    const summary =
+      primaryDispatchLine(world, events) ?? `Cannot issue order — ${from} to ${to}`;
+    return {
+      action: 'move',
+      success: false,
+      toastMessage: summary.replace(/^REJECTED — /, 'Cannot complete order — '),
+      toastTone: 'error',
+      inline: {
+        summary,
+        isError: true,
         unitId: context.unitId,
         territoryId: context.toTerritoryId,
       },
