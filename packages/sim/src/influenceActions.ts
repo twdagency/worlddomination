@@ -1,5 +1,6 @@
 import { areAllied, formAlliance, formTreaty, getAlliancesFor } from './diplomacy';
 import { MS_PER_DAY, MS_PER_HOUR } from './constants';
+import { findCountry, recordConquerorOnTerritoryCapture } from './country';
 import {
   allianceFormedEvent,
   DEFAULT_TREATY_DURATION_MS,
@@ -8,14 +9,17 @@ import {
 import { extractionPerHour, incomePerHour } from './economy';
 import {
   applyInfluenceDelta,
+  clearInfluenceForCity,
   ensureWorldInfluence,
   ensureWorldTributes,
   getInfluence,
   setInfluence,
 } from './influence';
 import { removePendingProposal } from './pendingProposals';
+import { nextRandom } from './rng';
 import type {
   ActiveTribute,
+  DiplomaticPosture,
   Id,
   Millis,
   PendingProposal,
@@ -23,7 +27,9 @@ import type {
   PressureProposalKind,
   Reputation,
   ResourceId,
+  RngState,
   SimEventDraft,
+  Territory,
   TributeAutoEndReason,
   WorldState,
 } from './types';
@@ -732,4 +738,305 @@ export function accrueTributes(
   }
 
   return { world: { ...next, activeTributes: remaining }, events };
+}
+
+export const COUP_ATTEMPT_GOLD_COST = 8000;
+export const COUP_ATTEMPT_MANPOWER_COST = 1;
+export const COUP_INFLUENCE_FLOOR = 70;
+export const COUP_INFLUENCE_COST_SUCCESS = 50;
+export const COUP_INFLUENCE_COST_FAILURE = 70;
+export const COUP_BASE_SUCCESS_RATE = 0.6;
+export const COUP_FORTIFICATION_PENALTY_PER_TIER = -0.05;
+export const COUP_LOYAL_POSTURE_PENALTY = -0.1;
+export const COUP_OPPORTUNIST_POSTURE_BONUS = 0.1;
+export const COUP_ALLIED_INSIDER_BONUS = 0.15;
+export const COUP_SUCCESS_TARGET_REPUTATION_PENALTY = -30;
+export const COUP_FAILURE_TARGET_REPUTATION_PENALTY = -20;
+
+export type CoupRejectionReason =
+  | 'insufficient-influence'
+  | 'insufficient-gold'
+  | 'insufficient-manpower'
+  | 'target-is-allied'
+  | 'target-owner-defeated'
+  | 'target-city-unknown'
+  | 'target-is-own-city';
+
+type TerritoryWithFortification = Territory & { fortificationLevel?: number };
+
+function fortificationLevel(territory: Territory): number {
+  return (territory as TerritoryWithFortification).fortificationLevel ?? 0;
+}
+
+function deductManpower(world: WorldState, factionId: Id, amount: number): WorldState {
+  const faction = world.factions[factionId];
+  if (!faction) return world;
+  return {
+    ...world,
+    factions: {
+      ...world.factions,
+      [factionId]: { ...faction, manpower: faction.manpower - amount },
+    },
+  };
+}
+
+function validateCoupTarget(
+  world: WorldState,
+  actorId: Id,
+  targetCityId: Id,
+): { ok: true; ownerId: Id } | { ok: false; reason: CoupRejectionReason } {
+  const city = world.territories[targetCityId];
+  if (!city?.ownerId) return { ok: false, reason: 'target-city-unknown' };
+  if (city.ownerId === actorId) return { ok: false, reason: 'target-is-own-city' };
+  if (areAllied(world, actorId, city.ownerId)) return { ok: false, reason: 'target-is-allied' };
+  if (isOwnerDefeated(world, city.ownerId)) return { ok: false, reason: 'target-owner-defeated' };
+  return { ok: true, ownerId: city.ownerId };
+}
+
+export function validateCoupAttempt(
+  world: WorldState,
+  actorId: Id,
+  targetCityId: Id,
+): { ok: true; targetCountryId: Id } | { ok: false; reason: CoupRejectionReason } {
+  const targetCheck = validateCoupTarget(world, actorId, targetCityId);
+  if (!targetCheck.ok) return targetCheck;
+
+  if (getInfluence(world, targetCityId, actorId) < COUP_INFLUENCE_FLOOR) {
+    return { ok: false, reason: 'insufficient-influence' };
+  }
+
+  const faction = world.factions[actorId];
+  if (!faction || faction.funding < COUP_ATTEMPT_GOLD_COST) {
+    return { ok: false, reason: 'insufficient-gold' };
+  }
+  if (faction.manpower < COUP_ATTEMPT_MANPOWER_COST) {
+    return { ok: false, reason: 'insufficient-manpower' };
+  }
+
+  return { ok: true, targetCountryId: targetCheck.ownerId };
+}
+
+export function calculateCoupSuccessRate(
+  world: WorldState,
+  actorId: Id,
+  targetCityId: Id,
+): number {
+  const city = world.territories[targetCityId];
+  if (!city?.ownerId) return 0;
+
+  const targetCountry = findCountry(world, city.ownerId);
+  if (!targetCountry) return 0;
+
+  let rate = COUP_BASE_SUCCESS_RATE;
+  rate += fortificationLevel(city) * COUP_FORTIFICATION_PENALTY_PER_TIER;
+
+  const posture: DiplomaticPosture | undefined =
+    world.leaders[targetCountry.leaderId]?.weights.diplomaticPosture;
+  if (posture === 'loyal') rate += COUP_LOYAL_POSTURE_PENALTY;
+  if (posture === 'opportunist') rate += COUP_OPPORTUNIST_POSTURE_BONUS;
+  if (areAllied(world, actorId, targetCountry.id)) rate += COUP_ALLIED_INSIDER_BONUS;
+
+  return Math.max(0, Math.min(1, rate));
+}
+
+export function rollCoupOutcome(
+  rng: RngState,
+  successRate: number,
+): { success: boolean; rollValue: number; rng: RngState } {
+  const roll = nextRandom(rng);
+  return {
+    success: roll.value < successRate,
+    rollValue: roll.value,
+    rng: roll.state,
+  };
+}
+
+function applyCoupFailureReputation(
+  world: WorldState,
+  actorId: Id,
+  targetCountryId: Id,
+): { world: WorldState; reputationDeltas: Record<Id, number> } {
+  const reputationDeltas: Record<Id, number> = {};
+  const reputation: Reputation = {};
+
+  for (const observer of Object.keys(world.reputation).sort()) {
+    reputation[observer] = { ...world.reputation[observer] };
+  }
+
+  const row = reputation[targetCountryId];
+  if (row) {
+    row[actorId] = (row[actorId] ?? 0) + COUP_FAILURE_TARGET_REPUTATION_PENALTY;
+    reputationDeltas[targetCountryId] = COUP_FAILURE_TARGET_REPUTATION_PENALTY;
+  }
+
+  return { world: { ...world, reputation }, reputationDeltas };
+}
+
+function applyCoupSuccessReputation(
+  world: WorldState,
+  actorId: Id,
+  targetCountryId: Id,
+): { world: WorldState; reputationDeltas: Record<Id, number> } {
+  const reputationDeltas: Record<Id, number> = {};
+  const reputation: Reputation = {};
+
+  for (const observer of Object.keys(world.reputation).sort()) {
+    reputation[observer] = { ...world.reputation[observer] };
+  }
+
+  const row = reputation[targetCountryId];
+  if (row) {
+    row[actorId] = (row[actorId] ?? 0) + COUP_SUCCESS_TARGET_REPUTATION_PENALTY;
+    reputationDeltas[targetCountryId] = COUP_SUCCESS_TARGET_REPUTATION_PENALTY;
+  }
+
+  return { world: { ...world, reputation }, reputationDeltas };
+}
+
+function cancelTributesOnCity(
+  world: WorldState,
+  targetCityId: Id,
+  at: Millis,
+  reason: TributeAutoEndReason,
+): { world: WorldState; events: SimEventDraft[] } {
+  const events: SimEventDraft[] = [];
+  const remaining: ActiveTribute[] = [];
+
+  for (const tribute of world.activeTributes ?? []) {
+    if (tribute.targetCityId === targetCityId) {
+      events.push({
+        kind: 'tributeAutoEnded',
+        at,
+        actorId: tribute.actorId,
+        targetCityId,
+        reason,
+        importance: 'medium',
+      });
+      continue;
+    }
+    remaining.push(tribute);
+  }
+
+  if (events.length === 0) return { world, events };
+  return { world: { ...world, activeTributes: remaining }, events };
+}
+
+function captureCityForCoup(
+  world: WorldState,
+  targetCityId: Id,
+  actorId: Id,
+  previousOwnerId: Id,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  const territory = world.territories[targetCityId];
+  if (!territory) return { world, events: [] };
+
+  const territories = {
+    ...world.territories,
+    [targetCityId]: { ...territory, ownerId: actorId },
+  };
+  const countries = recordConquerorOnTerritoryCapture(
+    { ...world, territories },
+    targetCityId,
+    previousOwnerId,
+    actorId,
+  ).countries;
+
+  return {
+    world: { ...world, territories, countries },
+    events: [
+      {
+        kind: 'territoryCaptured',
+        at,
+        territoryId: targetCityId,
+        previousOwnerId,
+        newOwnerId: actorId,
+        importance: 'high',
+      },
+    ],
+  };
+}
+
+function applyCoupSuccessInfluence(
+  world: WorldState,
+  targetCityId: Id,
+  actorId: Id,
+  at: Millis,
+): WorldState {
+  const prior = getInfluence(world, targetCityId, actorId);
+  let next = clearInfluenceForCity(world, targetCityId);
+  return setInfluence(next, targetCityId, actorId, prior - COUP_INFLUENCE_COST_SUCCESS, at);
+}
+
+export function applyCoupAttempt(
+  world: WorldState,
+  actorId: Id,
+  targetCityId: Id,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  const validation = validateCoupAttempt(world, actorId, targetCityId);
+  if (!validation.ok) return { world, events: [] };
+
+  const targetCountryId = validation.targetCountryId;
+  const targetCountry = findCountry(world, targetCountryId);
+  if (!targetCountry) return { world, events: [] };
+
+  const priorInfluence = getInfluence(world, targetCityId, actorId);
+  const successRate = calculateCoupSuccessRate(world, actorId, targetCityId);
+  const roll = rollCoupOutcome(world.rng, successRate);
+
+  let next = ensureWorldTributes(ensureWorldInfluence(world));
+  next = deductGold(next, actorId, COUP_ATTEMPT_GOLD_COST);
+  next = deductManpower(next, actorId, COUP_ATTEMPT_MANPOWER_COST);
+  next = { ...next, rng: roll.rng };
+
+  if (roll.success) {
+    const captured = captureCityForCoup(next, targetCityId, actorId, targetCountryId, at);
+    next = captured.world;
+    next = applyCoupSuccessInfluence(next, targetCityId, actorId, at);
+    const tributeCleanup = cancelTributesOnCity(next, targetCityId, at, 'ownership-changed');
+    next = tributeCleanup.world;
+    const reputationResult = applyCoupSuccessReputation(next, actorId, targetCountryId);
+    next = reputationResult.world;
+
+    return {
+      world: next,
+      events: [
+        {
+          kind: 'coupSuccess',
+          at,
+          actorId,
+          targetCityId,
+          targetCountryId,
+          previousLeaderId: targetCountry.leaderId,
+          successRate,
+          rollValue: roll.rollValue,
+          importance: 'high',
+        },
+        ...captured.events,
+        ...tributeCleanup.events,
+      ],
+    };
+  }
+
+  next = setInfluence(next, targetCityId, actorId, 0, at);
+  const reputationResult = applyCoupFailureReputation(next, actorId, targetCountryId);
+  next = reputationResult.world;
+
+  return {
+    world: next,
+    events: [
+      {
+        kind: 'coupFailure',
+        at,
+        actorId,
+        targetCityId,
+        targetCountryId,
+        successRate,
+        rollValue: roll.rollValue,
+        influenceLost: priorInfluence,
+        importance: 'high',
+      },
+    ],
+  };
 }

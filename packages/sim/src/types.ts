@@ -243,9 +243,21 @@ export type Order =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+    }
+  | {
+      kind: 'coup-attempt';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     };
 
-export type InfluenceActionKind = 'diplomatic-pressure' | 'tribute-extraction' | 'tribute-cancel';
+export type InfluenceActionKind =
+  | 'diplomatic-pressure'
+  | 'tribute-extraction'
+  | 'tribute-cancel'
+  | 'coup-attempt';
 
 export type PressureProposalKind =
   | 'accept-alliance'
@@ -720,6 +732,28 @@ export type SimEventKind =
       at: Millis;
       actorId: Id;
       targetCityId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'coupSuccess';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      previousLeaderId: Id;
+      successRate: number;
+      rollValue: number;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'coupFailure';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      successRate: number;
+      rollValue: number;
+      influenceLost: number;
       importance?: DispatchImportance;
     };
 

@@ -38,6 +38,8 @@ const HIGH_KINDS = new Set<SimEvent['kind']>([
   'tributeStarted',
   'tributeMinorRebellion',
   'tributeMajorRebellion',
+  'coupSuccess',
+  'coupFailure',
 ]);
 
 const MEDIUM_KINDS = new Set<SimEvent['kind']>([

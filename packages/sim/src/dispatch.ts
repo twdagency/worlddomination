@@ -445,6 +445,10 @@ export function dispatchLineForEvent(
       return `TRIBUTE ENDED — extraction in ${territoryName(world, event.targetCityId)} (${event.reason})`;
     case 'tributeVoluntarilyEnded':
       return `TRIBUTE ENDED — ${factionName(world, event.actorId)} withdrew extraction from ${territoryName(world, event.targetCityId)}`;
+    case 'coupSuccess':
+      return `COUP SUCCEEDED — ${factionName(world, event.actorId)} seized ${territoryName(world, event.targetCityId)} from ${factionName(world, event.targetCountryId)}`;
+    case 'coupFailure':
+      return `COUP FAILED — ${factionName(world, event.actorId)}'s influence collapsed in ${territoryName(world, event.targetCityId)}`;
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'allyArrivalPeaceful':
@@ -682,6 +686,10 @@ export function isDispatchVisibleToFaction(
     case 'tributeMajorRebellion':
     case 'tributeAutoEnded':
     case 'tributeVoluntarilyEnded':
+      return true;
+
+    case 'coupSuccess':
+    case 'coupFailure':
       return true;
 
     default:
