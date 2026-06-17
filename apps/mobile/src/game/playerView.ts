@@ -5,7 +5,6 @@ import {
   pendingProposalsForFaction,
   resolveEventImportance,
   type Id,
-  type Millis,
   type SimEvent,
 } from 'sim';
 import {
@@ -22,6 +21,11 @@ import { resolvePlayerFactionId } from 'shared';
 import { formatDateTime, formatDuration } from '../utils/format';
 import { formatFactionIdentityLine, getFactionIdentity } from './factionDisplay';
 import { formatTransitEndpointLabel } from './territoryOwnerLabel';
+import {
+  DEFAULT_DISPATCH_READ_STATE,
+  isDispatchUnreadSince,
+  type DispatchReadState,
+} from './dispatchReadState';
 
 export { resolvePlayerFactionId } from 'shared';
 
@@ -610,7 +614,7 @@ export function getDashboardDispatchesDigest(
 export function getDashboardUnreadDispatchCount(
   world: WorldState,
   events: SimEvent[],
-  lastViewedAt: Millis,
+  readState: DispatchReadState = DEFAULT_DISPATCH_READ_STATE,
   factionId?: Id,
 ): number {
   const resolvedFactionId = factionId ?? resolvePlayerFactionId(world);
@@ -620,7 +624,7 @@ export function getDashboardUnreadDispatchCount(
   let count = 0;
   for (const event of filterDispatchesForFaction(world, events, resolvedFactionId)) {
     if (!isTimestampedEvent(event) || event.at < crisisSinceMs) continue;
-    if (event.at <= lastViewedAt) continue;
+    if (!isDispatchUnreadSince(event, readState)) continue;
     if (resolveEventImportance(world, event) === 'high') count += 1;
   }
   return Math.max(0, count);

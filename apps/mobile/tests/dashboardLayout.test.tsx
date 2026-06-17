@@ -35,7 +35,7 @@ vi.mock('@react-navigation/native', () => ({
 const gameState = vi.hoisted(() => ({
   world: null as import('sim').WorldState | null,
   dispatches: [] as import('sim').SimEvent[],
-  lastViewedDispatchesAt: 0,
+  dispatchReadState: { atMs: 0, throughEventSerial: -1 },
   markDispatchesViewed: vi.fn(),
 }));
 
@@ -43,7 +43,7 @@ vi.mock('../src/game/GameContext', () => ({
   useGame: () => ({
     world: gameState.world ?? createSprint4World(START_MS),
     dispatches: gameState.dispatches,
-    lastViewedDispatchesAt: gameState.lastViewedDispatchesAt,
+    dispatchReadState: gameState.dispatchReadState,
     markDispatchesViewed: gameState.markDispatchesViewed,
     resolvePendingDilemma: vi.fn(),
     openDilemmaModal: vi.fn(),

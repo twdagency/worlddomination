@@ -44,17 +44,22 @@ import {
 import {
   clearCampaignStorage,
   loadDispatches,
+  loadDispatchReadState,
   loadLastActiveMs,
-  loadLastViewedDispatchesAt,
   loadScenarioId,
   loadWorld,
   saveDispatches,
+  saveDispatchReadState,
   saveLastActiveMs,
-  saveLastViewedDispatchesAt,
   saveScenarioId,
   saveTutorialOnboarded,
   saveWorld,
 } from '../storage/worldStorage';
+import {
+  computeDispatchReadState,
+  DEFAULT_DISPATCH_READ_STATE,
+  type DispatchReadState,
+} from './dispatchReadState';
 import { selectTutorialState, type TutorialBannerMode } from './tutorialSelector';
 import {
   resolveDilemmaModalState,
@@ -81,7 +86,7 @@ interface GameContextValue extends TutorialContextSlice {
   world: WorldState;
   dispatches: SimEvent[];
   awayMs: number;
-  lastViewedDispatchesAt: Millis;
+  dispatchReadState: DispatchReadState;
   markDispatchesViewed: () => void;
   scenarioId: ScenarioId;
   wallNowMs: number;
@@ -126,7 +131,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   );
   const [dispatches, setDispatches] = useState<SimEvent[]>([]);
   const [awayMs, setAwayMs] = useState(0);
-  const [lastViewedDispatchesAt, setLastViewedDispatchesAt] = useState<Millis>(0);
+  const [dispatchReadState, setDispatchReadState] = useState<DispatchReadState>(
+    DEFAULT_DISPATCH_READ_STATE,
+  );
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [lastDismissedBeat, setLastDismissedBeat] = useState<TutorialBeatId | null>(null);
@@ -258,9 +265,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const markDispatchesViewed = useCallback(() => {
-    const nowMs = worldRef.current.nowMs;
-    setLastViewedDispatchesAt(nowMs);
-    void saveLastViewedDispatchesAt(nowMs);
+    const read = computeDispatchReadState(worldRef.current.nowMs, dispatchesRef.current);
+    setDispatchReadState(read);
+    void saveDispatchReadState(read);
   }, []);
 
   const applyAction = useCallback(
@@ -316,18 +323,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [storedWorld, storedDispatches, lastActive, storedScenarioId, storedLastViewed] =
+      const [storedWorld, storedDispatches, lastActive, storedScenarioId, storedReadState] =
         await Promise.all([
         loadWorld(),
         loadDispatches(),
         loadLastActiveMs(),
         loadScenarioId(),
-        loadLastViewedDispatchesAt(),
+        loadDispatchReadState(),
       ]);
       if (cancelled) return;
 
-      if (storedLastViewed !== null) {
-        setLastViewedDispatchesAt(storedLastViewed);
+      if (storedReadState !== null) {
+        setDispatchReadState(storedReadState);
       }
 
       const hasStoredWorld = storedWorld !== null;
@@ -445,7 +452,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setScenarioId(id);
     setAwayMs(0);
     setDispatches([]);
-    setLastViewedDispatchesAt(0);
+    setDispatchReadState(DEFAULT_DISPATCH_READ_STATE);
     setActionFeedback(null);
     setLastDismissedBeat(null);
     setBannerCollapsedBeat(null);
@@ -533,7 +540,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         world,
         dispatches,
         awayMs,
-        lastViewedDispatchesAt,
+        dispatchReadState,
         markDispatchesViewed,
         scenarioId,
         wallNowMs,

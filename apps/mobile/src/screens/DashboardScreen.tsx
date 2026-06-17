@@ -25,7 +25,7 @@ type DashboardNavigation = NativeStackNavigationProp<HomeStackParamList, 'Dashbo
 
 export function DashboardScreen() {
   const navigation = useNavigation<DashboardNavigation>();
-  const { world, dispatches, lastViewedDispatchesAt, markDispatchesViewed, openDilemmaModal } =
+  const { world, dispatches, dispatchReadState, markDispatchesViewed, openDilemmaModal } =
     useGame();
   const [fallenAcknowledged, setFallenAcknowledged] = useState(false);
 
@@ -43,8 +43,8 @@ export function DashboardScreen() {
     [world, dispatches],
   );
   const unreadDispatchCount = useMemo(
-    () => getDashboardUnreadDispatchCount(world, dispatches, lastViewedDispatchesAt),
-    [world, dispatches, lastViewedDispatchesAt],
+    () => getDashboardUnreadDispatchCount(world, dispatches, dispatchReadState),
+    [world, dispatches, dispatchReadState],
   );
   const activeForces = useMemo(() => getDashboardActiveForcesSummary(world), [world]);
 

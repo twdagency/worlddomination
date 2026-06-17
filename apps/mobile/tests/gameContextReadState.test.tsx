@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import TestRenderer from 'react-test-renderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GameProvider, useGame } from '../src/game/GameContext';
+import { serializeDispatchReadState } from '../src/game/dispatchReadState';
 import { STORAGE_KEYS } from '../src/theme/terminal';
 
 vi.mock('../src/components/feedback/ToastProvider', () => ({
@@ -23,16 +24,16 @@ function ReadStateProbe({
   onUpdate,
 }: {
   onUpdate: (value: {
-    lastViewedDispatchesAt: number;
+    dispatchReadState: { atMs: number; throughEventSerial: number };
     markDispatchesViewed: () => void;
     worldNowMs: number;
   }) => void;
 }) {
-  const { lastViewedDispatchesAt, markDispatchesViewed, ready, world } = useGame();
+  const { dispatchReadState, markDispatchesViewed, ready, world } = useGame();
   useEffect(() => {
     if (!ready) return;
-    onUpdate({ lastViewedDispatchesAt, markDispatchesViewed, worldNowMs: world.nowMs });
-  }, [ready, lastViewedDispatchesAt, markDispatchesViewed, world.nowMs, onUpdate]);
+    onUpdate({ dispatchReadState, markDispatchesViewed, worldNowMs: world.nowMs });
+  }, [ready, dispatchReadState, markDispatchesViewed, world.nowMs, onUpdate]);
   return null;
 }
 
@@ -44,19 +45,20 @@ describe('GameContext dispatch read state', () => {
     vi.mocked(AsyncStorage.setItem).mockResolvedValue(undefined);
   });
 
-  it('hydrates lastViewedDispatchesAt from AsyncStorage on mount', async () => {
+  it('hydrates dispatchReadState from AsyncStorage on mount', async () => {
+    const stored = { atMs: 1_700_600_000_000, throughEventSerial: 42 };
     vi.mocked(AsyncStorage.getItem).mockImplementation(async (key) => {
-      if (key === STORAGE_KEYS.lastViewedDispatchesAt) return '1700600000000';
+      if (key === STORAGE_KEYS.lastViewedDispatchesAt) return serializeDispatchReadState(stored);
       return null;
     });
 
-    let lastViewed = -1;
+    let readAt = -1;
     await act(async () => {
       TestRenderer.create(
         <GameProvider>
           <ReadStateProbe
-            onUpdate={({ lastViewedDispatchesAt }) => {
-              lastViewed = lastViewedDispatchesAt;
+            onUpdate={({ dispatchReadState }) => {
+              readAt = dispatchReadState.atMs;
             }}
           />
         </GameProvider>,
@@ -65,10 +67,10 @@ describe('GameContext dispatch read state', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    expect(lastViewed).toBe(1_700_600_000_000);
+    expect(readAt).toBe(stored.atMs);
   });
 
-  it('persists world.nowMs when markDispatchesViewed is called', async () => {
+  it('persists sim read state when markDispatchesViewed is called', async () => {
     let markDispatchesViewed: (() => void) | null = null;
     let worldNowMs = 0;
     await act(async () => {
@@ -95,7 +97,7 @@ describe('GameContext dispatch read state', () => {
 
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(
       STORAGE_KEYS.lastViewedDispatchesAt,
-      String(worldNowMs),
+      serializeDispatchReadState({ atMs: worldNowMs, throughEventSerial: -1 }),
     );
   });
 });

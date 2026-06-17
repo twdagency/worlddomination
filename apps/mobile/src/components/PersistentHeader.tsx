@@ -20,7 +20,7 @@ export function PersistentHeader() {
     world,
     dispatches,
     awayMs,
-    lastViewedDispatchesAt,
+    dispatchReadState,
     isTutorialActive,
     isBannerDismissed,
     restoreBanner,
@@ -31,7 +31,7 @@ export function PersistentHeader() {
   const urgentCount = getDashboardUnreadDispatchCount(
     world,
     dispatches,
-    lastViewedDispatchesAt,
+    dispatchReadState,
   );
   const showTutorialRestore = isTutorialActive && isBannerDismissed;
 
