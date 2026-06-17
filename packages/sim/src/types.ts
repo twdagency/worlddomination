@@ -251,13 +251,22 @@ export type Order =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+    }
+  | {
+      kind: 'defection-claim';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     };
 
 export type InfluenceActionKind =
   | 'diplomatic-pressure'
   | 'tribute-extraction'
   | 'tribute-cancel'
-  | 'coup-attempt';
+  | 'coup-attempt'
+  | 'defection-claim';
 
 export type PressureProposalKind =
   | 'accept-alliance'
@@ -754,6 +763,15 @@ export type SimEventKind =
       successRate: number;
       rollValue: number;
       influenceLost: number;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'defectionOccurred';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      previousLeaderId: Id;
       importance?: DispatchImportance;
     };
 

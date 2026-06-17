@@ -1040,3 +1040,94 @@ export function applyCoupAttempt(
     ],
   };
 }
+
+export const DEFECTION_INFLUENCE_REQUIRED = 100;
+export const DEFECTION_INFLUENCE_COST = 100;
+export const DEFECTION_GOLD_COST = 0;
+export const DEFECTION_MANPOWER_COST = 0;
+export const DEFECTION_TARGET_REPUTATION_PENALTY = -25;
+
+export type DefectionRejectionReason =
+  | 'insufficient-influence'
+  | 'target-is-allied'
+  | 'target-owner-defeated'
+  | 'target-city-unknown'
+  | 'target-is-own-city';
+
+export function validateDefectionClaim(
+  world: WorldState,
+  actorId: Id,
+  targetCityId: Id,
+): { ok: true; targetCountryId: Id } | { ok: false; reason: DefectionRejectionReason } {
+  const targetCheck = validateCoupTarget(world, actorId, targetCityId);
+  if (!targetCheck.ok) {
+    return {
+      ok: false,
+      reason: targetCheck.reason as DefectionRejectionReason,
+    };
+  }
+
+  if (getInfluence(world, targetCityId, actorId) < DEFECTION_INFLUENCE_REQUIRED) {
+    return { ok: false, reason: 'insufficient-influence' };
+  }
+
+  return { ok: true, targetCountryId: targetCheck.ownerId };
+}
+
+function applyDefectionReputation(
+  world: WorldState,
+  actorId: Id,
+  targetCountryId: Id,
+): WorldState {
+  const reputation: Reputation = {};
+
+  for (const observer of Object.keys(world.reputation).sort()) {
+    reputation[observer] = { ...world.reputation[observer] };
+  }
+
+  const row = reputation[targetCountryId];
+  if (row) {
+    row[actorId] = (row[actorId] ?? 0) + DEFECTION_TARGET_REPUTATION_PENALTY;
+  }
+
+  return { ...world, reputation };
+}
+
+export function applyDefectionClaim(
+  world: WorldState,
+  actorId: Id,
+  targetCityId: Id,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  const validation = validateDefectionClaim(world, actorId, targetCityId);
+  if (!validation.ok) return { world, events: [] };
+
+  const targetCountryId = validation.targetCountryId;
+  const targetCountry = findCountry(world, targetCountryId);
+  if (!targetCountry) return { world, events: [] };
+
+  let next = ensureWorldTributes(ensureWorldInfluence(world));
+  const captured = captureCityForCoup(next, targetCityId, actorId, targetCountryId, at);
+  next = captured.world;
+  next = clearInfluenceForCity(next, targetCityId);
+  const tributeCleanup = cancelTributesOnCity(next, targetCityId, at, 'ownership-changed');
+  next = tributeCleanup.world;
+  next = applyDefectionReputation(next, actorId, targetCountryId);
+
+  return {
+    world: next,
+    events: [
+      {
+        kind: 'defectionOccurred',
+        at,
+        actorId,
+        targetCityId,
+        targetCountryId,
+        previousLeaderId: targetCountry.leaderId,
+        importance: 'high',
+      },
+      ...captured.events,
+      ...tributeCleanup.events,
+    ],
+  };
+}

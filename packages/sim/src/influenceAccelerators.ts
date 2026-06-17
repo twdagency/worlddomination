@@ -11,12 +11,15 @@ import { nextRandom } from './rng';
 import {
   applyDiplomaticPressure,
   applyCoupAttempt,
+  applyDefectionClaim,
   applyTributeCancel,
   applyTributeExtraction,
   type DiplomaticPressureRejectionReason,
   type CoupRejectionReason,
+  type DefectionRejectionReason,
   type TributeRejectionReason,
   validateCoupAttempt,
+  validateDefectionClaim,
   validateDiplomaticPressure,
   validateTributeCancel,
   validateTributeExtraction,
@@ -51,6 +54,7 @@ export type InfluenceOrderRejectionReason =
   | DiplomaticPressureRejectionReason
   | TributeRejectionReason
   | CoupRejectionReason
+  | DefectionRejectionReason
   | 'insufficient-gold'
   | 'insufficient-manpower'
   | 'target-is-own-city'
@@ -70,6 +74,7 @@ const INFLUENCE_ORDER_KINDS = new Set<Order['kind']>([
   'tribute-extraction',
   'tribute-cancel',
   'coup-attempt',
+  'defection-claim',
 ]);
 
 export function isInfluenceOrder(order: Order): boolean {
@@ -187,7 +192,8 @@ function rejectInfluenceOrder(
       : order.kind === 'diplomatic-pressure' ||
           order.kind === 'tribute-extraction' ||
           order.kind === 'tribute-cancel' ||
-          order.kind === 'coup-attempt'
+          order.kind === 'coup-attempt' ||
+          order.kind === 'defection-claim'
         ? order.kind
         : order.kind;
   events.push({
@@ -360,6 +366,18 @@ export function applyInfluenceOrders(
         continue;
       }
       const result = applyCoupAttempt(next, ownerId, targetCityId, at);
+      next = result.world;
+      events.push(...result.events);
+      continue;
+    }
+
+    if (order.kind === 'defection-claim') {
+      const validation = validateDefectionClaim(next, ownerId, targetCityId);
+      if (!validation.ok) {
+        rejectInfluenceOrder(next, order, validation.reason, events);
+        continue;
+      }
+      const result = applyDefectionClaim(next, ownerId, targetCityId, at);
       next = result.world;
       events.push(...result.events);
       continue;

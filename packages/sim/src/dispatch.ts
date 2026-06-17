@@ -449,6 +449,14 @@ export function dispatchLineForEvent(
       return `COUP SUCCEEDED — ${factionName(world, event.actorId)} seized ${territoryName(world, event.targetCityId)} from ${factionName(world, event.targetCountryId)}`;
     case 'coupFailure':
       return `COUP FAILED — ${factionName(world, event.actorId)}'s influence collapsed in ${territoryName(world, event.targetCityId)}`;
+    case 'defectionOccurred': {
+      const city = territoryName(world, event.targetCityId);
+      const actor = factionName(world, event.actorId);
+      const targetCountry = factionName(world, event.targetCountryId);
+      const leader =
+        world.leaders[event.previousLeaderId]?.name ?? factionName(world, event.targetCountryId);
+      return `City defected: ${city} chose ${actor} over ${targetCountry}. ${leader}'s influence wanes.`;
+    }
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'allyArrivalPeaceful':
@@ -690,6 +698,7 @@ export function isDispatchVisibleToFaction(
 
     case 'coupSuccess':
     case 'coupFailure':
+    case 'defectionOccurred':
       return true;
 
     default:
