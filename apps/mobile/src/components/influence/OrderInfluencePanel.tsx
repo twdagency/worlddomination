@@ -8,7 +8,9 @@ import {
   type InfluenceOrderActionKind,
 } from '../../game/influenceSelector';
 import { formatCooldownDays } from '../../game/influenceDisplay';
+import { INFLUENCE_ACTION_TOOLTIPS, type InfluenceActionTooltipKind } from '../../game/influenceTooltips';
 import { ActionFeedbackBanner } from '../feedback/ActionFeedbackBanner';
+import { TooltipInfoIcon } from '../tooltip/TooltipInfoIcon';
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';
 import { formatFunding } from '../../utils/format';
@@ -44,7 +46,13 @@ function InfluenceActionCard({
       style={[styles.actionCard, disabled && styles.actionCardDisabled]}
       testID={`influence-action-${action.kind}`}
     >
-      <Text style={[styles.actionTitle, disabled && styles.mutedText]}>{action.label}</Text>
+      <View style={styles.titleRow}>
+        <Text style={[styles.actionTitle, disabled && styles.mutedText]}>{action.label}</Text>
+        <TooltipInfoIcon
+          tooltip={INFLUENCE_ACTION_TOOLTIPS[action.kind as InfluenceActionTooltipKind]}
+          testID={`influence-action-info-${action.kind}`}
+        />
+      </View>
       <Text style={[styles.actionMeta, disabled && styles.mutedText]}>
         Requires {action.thresholdRequired > 0 ? `${action.thresholdRequired}+ influence` : 'valid target'}
         {' · '}
@@ -197,6 +205,11 @@ const styles = StyleSheet.create({
   actionCard: {
     marginBottom: 8,
     gap: 4,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   actionCardDisabled: {
     opacity: 0.6,

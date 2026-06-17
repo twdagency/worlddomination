@@ -1,7 +1,9 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { InfluenceSummaryView } from '../../game/influenceSelector';
+import { INFLUENCE_CARD_FIRST_VIEW_TOOLTIP } from '../../game/influenceTooltips';
 import { formatInfluenceValue } from '../../game/influenceDisplay';
+import { TooltipAnchor } from '../tooltip/TooltipAnchor';
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';
 
@@ -14,7 +16,7 @@ interface InfluenceCardProps {
 export function InfluenceCard({ summary, onOpenCity, onOpenInfluence }: InfluenceCardProps) {
   const empty = summary.activeCityCount === 0;
 
-  return (
+  const card = (
     <TerminalCard testID="dashboard-influence-card">
       <Text style={styles.label}>Influence</Text>
       {empty ? (
@@ -56,6 +58,21 @@ export function InfluenceCard({ summary, onOpenCity, onOpenInfluence }: Influenc
       </Pressable>
     </TerminalCard>
   );
+
+  if (!empty) {
+    return (
+      <TooltipAnchor
+        tooltip={INFLUENCE_CARD_FIRST_VIEW_TOOLTIP}
+        trigger="first-mount"
+        enabled={summary.activeCityCount > 0}
+        mountDelayMs={500}
+      >
+        {card}
+      </TooltipAnchor>
+    );
+  }
+
+  return card;
 }
 
 const styles = StyleSheet.create({

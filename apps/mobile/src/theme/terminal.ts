@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   lastViewedDispatchesAt: '@worlddomination/lastViewedDispatchesAt',
   scenarioId: '@worlddomination/scenarioId',
   tutorialOnboarded: '@worlddomination/tutorialOnboarded',
+  tooltipDismissals: '@worlddomination/tooltipDismissals',
 } as const;
 
 export const terminal = {

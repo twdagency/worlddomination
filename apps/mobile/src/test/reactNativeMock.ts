@@ -33,5 +33,17 @@ export const Pressable = ({ children, onPress, testID, accessibilityLabel, ...pr
 export const ScrollView = mockComponent('ScrollView');
 export const FlatList = mockComponent('FlatList');
 export const ActivityIndicator = mockComponent('ActivityIndicator');
-export const Modal = ({ children, visible, testID }: MockProps & { visible?: boolean }) =>
-  visible ? React.createElement('Modal', { testID }, children) : null;
+export const Modal = ({ children, visible, testID, ...props }: MockProps & { visible?: boolean }) =>
+  React.createElement('Modal', { testID, visible, ...props }, visible ? children : null);
+
+export const useWindowDimensions = () => ({
+  width: 390,
+  height: 844,
+  scale: 2,
+  fontScale: 1,
+});
+
+export const AccessibilityInfo = {
+  isReduceMotionEnabled: () => Promise.resolve(false),
+  addEventListener: () => ({ remove: () => undefined }),
+};

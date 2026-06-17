@@ -12,8 +12,14 @@ import {
   formatNetRatePerDay,
   formatSourceContribution,
 } from '../../game/influenceDisplay';
+import {
+  TERRITORY_INFLUENCE_NET_TOOLTIP,
+  TERRITORY_INFLUENCE_SOURCES_TOOLTIP,
+  TERRITORY_INFLUENCE_THRESHOLD_TOOLTIP,
+} from '../../game/influenceTooltips';
 import { deepLinkForInfluenceAction } from '../../navigation/deepLinks';
 import { useDeepLinkNavigation } from '../../navigation/useDeepLinkNavigation';
+import { TooltipInfoIcon } from '../tooltip/TooltipInfoIcon';
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';
 
@@ -73,7 +79,13 @@ export function ForeignTerritoryInfluenceDetail({
           <Text style={styles.hint}>Tribute extraction active.</Text>
         ) : null}
 
-        <Text style={styles.subsection}>Sources</Text>
+        <View style={styles.subsectionRow}>
+          <Text style={styles.subsectionInline}>Sources</Text>
+          <TooltipInfoIcon
+            tooltip={TERRITORY_INFLUENCE_SOURCES_TOOLTIP}
+            testID="territory-influence-sources-info"
+          />
+        </View>
         {view.influenceSources.length === 0 ? (
           <Text style={styles.stat}>No passive sources — decay may apply.</Text>
         ) : (
@@ -83,7 +95,13 @@ export function ForeignTerritoryInfluenceDetail({
             </Text>
           ))
         )}
-        <Text style={styles.stat}>Net: {formatNetRatePerDay(view.decayPerDay)}</Text>
+        <View style={styles.statRow}>
+          <Text style={styles.stat}>Net: {formatNetRatePerDay(view.decayPerDay)}</Text>
+          <TooltipInfoIcon
+            tooltip={TERRITORY_INFLUENCE_NET_TOOLTIP}
+            testID="territory-influence-net-info"
+          />
+        </View>
 
         {view.competingActors.length > 0 ? (
           <>
@@ -96,7 +114,13 @@ export function ForeignTerritoryInfluenceDetail({
           </>
         ) : null}
 
-        <Text style={styles.subsection}>Threshold proximity</Text>
+        <View style={styles.subsectionRow}>
+          <Text style={styles.subsectionInline}>Threshold proximity</Text>
+          <TooltipInfoIcon
+            tooltip={TERRITORY_INFLUENCE_THRESHOLD_TOOLTIP}
+            testID="territory-influence-threshold-info"
+          />
+        </View>
         {proximity.map((entry) => (
           <Text key={entry.label} style={styles.stat}>
             {entry.detail}
@@ -132,6 +156,24 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: 12,
     marginBottom: 6,
+  },
+  subsectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  subsectionInline: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   valueLine: {
     color: terminal.text,
