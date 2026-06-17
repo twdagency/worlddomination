@@ -28,6 +28,7 @@ export function DispatchesScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      console.log('[badge-diag] Dispatches focus effect fired');
       markDispatchesViewed();
     }, [markDispatchesViewed]),
   );

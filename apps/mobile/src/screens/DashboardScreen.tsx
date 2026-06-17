@@ -31,6 +31,7 @@ export function DashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      console.log('[badge-diag] Dashboard focus effect fired');
       markDispatchesViewed();
     }, [markDispatchesViewed]),
   );

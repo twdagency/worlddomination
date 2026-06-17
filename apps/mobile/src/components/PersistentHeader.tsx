@@ -33,6 +33,13 @@ export function PersistentHeader() {
     dispatches,
     lastViewedDispatchesAt,
   );
+  console.log('[badge-diag] badge selector called', {
+    lastViewedAt: lastViewedDispatchesAt,
+    wallNow: Date.now(),
+    worldNowMs: world.nowMs,
+    count: urgentCount,
+    dispatchCount: dispatches.length,
+  });
   const showTutorialRestore = isTutorialActive && isBannerDismissed;
 
   const model = buildPersistentHeaderModel({

@@ -618,11 +618,23 @@ export function getDashboardUnreadDispatchCount(
 
   const crisisSinceMs = world.nowMs - CRISIS_WINDOW_MS;
   let count = 0;
+  const unreadHighAt: number[] = [];
   for (const event of filterDispatchesForFaction(world, events, resolvedFactionId)) {
     if (!isTimestampedEvent(event) || event.at < crisisSinceMs) continue;
     if (event.at <= lastViewedAt) continue;
-    if (resolveEventImportance(world, event) === 'high') count += 1;
+    if (resolveEventImportance(world, event) === 'high') {
+      count += 1;
+      unreadHighAt.push(event.at);
+    }
   }
+  console.log('[badge-diag] getDashboardUnreadDispatchCount', {
+    lastViewedAt,
+    worldNowMs: world.nowMs,
+    wallNow: Date.now(),
+    count,
+    unreadHighAt,
+    crisisSinceMs,
+  });
   return Math.max(0, count);
 }
 

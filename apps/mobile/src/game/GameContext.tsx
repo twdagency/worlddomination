@@ -259,12 +259,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const markDispatchesViewed = useCallback(() => {
     const now = Date.now();
+    console.log('[badge-diag] markDispatchesViewed called', now);
     setLastViewedDispatchesAt(now);
     void saveLastViewedDispatchesAt(now);
   }, []);
 
   useEffect(() => {
     void loadLastViewedDispatchesAt().then((stored) => {
+      console.log('[badge-diag] hydrated lastViewedAt', stored);
       if (stored !== null) setLastViewedDispatchesAt(stored);
     });
   }, []);
