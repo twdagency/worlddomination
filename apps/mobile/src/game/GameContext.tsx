@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import type { BeatCopy } from 'shared';
-import type { SimEvent, TransitOrder, TutorialBeatId, WorldState } from 'sim';
+import type { SimEvent, TransitOrder, TutorialBeatId, WorldState, Millis } from 'sim';
 import {
   evaluateBeatProgression,
   getDilemmaById,
@@ -45,10 +45,12 @@ import {
   clearCampaignStorage,
   loadDispatches,
   loadLastActiveMs,
+  loadLastViewedDispatchesAt,
   loadScenarioId,
   loadWorld,
   saveDispatches,
   saveLastActiveMs,
+  saveLastViewedDispatchesAt,
   saveScenarioId,
   saveTutorialOnboarded,
   saveWorld,
@@ -79,6 +81,8 @@ interface GameContextValue extends TutorialContextSlice {
   world: WorldState;
   dispatches: SimEvent[];
   awayMs: number;
+  lastViewedDispatchesAt: Millis;
+  markDispatchesViewed: () => void;
   scenarioId: ScenarioId;
   wallNowMs: number;
   actionFeedback: ActionFeedback | null;
@@ -122,6 +126,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   );
   const [dispatches, setDispatches] = useState<SimEvent[]>([]);
   const [awayMs, setAwayMs] = useState(0);
+  const [lastViewedDispatchesAt, setLastViewedDispatchesAt] = useState<Millis>(0);
   const [wallNowMs, setWallNowMs] = useState(() => Date.now());
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [lastDismissedBeat, setLastDismissedBeat] = useState<TutorialBeatId | null>(null);
@@ -250,6 +255,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const clearActionFeedback = useCallback(() => {
     setActionFeedback(null);
+  }, []);
+
+  const markDispatchesViewed = useCallback(() => {
+    const now = Date.now();
+    setLastViewedDispatchesAt(now);
+    void saveLastViewedDispatchesAt(now);
+  }, []);
+
+  useEffect(() => {
+    void loadLastViewedDispatchesAt().then((stored) => {
+      if (stored !== null) setLastViewedDispatchesAt(stored);
+    });
   }, []);
 
   const applyAction = useCallback(
@@ -428,6 +445,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setScenarioId(id);
     setAwayMs(0);
     setDispatches([]);
+    setLastViewedDispatchesAt(0);
     setActionFeedback(null);
     setLastDismissedBeat(null);
     setBannerCollapsedBeat(null);
@@ -515,6 +533,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         world,
         dispatches,
         awayMs,
+        lastViewedDispatchesAt,
+        markDispatchesViewed,
         scenarioId,
         wallNowMs,
         actionFeedback,

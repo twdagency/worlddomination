@@ -13,6 +13,9 @@ vi.mock('@expo/vector-icons', () => ({
 vi.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ goBack: goBackMock }),
   useRoute: () => ({ params: undefined, key: 'dispatches', name: 'Dispatches' }),
+  useFocusEffect: (callback: () => void) => {
+    callback();
+  },
 }));
 
 vi.mock('../src/game/devFlag', () => ({
@@ -24,6 +27,7 @@ vi.mock('../src/game/GameContext', () => ({
     world: createSprint4World(),
     dispatches: [],
     awayMs: 0,
+    markDispatchesViewed: vi.fn(),
   }),
 }));
 

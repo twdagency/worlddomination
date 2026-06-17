@@ -27,17 +27,24 @@ vi.mock('@react-navigation/native', () => ({
     getParent: () => ({ navigate: parentNavigateMock }),
   }),
   useRoute: () => ({ params: undefined, key: 'dispatches', name: 'Dispatches' }),
+  useFocusEffect: (callback: () => void) => {
+    callback();
+  },
 }));
 
 const gameState = vi.hoisted(() => ({
   world: null as import('sim').WorldState | null,
   dispatches: [] as import('sim').SimEvent[],
+  lastViewedDispatchesAt: 0,
+  markDispatchesViewed: vi.fn(),
 }));
 
 vi.mock('../src/game/GameContext', () => ({
   useGame: () => ({
     world: gameState.world ?? createSprint4World(START_MS),
     dispatches: gameState.dispatches,
+    lastViewedDispatchesAt: gameState.lastViewedDispatchesAt,
+    markDispatchesViewed: gameState.markDispatchesViewed,
     resolvePendingDilemma: vi.fn(),
     openDilemmaModal: vi.fn(),
   }),

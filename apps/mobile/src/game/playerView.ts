@@ -5,6 +5,7 @@ import {
   pendingProposalsForFaction,
   resolveEventImportance,
   type Id,
+  type Millis,
   type SimEvent,
 } from 'sim';
 import {
@@ -605,10 +606,11 @@ export function getDashboardDispatchesDigest(
   return ranked.slice(0, limit);
 }
 
-/** High-importance dispatches in the crisis window — unread proxy for badges. */
+/** High-importance dispatches after last view — crisis window + read-state gated. */
 export function getDashboardUnreadDispatchCount(
   world: WorldState,
   events: SimEvent[],
+  lastViewedAt: Millis,
   factionId?: Id,
 ): number {
   const resolvedFactionId = factionId ?? resolvePlayerFactionId(world);
@@ -618,9 +620,10 @@ export function getDashboardUnreadDispatchCount(
   let count = 0;
   for (const event of filterDispatchesForFaction(world, events, resolvedFactionId)) {
     if (!isTimestampedEvent(event) || event.at < crisisSinceMs) continue;
+    if (event.at <= lastViewedAt) continue;
     if (resolveEventImportance(world, event) === 'high') count += 1;
   }
-  return count;
+  return Math.max(0, count);
 }
 
 /** Glance summary of player forces — prioritizes in-transit stacks. */

@@ -37,6 +37,17 @@ export async function saveLastActiveMs(ms: number): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.lastActiveMs, String(ms));
 }
 
+export async function loadLastViewedDispatchesAt(): Promise<number | null> {
+  const raw = await AsyncStorage.getItem(STORAGE_KEYS.lastViewedDispatchesAt);
+  if (!raw) return null;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export async function saveLastViewedDispatchesAt(ms: number): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEYS.lastViewedDispatchesAt, String(ms));
+}
+
 export async function loadScenarioId(): Promise<string | null> {
   return AsyncStorage.getItem(STORAGE_KEYS.scenarioId);
 }
@@ -59,5 +70,6 @@ export async function clearCampaignStorage(): Promise<void> {
     STORAGE_KEYS.world,
     STORAGE_KEYS.dispatches,
     STORAGE_KEYS.lastActiveMs,
+    STORAGE_KEYS.lastViewedDispatchesAt,
   ]);
 }

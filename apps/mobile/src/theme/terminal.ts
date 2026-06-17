@@ -2,6 +2,7 @@ export const STORAGE_KEYS = {
   world: '@worlddomination/world',
   dispatches: '@worlddomination/dispatches',
   lastActiveMs: '@worlddomination/lastActiveMs',
+  lastViewedDispatchesAt: '@worlddomination/lastViewedDispatchesAt',
   scenarioId: '@worlddomination/scenarioId',
   tutorialOnboarded: '@worlddomination/tutorialOnboarded',
 } as const;
