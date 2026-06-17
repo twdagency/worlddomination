@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { useRoute, type RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useRoute, type RouteProp } from '@react-navigation/native';
 import { resolveEventImportance } from 'sim';
 import { useGame } from '../game/GameContext';
 import {
@@ -21,10 +21,16 @@ import { terminal } from '../theme/terminal';
 type DispatchesRoute = RouteProp<HomeStackParamList, 'Dispatches'>;
 
 export function DispatchesScreen() {
-  const { world, dispatches, awayMs } = useGame();
+  const { world, dispatches, awayMs, markDispatchesViewed } = useGame();
   const route = useRoute<DispatchesRoute>();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const listRef = useRef<FlatList>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      markDispatchesViewed();
+    }, [markDispatchesViewed]),
+  );
 
   const recent = [...dispatches].filter(isTimestampedDispatch);
   const feed = useMemo(() => {

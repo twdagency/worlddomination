@@ -276,6 +276,14 @@ Chains:
 
 Most chains are state-driven (events affect state, state changes trigger new events).
 Heavy dilemmas, major crises, and surrender outcomes get authored follow-up sequences playing out over game-weeks.
+
+Event ordering & time
+Read-state ordering. When multiple events share a simulation millisecond (same-tick emissions, batch dispatches), `atMs` alone is not a total order. Any "since when" comparison for read-state, replay, or multiplayer sync MUST use `(atMs, throughEventSerial)` tuples, with the event serial as tiebreaker. The serial preserves causality across same-tick events and is required for correct unread counts, catch-up, and deterministic replay.
+
+Canonical timestamp source. All "since when" / read-state / replay / catch-up features MUST use `world.nowMs` (simulation clock), never `Date.now()` (wall clock). Wall-clock timestamps drift across sessions, devices, and the away/catch-up boundary; the simulation clock is the only deterministic ordering primitive shared with event emission.
+
+Origin: Sprint 8.5b — `dd25eea` (simulation clock for read-state), `a32cfbc` (serial tiebreaker for same-ms departures).
+
 Intel depth
 Source-differentiated intel quality:
 
