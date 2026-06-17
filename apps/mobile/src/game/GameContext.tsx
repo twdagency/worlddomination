@@ -258,17 +258,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const markDispatchesViewed = useCallback(() => {
-    const now = Date.now();
-    console.log('[badge-diag] markDispatchesViewed called', now);
-    setLastViewedDispatchesAt(now);
-    void saveLastViewedDispatchesAt(now);
-  }, []);
-
-  useEffect(() => {
-    void loadLastViewedDispatchesAt().then((stored) => {
-      console.log('[badge-diag] hydrated lastViewedAt', stored);
-      if (stored !== null) setLastViewedDispatchesAt(stored);
-    });
+    const nowMs = worldRef.current.nowMs;
+    setLastViewedDispatchesAt(nowMs);
+    void saveLastViewedDispatchesAt(nowMs);
   }, []);
 
   const applyAction = useCallback(
@@ -324,13 +316,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [storedWorld, storedDispatches, lastActive, storedScenarioId] = await Promise.all([
+      const [storedWorld, storedDispatches, lastActive, storedScenarioId, storedLastViewed] =
+        await Promise.all([
         loadWorld(),
         loadDispatches(),
         loadLastActiveMs(),
         loadScenarioId(),
+        loadLastViewedDispatchesAt(),
       ]);
       if (cancelled) return;
+
+      if (storedLastViewed !== null) {
+        setLastViewedDispatchesAt(storedLastViewed);
+      }
 
       const hasStoredWorld = storedWorld !== null;
       const id = resolveScenarioId(storedScenarioId, hasStoredWorld);

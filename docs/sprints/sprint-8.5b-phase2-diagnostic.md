@@ -116,11 +116,14 @@ Search Metro / Logcat for `[badge-diag]`:
 | **A** | Mark on tab press listener / `navigation.addListener('focus')` on Home stack / `useIsFocused` fallback | Medium |
 | **A + stack** | Reset Home stack to `DashboardHome` on tab press | Medium |
 
-Remove all `[badge-diag]` logs in Phase 3.
+## Phase 3 — Fix applied
 
----
+**Root cause (confirmed on device):** Hypothesis D — `markDispatchesViewed` stored `Date.now()` while dispatch `event.at` uses `world.nowMs`. Tutorial pacing leaves `world.nowMs` far ahead of wall clock; `event.at > lastViewedAt` never clears.
 
-## Q1 — Device build state
+**Fix:** `markDispatchesViewed` uses `worldRef.current.nowMs`; hydration loads in initial `Promise.all` before `ready` (no async race).
+
+**Commit:** `sprint-8.5b: phase-3 fix dispatch read-state sim timeline`
+
 
 **Unknown from agent side.** Income-display WIP was in the working tree during development; it was **stashed** before Phase 2 (`git stash` — income display WIP). **Recommend re-testing on diagnostic commit with `git status` clean.**
 

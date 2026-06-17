@@ -98,4 +98,15 @@ describe('getDashboardUnreadDispatchCount', () => {
     expect(getDashboardUnreadDispatchCount(world, events, 0)).toBe(2);
     expect(getDashboardUnreadDispatchCount(world, events, 250)).toBe(0);
   });
+
+  it('clears unread when lastViewedAt uses sim time ahead of wall clock', () => {
+    const wallNow = 1_700_000_000_000;
+    const simNow = wallNow + 32 * 3_600_000;
+    const world = createSprint4World(simNow);
+    const pid = resolvePlayerFactionId(world)!;
+    const { events } = stampEvents(world, [battleEvent(simNow, pid)]);
+
+    expect(getDashboardUnreadDispatchCount(world, events, wallNow)).toBe(1);
+    expect(getDashboardUnreadDispatchCount(world, events, simNow)).toBe(0);
+  });
 });

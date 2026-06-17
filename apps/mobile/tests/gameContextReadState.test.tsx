@@ -22,13 +22,17 @@ vi.mock('react-native', async (importOriginal) => {
 function ReadStateProbe({
   onUpdate,
 }: {
-  onUpdate: (value: { lastViewedDispatchesAt: number; markDispatchesViewed: () => void }) => void;
+  onUpdate: (value: {
+    lastViewedDispatchesAt: number;
+    markDispatchesViewed: () => void;
+    worldNowMs: number;
+  }) => void;
 }) {
-  const { lastViewedDispatchesAt, markDispatchesViewed, ready } = useGame();
+  const { lastViewedDispatchesAt, markDispatchesViewed, ready, world } = useGame();
   useEffect(() => {
     if (!ready) return;
-    onUpdate({ lastViewedDispatchesAt, markDispatchesViewed });
-  }, [ready, lastViewedDispatchesAt, markDispatchesViewed, onUpdate]);
+    onUpdate({ lastViewedDispatchesAt, markDispatchesViewed, worldNowMs: world.nowMs });
+  }, [ready, lastViewedDispatchesAt, markDispatchesViewed, world.nowMs, onUpdate]);
   return null;
 }
 
@@ -64,17 +68,16 @@ describe('GameContext dispatch read state', () => {
     expect(lastViewed).toBe(1_700_600_000_000);
   });
 
-  it('persists timestamp when markDispatchesViewed is called', async () => {
-    const now = 1_700_600_123_456;
-    vi.spyOn(Date, 'now').mockReturnValue(now);
-
+  it('persists world.nowMs when markDispatchesViewed is called', async () => {
     let markDispatchesViewed: (() => void) | null = null;
+    let worldNowMs = 0;
     await act(async () => {
       TestRenderer.create(
         <GameProvider>
           <ReadStateProbe
             onUpdate={(value) => {
               markDispatchesViewed = value.markDispatchesViewed;
+              worldNowMs = value.worldNowMs;
             }}
           />
         </GameProvider>,
@@ -83,6 +86,8 @@ describe('GameContext dispatch read state', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
+    expect(worldNowMs).toBeGreaterThan(0);
+
     await act(async () => {
       markDispatchesViewed?.();
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -90,9 +95,7 @@ describe('GameContext dispatch read state', () => {
 
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(
       STORAGE_KEYS.lastViewedDispatchesAt,
-      String(now),
+      String(worldNowMs),
     );
-
-    vi.mocked(Date.now).mockRestore();
   });
 });
