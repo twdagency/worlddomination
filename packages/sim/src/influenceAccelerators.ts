@@ -8,6 +8,11 @@ import {
 } from './influence';
 import { formatOrderRejectedMessage } from './movement';
 import { nextRandom } from './rng';
+import {
+  applyDiplomaticPressure,
+  type DiplomaticPressureRejectionReason,
+  validateDiplomaticPressure,
+} from './influenceActions';
 import type {
   ActiveDiplomaticMission,
   CulturalCampaignRecord,
@@ -35,6 +40,7 @@ export const INFLUENCE_SUBVERSION_REPUTATION_PENALTY = -25;
 export const INFLUENCE_SUBVERSION_REPUTATION_BOLD_BONUS = 5;
 
 export type InfluenceOrderRejectionReason =
+  | DiplomaticPressureRejectionReason
   | 'insufficient-gold'
   | 'insufficient-manpower'
   | 'target-is-own-city'
@@ -50,6 +56,7 @@ const INFLUENCE_ORDER_KINDS = new Set<Order['kind']>([
   'cultural-campaign',
   'influence-subversion',
   'cancel-diplomatic-mission',
+  'diplomatic-pressure',
 ]);
 
 export function isInfluenceOrder(order: Order): boolean {
@@ -76,6 +83,14 @@ export function formatInfluenceOrderRejectedMessage(reason: InfluenceOrderReject
       return 'Cultural campaign is still on cooldown for this city.';
     case 'no-active-mission':
       return 'No active diplomatic mission to cancel.';
+    case 'insufficient-influence':
+      return 'Insufficient influence for diplomatic pressure (requires 30+).';
+    case 'no-pending-proposal':
+      return 'No matching pending proposal to force acceptance.';
+    case 'unsupported-proposal-kind':
+      return 'This diplomatic pressure proposal kind is not yet available.';
+    case 'target-country-mismatch':
+      return 'Target city is not owned by the specified country.';
     default:
       return formatOrderRejectedMessage(reason);
   }
@@ -149,12 +164,17 @@ function rejectInfluenceOrder(
   events: SimEventDraft[],
 ): void {
   if (!world.factions[order.ownerId]?.isPlayer) return;
+  const influenceOrderKind =
+    order.kind === 'cancel-diplomatic-mission'
+      ? 'cancel-diplomatic-mission'
+      : order.kind === 'diplomatic-pressure'
+        ? 'diplomatic-pressure'
+        : order.kind;
   events.push({
     kind: 'orderRejected',
     at: world.nowMs,
     factionId: order.ownerId,
-    influenceOrderKind:
-      order.kind === 'cancel-diplomatic-mission' ? 'cancel-diplomatic-mission' : order.kind,
+    influenceOrderKind,
     targetCityId: order.targetCityId,
     reason,
     importance: 'medium',
@@ -262,6 +282,32 @@ export function applyInfluenceOrders(
 
     const ownerId = order.ownerId;
     const targetCityId = order.targetCityId;
+
+    if (order.kind === 'diplomatic-pressure') {
+      const validation = validateDiplomaticPressure(
+        next,
+        ownerId,
+        targetCityId,
+        order.targetCountryId,
+        order.proposalKind,
+      );
+      if (!validation.ok) {
+        rejectInfluenceOrder(next, order, validation.reason, events);
+        continue;
+      }
+
+      const result = applyDiplomaticPressure(
+        next,
+        ownerId,
+        targetCityId,
+        order.targetCountryId,
+        order.proposalKind,
+        at,
+      );
+      next = result.world;
+      events.push(...result.events);
+      continue;
+    }
 
     if (order.kind === 'cancel-diplomatic-mission') {
       if (!hasActiveMission(next, ownerId, targetCityId, at)) {

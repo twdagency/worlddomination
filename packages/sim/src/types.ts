@@ -215,15 +215,41 @@ export type Order =
   | { kind: 'eventChoice'; eventId: Id; choiceId: Id }
   | { kind: 'covertOp'; spyUnitId: Id; targetId: Id; op: CovertOpKind }
   | {
-      kind: 'diplomatic-mission' | 'cultural-campaign' | 'influence-subversion' | 'cancel-diplomatic-mission';
+      kind:
+        | 'diplomatic-mission'
+        | 'cultural-campaign'
+        | 'influence-subversion'
+        | 'cancel-diplomatic-mission';
       ownerId: Id;
       targetCityId: Id;
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+    }
+  | {
+      kind: 'diplomatic-pressure';
+      ownerId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      proposalKind: PressureProposalKind;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     };
 
-export type InfluenceOrderKind = 'diplomatic-mission' | 'cultural-campaign' | 'influence-subversion';
+export type InfluenceActionKind = 'diplomatic-pressure';
+
+export type PressureProposalKind =
+  | 'accept-alliance'
+  | 'accept-treaty'
+  | 'concession-territory'
+  | 'concession-resource';
+
+export type InfluenceOrderKind =
+  | 'diplomatic-mission'
+  | 'cultural-campaign'
+  | 'influence-subversion'
+  | InfluenceActionKind;
 
 export interface ActiveDiplomaticMission {
   ownerId: Id;
@@ -606,6 +632,18 @@ export type SimEventKind =
       at: Millis;
       ownerId: Id;
       targetCountryId: Id;
+      reputationDeltas: Record<Id, number>;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'diplomaticPressureApplied';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      proposalKind: PressureProposalKind;
+      influenceCost: number;
+      goldCost: number;
       reputationDeltas: Record<Id, number>;
       importance?: DispatchImportance;
     };

@@ -26,7 +26,7 @@ import { stampEvents } from './events';
  *
  * Tick pipeline (Sprint 8.5 Phase 3 — capture before income):
  * 1. applyMoveOrders — departures enter transit
- * 1b. applyInfluenceOrders — influence accelerators (diplomatic mission, cultural campaign, subversion)
+ * 1b. applyInfluenceOrders — influence accelerators + threshold actions (diplomatic pressure)
  * 2. applyBuildOrders — queued construction
  * 3. resolveProductionCompletions — infra/build finishes at nowMs
  * 4. resolveArrivals — combat, captures; ownership transitions complete

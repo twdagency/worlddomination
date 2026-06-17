@@ -231,6 +231,18 @@ export {
   setInfluence,
 } from './influence';
 export {
+  applyDiplomaticPressure,
+  DIPLOMATIC_PRESSURE_ALLY_OF_TARGET_REPUTATION_PENALTY,
+  DIPLOMATIC_PRESSURE_COST,
+  DIPLOMATIC_PRESSURE_INFLUENCE_COST,
+  DIPLOMATIC_PRESSURE_MIN_INFLUENCE,
+  DIPLOMATIC_PRESSURE_OBSERVER_REPUTATION_PENALTY,
+  DIPLOMATIC_PRESSURE_TARGET_REPUTATION_PENALTY,
+  findPendingProposalForPressure,
+  formatDiplomaticPressureProposalLabel,
+  validateDiplomaticPressure,
+} from './influenceActions';
+export {
   applyInfluenceOrders,
   CULTURAL_CAMPAIGN_BURST,
   CULTURAL_CAMPAIGN_COOLDOWN_MS,

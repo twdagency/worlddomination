@@ -156,7 +156,8 @@ export function tagOrder(
     order.kind === 'diplomatic-mission' ||
     order.kind === 'cultural-campaign' ||
     order.kind === 'influence-subversion' ||
-    order.kind === 'cancel-diplomatic-mission'
+    order.kind === 'cancel-diplomatic-mission' ||
+    order.kind === 'diplomatic-pressure'
   ) {
     return {
       ...order,

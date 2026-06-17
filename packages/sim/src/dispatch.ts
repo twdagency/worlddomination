@@ -1,6 +1,7 @@
 import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
 import { findCountry } from './country';
 import { formatInfluenceOrderRejectedMessage } from './influenceAccelerators';
+import { formatDiplomaticPressureProposalLabel } from './influenceActions';
 import { formatOrderRejectedMessage } from './movement';
 import { isTerritoryVisible } from './visibility';
 import { isTreatyParty, otherParty } from './diplomaticDispatch';
@@ -430,6 +431,8 @@ export function dispatchLineForEvent(
       return `SUBVERSION — +${event.influenceDelta} covert influence in ${territoryName(world, event.targetCityId)}`;
     case 'subversionDiscovered':
       return `SUBVERSION EXPOSED — ${factionName(world, event.ownerId)} caught influencing ${factionName(world, event.targetCountryId)}`;
+    case 'diplomaticPressureApplied':
+      return `DIPLOMATIC PRESSURE — ${factionName(world, event.actorId)} forced ${factionName(world, event.targetCountryId)} to accept ${formatDiplomaticPressureProposalLabel(event.proposalKind)}`;
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'allyArrivalPeaceful':
@@ -654,6 +657,9 @@ export function isDispatchVisibleToFaction(
     case 'diplomaticMissionExpelled':
     case 'culturalCampaignApplied':
     case 'subversionDiscovered':
+      return true;
+
+    case 'diplomaticPressureApplied':
       return true;
 
     default:
