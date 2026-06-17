@@ -22,6 +22,9 @@ import {
 import type { DispatchFeedItem, SimEvent, WorldState } from 'sim';
 import type { TransitOrder } from 'sim';
 import { resolvePlayerFactionId } from 'shared';
+import { resolvePressureOrderFields, type InfluenceOrderActionKind } from './influenceSelector';
+
+export { type InfluenceOrderActionKind };
 
 export function mergeDispatches(
   world: WorldState,
@@ -110,6 +113,49 @@ export function issueUpgradeInfra(
         kind: 'upgradeInfra',
         territoryId,
         ...taggedOrderFields(playerId, world.nowMs, 'build'),
+      },
+    ],
+    0,
+  );
+}
+
+export function issueInfluenceOrder(
+  world: WorldState,
+  kind: InfluenceOrderActionKind,
+  targetCityId: string,
+): { world: WorldState; events: SimEvent[] } {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return { world, events: [] };
+
+  const tags = taggedOrderFields(playerId, world.nowMs, 'expand');
+
+  if (kind === 'diplomatic-pressure') {
+    const fields = resolvePressureOrderFields(world, playerId, targetCityId);
+    if (!fields) return { world, events: [] };
+    return tick(
+      world,
+      [
+        {
+          kind: 'diplomatic-pressure',
+          ownerId: playerId,
+          targetCityId,
+          targetCountryId: fields.targetCountryId,
+          proposalKind: fields.proposalKind,
+          ...tags,
+        },
+      ],
+      0,
+    );
+  }
+
+  return tick(
+    world,
+    [
+      {
+        kind,
+        ownerId: playerId,
+        targetCityId,
+        ...tags,
       },
     ],
     0,
@@ -212,7 +258,8 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
     return `REJECTED — ${event.reason === 'cannot-assault-own-territory' ? 'Cannot issue assault on own territory.' : event.reason}`;
   }
 
-  return `${event.kind} event`;
+  const playerId = resolvePlayerFactionId(world);
+  return dispatchLineForEvent(world, event, playerId ?? undefined);
 }
 
 export { buildDispatchFeed, compactDispatchFeed, COMPACTION_THRESHOLD_MS };

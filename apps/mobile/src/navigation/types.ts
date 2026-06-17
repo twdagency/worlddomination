@@ -9,7 +9,15 @@ export type HomeStackParamList = {
 
 export type ActionStackParamList = {
   ActionMenu: undefined;
-  Order: { presetDestinationId?: string; presetForceId?: string } | undefined;
+  Order:
+    | {
+        presetDestinationId?: string;
+        presetForceId?: string;
+        orderMode?: 'move' | 'build' | 'influence';
+        presetCityId?: string;
+        presetInfluenceAction?: string;
+      }
+    | undefined;
   Diplomacy: { expandFactionId?: string; focusCountryId?: string } | undefined;
   Territory: { territoryId?: string } | undefined;
   Forces: undefined;

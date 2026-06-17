@@ -3,6 +3,7 @@ import {
   dispatchLineForEvent,
   filterDispatchesForFaction,
   formatBuildBlockedMessage,
+  formatInfluenceOrderRejectedMessage,
   type SimEvent,
   type TransitOrder,
   type WorldState,
@@ -14,6 +15,7 @@ export type ActionKind =
   | 'move'
   | 'build'
   | 'upgradeInfra'
+  | 'influence'
   | 'proposeAlliance'
   | 'proposeTreaty'
   | 'breakAlliance'
@@ -34,6 +36,7 @@ export interface ActionFeedbackContext {
   allyFactionId?: string;
   proposalId?: string;
   moveEtaMs?: number;
+  influenceOrderKind?: string;
   /** Pre-sim validation message when the action never reaches the sim. */
   blockedMessage?: string;
 }
@@ -273,6 +276,47 @@ function buildDiplomacyFeedback(
   };
 }
 
+function buildInfluenceFeedback(
+  world: WorldState,
+  events: SimEvent[],
+  context: ActionFeedbackContext,
+): ActionFeedback {
+  const rejected = events.find((event) => event.kind === 'orderRejected');
+  if (rejected && rejected.kind === 'orderRejected') {
+    const reason =
+      typeof rejected.reason === 'string'
+        ? formatInfluenceOrderRejectedMessage(rejected.reason)
+        : 'Influence action rejected.';
+    const summary = `REJECTED — ${reason}`;
+    return {
+      action: 'influence',
+      success: false,
+      toastMessage: summary.replace(/^REJECTED — /, 'Cannot complete action — '),
+      toastTone: 'error',
+      inline: {
+        summary,
+        isError: true,
+        territoryId: context.territoryId,
+      },
+      dispatchEvents: playerVisibleEvents(world, events),
+    };
+  }
+
+  const toastMessage = primaryDispatchLine(world, events) ?? 'Influence action recorded';
+  return {
+    action: 'influence',
+    success: true,
+    toastMessage,
+    toastTone: 'success',
+    inline: {
+      summary: toastMessage,
+      isError: false,
+      territoryId: context.territoryId,
+    },
+    dispatchEvents: playerVisibleEvents(world, events),
+  };
+}
+
 /** Pure feedback derivation for toast, inline, and dispatch layers. */
 export function buildActionFeedback(
   action: ActionKind,
@@ -304,6 +348,8 @@ export function buildActionFeedback(
       return buildProductionFeedback(world, events, context, 'build');
     case 'upgradeInfra':
       return buildProductionFeedback(world, events, context, 'upgradeInfra');
+    case 'influence':
+      return buildInfluenceFeedback(world, events, context);
     case 'proposeAlliance':
     case 'proposeTreaty':
     case 'breakAlliance':

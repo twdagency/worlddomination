@@ -27,6 +27,7 @@ import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { CostBlock } from '../components/disclosure/CostBlock';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { resolvePlayerFactionId } from 'shared';
+import { selectInfluenceForDiplomacy } from '../game/influenceSelector';
 import {
   formatDiplomacyCountryTitle,
   selectCountryById,
@@ -134,6 +135,10 @@ export function DiplomacyScreen() {
 
   const activeTreaties = playerId ? getActiveTreaties(world, playerId, world.nowMs) : [];
   const defeatedCountries = useMemo(() => selectDefeatedCountries(world), [world]);
+  const influenceRollups = useMemo(() => {
+    const rollups = selectInfluenceForDiplomacy(world);
+    return new Map(rollups.map((entry) => [entry.countryId, entry]));
+  }, [world]);
 
   const treatyTerritories = Object.values(world.territories)
     .filter((territory) => territory.ownerId !== playerId)
@@ -248,6 +253,7 @@ export function DiplomacyScreen() {
         const expanded = expandedFactionId === item.id;
         const pending = item.status === 'proposal-incoming';
         const isFocused = highlightedId === item.id;
+        const influenceRollup = influenceRollups.get(item.id);
 
         return (
           <ExpandableRow
@@ -287,6 +293,15 @@ export function DiplomacyScreen() {
                   ·{' '}
                   {item.country.cities.map((city: { name: string }) => city.name).join(', ') || 'No holdings'}
                 </Text>
+                {influenceRollup ? (
+                  <Text
+                    style={styles.influenceRollup}
+                    testID={`diplomacy-influence-rollup-${item.id}`}
+                  >
+                    Influence: {influenceRollup.citiesUnderSway}{' '}
+                    {influenceRollup.citiesUnderSway === 1 ? 'city' : 'cities'} under your sway
+                  </Text>
+                ) : null}
               </View>
             }
             expanded={expanded}
@@ -402,6 +417,13 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 12,
     lineHeight: 16,
+  },
+  influenceRollup: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    marginTop: 4,
+    width: '100%',
   },
   hint: {
     color: terminal.muted,

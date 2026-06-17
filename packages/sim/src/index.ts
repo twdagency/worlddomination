@@ -274,6 +274,7 @@ export {
   TRIBUTE_RESENTMENT_GROWTH_PER_DAY,
   TRIBUTE_RESENTMENT_MAJOR_REBELLION,
   TRIBUTE_RESENTMENT_MINOR_REBELLION,
+  validateDefectionClaim,
   validateDiplomaticPressure,
   validateCoupAttempt,
   validateTributeCancel,

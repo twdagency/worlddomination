@@ -18,9 +18,11 @@ import {
   resolveDilemma,
   stampEvents,
 } from 'sim';
+import type { InfluenceOrderActionKind } from './actions';
 import {
   catchUp,
   issueBuild,
+  issueInfluenceOrder,
   issueMove,
   issueUpgradeInfra,
   mergeDispatches,
@@ -100,6 +102,7 @@ interface GameContextValue extends TutorialContextSlice {
   ) => Promise<void>;
   issueBuild: (territoryId: string, unitTypeId: string, count?: number) => Promise<void>;
   issueUpgradeInfra: (territoryId: string) => Promise<void>;
+  issueInfluence: (targetCityId: string, kind: InfluenceOrderActionKind) => Promise<void>;
   skipNext: () => Promise<void>;
   loadScenario: (id: DevScenarioId) => Promise<void>;
   proposeAlliance: (targetFactionId: string) => Promise<void>;
@@ -437,6 +440,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const issueInfluence = async (targetCityId: string, kind: InfluenceOrderActionKind) => {
+    await applyAction(
+      'influence',
+      { territoryId: targetCityId, influenceOrderKind: kind },
+      () => issueInfluenceOrder(world, kind, targetCityId),
+    );
+  };
+
   const skipNext = async () => {
     const result = skipToNextEvent(world);
     if (!result) return;
@@ -565,6 +576,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         confirmMove,
         issueBuild: issueBuildOrder,
         issueUpgradeInfra: issueUpgrade,
+        issueInfluence,
         skipNext,
         loadScenario,
         proposeAlliance,
