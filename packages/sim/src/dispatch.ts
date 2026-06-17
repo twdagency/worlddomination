@@ -1,5 +1,6 @@
 import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
 import { findCountry } from './country';
+import { formatInfluenceOrderRejectedMessage } from './influenceAccelerators';
 import { formatOrderRejectedMessage } from './movement';
 import { isTerritoryVisible } from './visibility';
 import { isTreatyParty, otherParty } from './diplomaticDispatch';
@@ -411,8 +412,24 @@ export function dispatchLineForEvent(
       return formatProductionNarrative(world, event);
     case 'buildBlocked':
       return `BLOCKED — ${event.reason}`;
-    case 'orderRejected':
-      return `REJECTED — ${formatOrderRejectedMessage(event.reason)}`;
+    case 'orderRejected': {
+      const formatter = event.influenceOrderKind
+        ? formatInfluenceOrderRejectedMessage
+        : formatOrderRejectedMessage;
+      return `REJECTED — ${formatter(event.reason)}`;
+    }
+    case 'diplomaticMissionStarted':
+      return `DIPLOMATIC MISSION — envoy to ${territoryName(world, event.targetCityId)} until day ${Math.ceil((event.expiresAt - world.startMs) / 86_400_000)}`;
+    case 'diplomaticMissionExpired':
+      return `DIPLOMATIC MISSION — envoy recalled from ${territoryName(world, event.targetCityId)}`;
+    case 'diplomaticMissionExpelled':
+      return `DIPLOMATIC MISSION — envoy expelled from ${territoryName(world, event.targetCityId)} (${event.reason})`;
+    case 'culturalCampaignApplied':
+      return `CULTURAL CAMPAIGN — +${event.influenceDelta} influence in ${territoryName(world, event.targetCityId)}`;
+    case 'subversionApplied':
+      return `SUBVERSION — +${event.influenceDelta} covert influence in ${territoryName(world, event.targetCityId)}`;
+    case 'subversionDiscovered':
+      return `SUBVERSION EXPOSED — ${factionName(world, event.ownerId)} caught influencing ${factionName(world, event.targetCountryId)}`;
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'allyArrivalPeaceful':
@@ -628,6 +645,16 @@ export function isDispatchVisibleToFaction(
 
     case 'orderRedirectedToAlly':
       return event.orderingFactionId === factionId;
+
+    case 'subversionApplied':
+      return event.ownerId === factionId;
+
+    case 'diplomaticMissionStarted':
+    case 'diplomaticMissionExpired':
+    case 'diplomaticMissionExpelled':
+    case 'culturalCampaignApplied':
+    case 'subversionDiscovered':
+      return true;
 
     default:
       return true;

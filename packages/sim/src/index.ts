@@ -229,6 +229,24 @@ export {
   setInfluence,
 } from './influence';
 export {
+  applyInfluenceOrders,
+  CULTURAL_CAMPAIGN_BURST,
+  CULTURAL_CAMPAIGN_COOLDOWN_MS,
+  CULTURAL_CAMPAIGN_COST,
+  DIPLOMATIC_MISSION_COST,
+  DIPLOMATIC_MISSION_DURATION_MS,
+  expireActiveInfluenceEffects,
+  formatInfluenceOrderRejectedMessage,
+  hasActiveDiplomaticMission,
+  INFLUENCE_SUBVERSION_BURST,
+  INFLUENCE_SUBVERSION_COST,
+  INFLUENCE_SUBVERSION_DISCOVERY_RATE,
+  INFLUENCE_SUBVERSION_MANPOWER_COST,
+  INFLUENCE_SUBVERSION_REPUTATION_BOLD_BONUS,
+  INFLUENCE_SUBVERSION_REPUTATION_PENALTY,
+  isInfluenceOrder,
+} from './influenceAccelerators';
+export {
   areAllied,
   breakAlliance,
   diplomacyDefaults,

@@ -213,7 +213,31 @@ export type Order =
   | { kind: 'setPolicy'; factionId: Id; policies: Partial<Policies> }
   | { kind: 'setStance'; unitId: Id; stance: Unit['stance'] }
   | { kind: 'eventChoice'; eventId: Id; choiceId: Id }
-  | { kind: 'covertOp'; spyUnitId: Id; targetId: Id; op: CovertOpKind };
+  | { kind: 'covertOp'; spyUnitId: Id; targetId: Id; op: CovertOpKind }
+  | {
+      kind: 'diplomatic-mission' | 'cultural-campaign' | 'influence-subversion' | 'cancel-diplomatic-mission';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    };
+
+export type InfluenceOrderKind = 'diplomatic-mission' | 'cultural-campaign' | 'influence-subversion';
+
+export interface ActiveDiplomaticMission {
+  ownerId: Id;
+  targetCityId: Id;
+  startedAt: Millis;
+  expiresAt: Millis;
+}
+
+export interface CulturalCampaignRecord {
+  ownerId: Id;
+  targetCityId: Id;
+  appliedAt: Millis;
+  cooldownUntil: Millis;
+}
 
 export type CovertOpKind = 'recon' | 'sabotage' | 'subvert' | 'counterintel';
 
@@ -443,8 +467,10 @@ export type SimEventKind =
       kind: 'orderRejected';
       at: Millis;
       factionId: Id;
-      unitId: Id;
-      attemptedDestinationId: Id;
+      unitId?: Id;
+      attemptedDestinationId?: Id;
+      influenceOrderKind?: InfluenceOrderKind | 'cancel-diplomatic-mission';
+      targetCityId?: Id;
       reason: string;
       importance?: DispatchImportance;
     }
@@ -534,6 +560,53 @@ export type SimEventKind =
       finalTerritoryId: Id;
       /** Alliance partners at the moment of defeat. */
       formerAlliances?: Id[];
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'diplomaticMissionStarted';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      expiresAt: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'diplomaticMissionExpired';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'diplomaticMissionExpelled';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      reason: 'alliance-broken' | 'war-declared' | 'target-defeated';
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'culturalCampaignApplied';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      influenceDelta: number;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'subversionApplied';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      influenceDelta: number;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'subversionDiscovered';
+      at: Millis;
+      ownerId: Id;
+      targetCountryId: Id;
+      reputationDeltas: Record<Id, number>;
       importance?: DispatchImportance;
     };
 
@@ -674,4 +747,8 @@ export interface WorldState {
   nextEventId?: number;
   /** Per-city, per-actor influence. Backfilled to `{}` by `ensureWorldInfluence`. */
   influence?: InfluenceStore;
+  /** Active diplomatic missions doubling passive influence accrual. */
+  activeDiplomaticMissions?: ActiveDiplomaticMission[];
+  /** Cultural campaign cooldown records per (actor, city). */
+  culturalCampaigns?: CulturalCampaignRecord[];
 }

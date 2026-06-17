@@ -25,8 +25,31 @@ const WAR_PASSIVE_PER_DAY = -2;
 const TRADE_CONTRIBUTION_PER_DAY = 0;
 
 export function ensureWorldInfluence(world: WorldState): WorldState {
-  if (world.influence !== undefined) return world;
-  return { ...world, influence: {} };
+  let next = world;
+  if (next.influence === undefined) {
+    next = { ...next, influence: {} };
+  }
+  if (next.activeDiplomaticMissions === undefined) {
+    next = { ...next, activeDiplomaticMissions: [] };
+  }
+  if (next.culturalCampaigns === undefined) {
+    next = { ...next, culturalCampaigns: [] };
+  }
+  return next;
+}
+
+function hasActiveDiplomaticMission(
+  world: WorldState,
+  actorId: Id,
+  cityId: Id,
+  at: Millis,
+): boolean {
+  return (world.activeDiplomaticMissions ?? []).some(
+    (mission) =>
+      mission.ownerId === actorId &&
+      mission.targetCityId === cityId &&
+      at < mission.expiresAt,
+  );
 }
 
 export function getInfluenceState(
@@ -347,7 +370,10 @@ export function accruePassiveInfluence(world: WorldState, at: Millis = world.now
       if (elapsedMs === 0 && prior) continue;
 
       const sources = computePassiveInfluenceSources(next, cityId, actorId, at);
-      const ratePerDay = ratePerDayFromSources(sources);
+      let ratePerDay = ratePerDayFromSources(sources);
+      if (hasActiveDiplomaticMission(next, actorId, cityId, at)) {
+        ratePerDay *= 2;
+      }
       const delta = ratePerDay * (elapsedMs / MS_PER_DAY);
       const priorValue = prior?.value ?? 0;
 

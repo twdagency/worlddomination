@@ -152,5 +152,16 @@ export function tagOrder(
       ...taggedOrderFields(factionId, decisionTickMs, intent ?? 'build'),
     };
   }
+  if (
+    order.kind === 'diplomatic-mission' ||
+    order.kind === 'cultural-campaign' ||
+    order.kind === 'influence-subversion' ||
+    order.kind === 'cancel-diplomatic-mission'
+  ) {
+    return {
+      ...order,
+      ...taggedOrderFields(factionId, decisionTickMs, intent ?? 'expand'),
+    };
+  }
   return order as Order;
 }
