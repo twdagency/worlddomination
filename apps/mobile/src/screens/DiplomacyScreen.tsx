@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useRoute, type RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import {
   areAllied,
   computeStance,
@@ -78,7 +79,24 @@ export function DiplomacyScreen() {
     declineProposal,
   } = useGame();
   const [treatyTarget, setTreatyTarget] = useState<string | null>(null);
+  const [selectedTreatyTerritoryId, setSelectedTreatyTerritoryId] = useState<string | null>(
+    null,
+  );
   const [expandedFactionId, setExpandedFactionId] = useState<string | null>(null);
+
+  const closeTreatyPicker = () => {
+    setTreatyTarget(null);
+    setSelectedTreatyTerritoryId(null);
+  };
+
+  const toggleTreatyPicker = (factionId: string) => {
+    if (treatyTarget === factionId) {
+      closeTreatyPicker();
+      return;
+    }
+    setTreatyTarget(factionId);
+    setSelectedTreatyTerritoryId(null);
+  };
 
   const playerId = resolvePlayerFactionId(world) ?? playerFactionId(world);
   const incoming = playerId ? pendingProposalsForFaction(world, playerId) : [];
@@ -335,33 +353,74 @@ export function DiplomacyScreen() {
                   {!areAllied(world, playerId, item.id) && (
                     <Pressable
                       style={styles.actionButton}
-                      onPress={() => setTreatyTarget(treatyTarget === item.id ? null : item.id)}
+                      onPress={() => toggleTreatyPicker(item.id)}
+                      testID={`diplomacy-propose-treaty-${item.id}`}
                     >
                       <Text style={styles.buttonText}>Propose treaty</Text>
                     </Pressable>
                   )}
                 </View>
                 {treatyTarget === item.id && (
-                  <View style={styles.territoryPicker}>
-                    <Text style={styles.pickerHint}>
-                      Select territory to offer access (48h default)
-                    </Text>
-                    {treatyTerritories.map((territory) => (
+                  <>
+                    <View style={styles.territoryPicker}>
+                      <Text style={styles.pickerHint}>
+                        Select territory to offer access (48h default)
+                      </Text>
+                      {treatyTerritories.map((territory) => {
+                        const selected = selectedTreatyTerritoryId === territory.id;
+                        return (
+                          <Pressable
+                            key={territory.id}
+                            style={[
+                              styles.territoryRow,
+                              selected && styles.territoryRowSelected,
+                            ]}
+                            onPress={() => setSelectedTreatyTerritoryId(territory.id)}
+                            testID={`treaty-territory-row-${territory.id}`}
+                          >
+                            <View style={styles.territoryRowContent}>
+                              <CostBlock
+                                preview={evaluateCostLines([treatyOfferLine(territory.name)])}
+                                title="Treaty offer"
+                              />
+                              {selected ? (
+                                <Ionicons
+                                  name="checkmark-circle"
+                                  size={20}
+                                  color={terminal.accent}
+                                  testID={`treaty-territory-selected-${territory.id}`}
+                                />
+                              ) : null}
+                            </View>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <View style={styles.treatyActionRow}>
                       <Pressable
-                        key={territory.id}
-                        style={styles.territoryRow}
-                        onPress={() => {
-                          setTreatyTarget(null);
-                          void proposeTreaty(item.id, territory.id);
-                        }}
+                        style={styles.cancelButton}
+                        onPress={closeTreatyPicker}
+                        testID="treaty-cancel-picker"
                       >
-                        <CostBlock
-                          preview={evaluateCostLines([treatyOfferLine(territory.name)])}
-                          title="Treaty offer"
-                        />
+                        <Text style={styles.buttonText}>Cancel</Text>
                       </Pressable>
-                    ))}
-                  </View>
+                      <Pressable
+                        style={[
+                          styles.sendButton,
+                          !selectedTreatyTerritoryId && styles.sendButtonDisabled,
+                        ]}
+                        disabled={!selectedTreatyTerritoryId}
+                        onPress={() => {
+                          if (!selectedTreatyTerritoryId) return;
+                          void proposeTreaty(item.id, selectedTreatyTerritoryId);
+                          closeTreatyPicker();
+                        }}
+                        testID="treaty-send-offer"
+                      >
+                        <Text style={styles.buttonText}>Send treaty offer</Text>
+                      </Pressable>
+                    </View>
+                  </>
                 )}
               </View>
             }
@@ -522,6 +581,46 @@ const styles = StyleSheet.create({
   },
   territoryRow: {
     paddingVertical: 4,
+  },
+  territoryRowSelected: {
+    borderWidth: 1,
+    borderColor: terminal.accent,
+    backgroundColor: 'rgba(63, 185, 80, 0.12)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+  },
+  territoryRowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    minHeight: 44,
+  },
+  treatyActionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  sendButton: {
+    borderWidth: 1,
+    borderColor: terminal.accent,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  sendButtonDisabled: {
+    opacity: 0.45,
+    borderColor: terminal.border,
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: terminal.border,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   footerWrap: {
     gap: 8,
