@@ -152,5 +152,21 @@ export function tagOrder(
       ...taggedOrderFields(factionId, decisionTickMs, intent ?? 'build'),
     };
   }
+  if (
+    order.kind === 'diplomatic-mission' ||
+    order.kind === 'cultural-campaign' ||
+    order.kind === 'influence-subversion' ||
+    order.kind === 'cancel-diplomatic-mission' ||
+    order.kind === 'diplomatic-pressure' ||
+    order.kind === 'tribute-extraction' ||
+    order.kind === 'tribute-cancel' ||
+    order.kind === 'coup-attempt' ||
+    order.kind === 'defection-claim'
+  ) {
+    return {
+      ...order,
+      ...taggedOrderFields(factionId, decisionTickMs, intent ?? 'expand'),
+    };
+  }
   return order as Order;
 }

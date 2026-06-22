@@ -16,6 +16,9 @@ import { syncCountriesFromFactions } from './country';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
+import { accruePassiveInfluence, ensureWorldTributes } from './influence';
+import { accrueTributes } from './influenceActions';
+import { applyInfluenceOrders, expireActiveInfluenceEffects } from './influenceAccelerators';
 import { stampEvents } from './events';
 
 /**
@@ -24,10 +27,14 @@ import { stampEvents } from './events';
  *
  * Tick pipeline (Sprint 8.5 Phase 3 — capture before income):
  * 1. applyMoveOrders — departures enter transit
+ * 1b. applyInfluenceOrders — influence accelerators + threshold actions (pressure, tribute, coup)
  * 2. applyBuildOrders — queued construction
  * 3. resolveProductionCompletions — infra/build finishes at nowMs
  * 4. resolveArrivals — combat, captures; ownership transitions complete
  * 5. accrueEconomy + accrueManpower — income/regen from post-combat ownership
+ * 5b. accruePassiveInfluence — passive accrual + decay toward neutrality when unsourced
+ * 5c. expireActiveInfluenceEffects — mission expiry, expulsion, campaign cooldown prune
+ * 5d. accrueTributes — ongoing tribute extraction, resentment, rebellion
  * 6. pruneExpiredTreaties
  * 7. recordIntelObservations → recordAlliedObservations → recordTreatyObservations
  * 8. emitIntelReportEvents
@@ -41,21 +48,25 @@ export function tick(
 ): { world: WorldState; events: SimEvent[]; accrued: AccruedIncome } {
   const events: SimEventDraft[] = [];
 
-  const { units: unitsAfterMoves, events: departureEvents } = applyMoveOrders(world, orders);
+  const influenceOrders = applyInfluenceOrders(world, orders, world.nowMs);
+  let workingWorld = influenceOrders.world;
+  events.push(...influenceOrders.events);
+
+  const { units: unitsAfterMoves, events: departureEvents } = applyMoveOrders(workingWorld, orders);
   events.push(...departureEvents);
 
   const {
     factions: factionsAfterBuilds,
     territories: territoriesAfterBuilds,
     events: buildEvents,
-  } = applyBuildOrders({ ...world, units: unitsAfterMoves }, orders);
+  } = applyBuildOrders({ ...workingWorld, units: unitsAfterMoves }, orders);
   events.push(...buildEvents);
 
   const nowMs = world.nowMs + elapsedMs;
   const day = Math.floor((nowMs - world.startMs) / MS_PER_DAY) + 1;
 
   const preCombat: WorldState = {
-    ...world,
+    ...workingWorld,
     units: unitsAfterMoves,
     factions: factionsAfterBuilds,
     territories: territoriesAfterBuilds,
@@ -115,7 +126,14 @@ export function tick(
     territories: economy.territories,
   };
 
-  const afterDiplomacy = pruneExpiredTreaties(afterEconomy, nowMs);
+  const afterInfluence = accruePassiveInfluence(afterEconomy, nowMs);
+  const afterInfluenceEffects = expireActiveInfluenceEffects(afterInfluence, nowMs);
+  events.push(...afterInfluenceEffects.events);
+
+  const afterTributes = accrueTributes(afterInfluenceEffects.world, nowMs);
+  events.push(...afterTributes.events);
+
+  const afterDiplomacy = pruneExpiredTreaties(afterTributes.world, nowMs);
   events.push(...expiredTreatyEvents(afterEconomy.treaties, afterDiplomacy.treaties, nowMs));
 
   const priorIntel = ensureIntelStore(afterDiplomacy);

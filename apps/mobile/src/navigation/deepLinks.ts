@@ -1,6 +1,9 @@
 import type { NavigationProp, ParamListBase } from '@react-navigation/native';
 import type { Id } from 'sim';
+import type { InfluenceOrderActionKind } from '../game/influenceSelector';
 import type { RootTabParamList } from './types';
+
+export type OrderScreenMode = 'move' | 'build' | 'influence';
 
 export type DeepLinkTarget =
   | {
@@ -23,6 +26,9 @@ export type DeepLinkTarget =
       presetDestinationId?: Id;
       presetForceId?: Id;
       focusCountryId?: Id;
+      orderMode?: OrderScreenMode;
+      presetCityId?: Id;
+      presetInfluenceAction?: InfluenceOrderActionKind;
     };
 
 export type ContextEntity =
@@ -32,6 +38,20 @@ export type ContextEntity =
   | { kind: 'dispatch'; id: Id };
 
 type RootNavigation = NavigationProp<RootTabParamList & ParamListBase>;
+
+/** Deep link to Order screen influence mode with action + city preset. */
+export function deepLinkForInfluenceAction(
+  cityId: Id,
+  action: InfluenceOrderActionKind,
+): DeepLinkTarget {
+  return {
+    tab: 'actions',
+    screen: 'order',
+    orderMode: 'influence',
+    presetCityId: cityId,
+    presetInfluenceAction: action,
+  };
+}
 
 /** Returns appropriate deep link for tapping a contextual entity. */
 export function deepLinkForEntity(
@@ -103,10 +123,17 @@ export function navigateTo(navigation: RootNavigation, target: DeepLinkTarget): 
           navigation.navigate('Actions', {
             screen: 'Order',
             params:
-              target.presetDestinationId || target.presetForceId
+              target.presetDestinationId ||
+              target.presetForceId ||
+              target.orderMode ||
+              target.presetCityId ||
+              target.presetInfluenceAction
                 ? {
                     presetDestinationId: target.presetDestinationId,
                     presetForceId: target.presetForceId,
+                    orderMode: target.orderMode,
+                    presetCityId: target.presetCityId,
+                    presetInfluenceAction: target.presetInfluenceAction,
                   }
                 : undefined,
           });

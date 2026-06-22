@@ -1,5 +1,7 @@
-import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import type { Id, IntelSource, Millis, Order, OrderIntent, ResourceId, SimEvent, WorldState } from './types';
 import { findCountry } from './country';
+import { formatInfluenceOrderRejectedMessage } from './influenceAccelerators';
+import { formatDiplomaticPressureProposalLabel } from './influenceActions';
 import { formatOrderRejectedMessage } from './movement';
 import { isTerritoryVisible } from './visibility';
 import { isTreatyParty, otherParty } from './diplomaticDispatch';
@@ -358,6 +360,62 @@ export interface DispatchFeedItem {
   line: string;
 }
 
+export function hasDisplayableResourceAccrual(
+  byTerritory: Record<Id, Partial<Record<ResourceId, number>>>,
+): boolean {
+  for (const territoryResources of Object.values(byTerritory)) {
+    if (!territoryResources) continue;
+    for (const amount of Object.values(territoryResources)) {
+      if (amount && Math.floor(amount) > 0) return true;
+    }
+  }
+  return false;
+}
+
+export function formatResourceAccruals(
+  byTerritory: Record<Id, Partial<Record<ResourceId, number>>>,
+): string[] {
+  const aggregated: Record<string, number> = {};
+  for (const territoryResources of Object.values(byTerritory)) {
+    if (!territoryResources) continue;
+    for (const [resource, amount] of Object.entries(territoryResources)) {
+      if (!amount || amount <= 0) continue;
+      aggregated[resource] = (aggregated[resource] ?? 0) + amount;
+    }
+  }
+
+  return Object.entries(aggregated)
+    .map(([resource, amount]) => ({ resource, floored: Math.floor(amount) }))
+    .filter(({ floored }) => floored > 0)
+    .map(({ resource, floored }) => `+${floored} ${resource}`);
+}
+
+export function hasDisplayableIncome(event: Extract<SimEvent, { kind: 'income' }>): boolean {
+  if (Math.floor(event.funding) > 0) return true;
+  return hasDisplayableResourceAccrual(event.resourcesByTerritory);
+}
+
+export function formatIncomeDispatchLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'income' }>,
+): string {
+  void world;
+  const fundingFloor = Math.floor(event.funding);
+  const parts: string[] = [];
+
+  if (fundingFloor > 0) {
+    parts.push(`+$${fundingFloor.toLocaleString()} funding`);
+  }
+
+  parts.push(...formatResourceAccruals(event.resourcesByTerritory));
+
+  if (parts.length === 0) {
+    return 'INCOME — minimal accrual';
+  }
+
+  return `INCOME — ${parts.join(', ')} accrued while away`;
+}
+
 export function dispatchLineForEvent(
   world: WorldState,
   event: SimEvent,
@@ -406,13 +464,55 @@ export function dispatchLineForEvent(
     case 'secured':
       return formatSecuredNarrative(world, event.territoryId, event.factionId, event.enemyWithdrew);
     case 'income':
-      return `INCOME — funding ${event.funding}`;
+      return formatIncomeDispatchLine(world, event);
     case 'production':
       return formatProductionNarrative(world, event);
     case 'buildBlocked':
       return `BLOCKED — ${event.reason}`;
-    case 'orderRejected':
-      return `REJECTED — ${formatOrderRejectedMessage(event.reason)}`;
+    case 'orderRejected': {
+      const formatter = event.influenceOrderKind
+        ? formatInfluenceOrderRejectedMessage
+        : formatOrderRejectedMessage;
+      return `REJECTED — ${formatter(event.reason)}`;
+    }
+    case 'diplomaticMissionStarted':
+      return `DIPLOMATIC MISSION — envoy to ${territoryName(world, event.targetCityId)} until day ${Math.ceil((event.expiresAt - world.startMs) / 86_400_000)}`;
+    case 'diplomaticMissionExpired':
+      return `DIPLOMATIC MISSION — envoy recalled from ${territoryName(world, event.targetCityId)}`;
+    case 'diplomaticMissionExpelled':
+      return `DIPLOMATIC MISSION — envoy expelled from ${territoryName(world, event.targetCityId)} (${event.reason})`;
+    case 'culturalCampaignApplied':
+      return `CULTURAL CAMPAIGN — +${event.influenceDelta} influence in ${territoryName(world, event.targetCityId)}`;
+    case 'subversionApplied':
+      return `SUBVERSION — +${event.influenceDelta} covert influence in ${territoryName(world, event.targetCityId)}`;
+    case 'subversionDiscovered':
+      return `SUBVERSION EXPOSED — ${factionName(world, event.ownerId)} caught influencing ${factionName(world, event.targetCountryId)}`;
+    case 'diplomaticPressureApplied':
+      return `DIPLOMATIC PRESSURE — ${factionName(world, event.actorId)} forced ${factionName(world, event.targetCountryId)} to accept ${formatDiplomaticPressureProposalLabel(event.proposalKind)}`;
+    case 'tributeStarted':
+      return `TRIBUTE — extraction begins in ${territoryName(world, event.targetCityId)}`;
+    case 'tributeAccrued':
+      return `TRIBUTE INCOME — +${Math.round(event.goldTransferred)} gold from ${territoryName(world, event.targetCityId)}`;
+    case 'tributeMinorRebellion':
+      return `TRIBUTE UNREST — resentment rising in ${territoryName(world, event.targetCityId)}`;
+    case 'tributeMajorRebellion':
+      return `TRIBUTE REBELLION — ${territoryName(world, event.targetCityId)} revolts against ${factionName(world, event.actorId)}`;
+    case 'tributeAutoEnded':
+      return `TRIBUTE ENDED — extraction in ${territoryName(world, event.targetCityId)} (${event.reason})`;
+    case 'tributeVoluntarilyEnded':
+      return `TRIBUTE ENDED — ${factionName(world, event.actorId)} withdrew extraction from ${territoryName(world, event.targetCityId)}`;
+    case 'coupSuccess':
+      return `COUP SUCCEEDED — ${factionName(world, event.actorId)} seized ${territoryName(world, event.targetCityId)} from ${factionName(world, event.targetCountryId)}`;
+    case 'coupFailure':
+      return `COUP FAILED — ${factionName(world, event.actorId)}'s influence collapsed in ${territoryName(world, event.targetCityId)}`;
+    case 'defectionOccurred': {
+      const city = territoryName(world, event.targetCityId);
+      const actor = factionName(world, event.actorId);
+      const targetCountry = factionName(world, event.targetCountryId);
+      const leader =
+        world.leaders[event.previousLeaderId]?.name ?? factionName(world, event.targetCountryId);
+      return `City defected: ${city} chose ${actor} over ${targetCountry}. ${leader}'s influence wanes.`;
+    }
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'allyArrivalPeaceful':
@@ -628,6 +728,34 @@ export function isDispatchVisibleToFaction(
 
     case 'orderRedirectedToAlly':
       return event.orderingFactionId === factionId;
+
+    case 'subversionApplied':
+      return event.ownerId === factionId;
+
+    case 'diplomaticMissionStarted':
+    case 'diplomaticMissionExpired':
+    case 'diplomaticMissionExpelled':
+    case 'culturalCampaignApplied':
+    case 'subversionDiscovered':
+      return true;
+
+    case 'diplomaticPressureApplied':
+      return true;
+
+    case 'tributeAccrued':
+      return event.actorId === factionId;
+
+    case 'tributeStarted':
+    case 'tributeMinorRebellion':
+    case 'tributeMajorRebellion':
+    case 'tributeAutoEnded':
+    case 'tributeVoluntarilyEnded':
+      return true;
+
+    case 'coupSuccess':
+    case 'coupFailure':
+    case 'defectionOccurred':
+      return true;
 
     default:
       return true;

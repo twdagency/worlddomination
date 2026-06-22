@@ -13,8 +13,10 @@ import {
 } from '../game/playerView';
 import { navigateTo } from '../navigation/deepLinks';
 import type { HomeStackParamList } from '../navigation/types';
+import { selectPlayerInfluenceSummary } from '../game/influenceSelector';
 import { ActiveForcesCard } from '../components/dashboard/ActiveForcesCard';
 import { CountryStatusCard } from '../components/dashboard/CountryStatusCard';
+import { InfluenceCard } from '../components/dashboard/InfluenceCard';
 import { PlayerFallenOverlay } from '../components/dashboard/PlayerFallenOverlay';
 import { DispatchesCard } from '../components/dashboard/DispatchesCard';
 import { QuickActionsCard, type QuickActionId } from '../components/dashboard/QuickActionsCard';
@@ -47,6 +49,7 @@ export function DashboardScreen() {
     [world, dispatches, dispatchReadState],
   );
   const activeForces = useMemo(() => getDashboardActiveForcesSummary(world), [world]);
+  const influenceSummary = useMemo(() => selectPlayerInfluenceSummary(world), [world]);
 
   const openDispatches = (dispatchId?: string) => {
     navigation.navigate('Dispatches', dispatchId ? { dispatchId } : undefined);
@@ -133,6 +136,24 @@ export function DashboardScreen() {
           defeatedCount={defeatedCountries.length}
           onViewDefeated={defeatedCountries.length > 0 ? openDefeatedCountries : undefined}
         />
+
+        <View style={styles.spacer} />
+
+        {influenceSummary ? (
+          <InfluenceCard
+            summary={influenceSummary}
+            onOpenCity={(cityId) =>
+              navigateTo(navigation.getParent()!, {
+                tab: 'actions',
+                screen: 'territory',
+                territoryId: cityId,
+              })
+            }
+            onOpenInfluence={() =>
+              navigateTo(navigation.getParent()!, { tab: 'actions', screen: 'order', orderMode: 'influence' })
+            }
+          />
+        ) : null}
 
         <View style={styles.spacer} />
 

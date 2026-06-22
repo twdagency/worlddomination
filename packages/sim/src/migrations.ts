@@ -2,6 +2,7 @@ import type { Leader, TutorialState, UnitType, WorldState } from './types';
 import { ensureWorldCountries } from './country';
 import { ensureWorldDiplomacy } from './diplomacy';
 import { ensureWorldEventCounter } from './events';
+import { ensureWorldInfluence } from './influence';
 import { STANDARD_TIME_MULTIPLIER } from './tutorial';
 
 export interface WorldMigrationCatalog {
@@ -94,6 +95,8 @@ export function ensureWorldMigrations(
   next = ensureWorldCountries(next);
 
   next = ensureWorldEventCounter(next);
+
+  next = ensureWorldInfluence(next);
 
   return next;
 }

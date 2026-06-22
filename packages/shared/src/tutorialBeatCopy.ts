@@ -42,6 +42,6 @@ export const TUTORIAL_BEAT_COPY: Record<TutorialBeatId, BeatCopy> = {
     beat: 'handoff',
     title: 'Your campaign begins',
     body: 'The tutorial is complete. Continue into the full Europe sandbox to pursue your chosen path to victory.',
-    hint: "Why: Everything you've learned applies now at full speed (1×). The game is yours.",
+    hint: 'New systems unlock as you play — including influence over foreign cities. Build influence through alliances, scouts, and diplomatic missions. Use it to pressure, extract from, or claim foreign cities. Watch the influence card on your Dashboard for opportunities.',
   },
 };

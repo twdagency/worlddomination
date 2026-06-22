@@ -11,7 +11,8 @@ import type { ResourceId, UnitType, WorldState } from 'sim';
 import { UNIT_TYPES } from 'shared';
 import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
-import { selectPlayerCountry } from '../game/countrySelector';
+import { ForeignTerritoryInfluenceDetail } from '../components/influence/ForeignTerritoryInfluenceDetail';
+import { selectCountryById, selectPlayerCountry } from '../game/countrySelector';
 import { playerOwnedTerritories } from '../game/playerView';
 import {
   collectActiveBuilds,
@@ -71,6 +72,11 @@ export function TerritoryScreen() {
     [world],
   );
 
+  const routeTerritoryId = route.params?.territoryId;
+  const routeTerritory = routeTerritoryId ? world.territories[routeTerritoryId] : undefined;
+  const isForeignRoute =
+    Boolean(routeTerritory && routeTerritory.ownerId && routeTerritory.ownerId !== playerId);
+
   const activeBuilds = useMemo(
     () => collectActiveBuilds(world, playerTerritories),
     [world, playerTerritories],
@@ -80,20 +86,21 @@ export function TerritoryScreen() {
   const [expandedTerritoryId, setExpandedTerritoryId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isForeignRoute) return;
     if (playerTerritories.length === 0) {
       setTerritoryId('');
       return;
     }
-    const routeTerritoryId = route.params?.territoryId;
-    if (routeTerritoryId && playerTerritories.some((t) => t.id === routeTerritoryId)) {
-      setTerritoryId(routeTerritoryId);
-      setExpandedTerritoryId(routeTerritoryId);
+    const paramTerritoryId = route.params?.territoryId;
+    if (paramTerritoryId && playerTerritories.some((t) => t.id === paramTerritoryId)) {
+      setTerritoryId(paramTerritoryId);
+      setExpandedTerritoryId(paramTerritoryId);
       return;
     }
     setTerritoryId((prev) =>
       playerTerritories.some((t) => t.id === prev) ? prev : playerTerritories[0].id,
     );
-  }, [playerTerritories, route.params?.territoryId]);
+  }, [playerTerritories, route.params?.territoryId, isForeignRoute]);
 
   const territory = playerTerritories.find((t) => t.id === territoryId);
 
@@ -105,7 +112,27 @@ export function TerritoryScreen() {
         canBuild(world, territoryId, u.id, 1, playerId!),
       ]),
     );
-  }, [world, territory, territoryId]);
+  }, [world, territory, territoryId, playerId]);
+
+  if (isForeignRoute && routeTerritoryId && playerId) {
+    const ownerCountry = selectCountryById(world, routeTerritory!.ownerId!);
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <ScreenBackButton />
+        <Text style={styles.heading}>Territory</Text>
+        <Text style={styles.playerIdentity}>
+          {routeTerritory!.name} — {ownerCountry?.name ?? routeTerritory!.ownerId} (foreign)
+        </Text>
+        <ForeignTerritoryInfluenceDetail
+          world={world}
+          cityId={routeTerritoryId}
+          playerId={playerId}
+        />
+      </ScrollView>
+    );
+  }
+
+  const playerCountry = selectPlayerCountry(world);
 
   if (playerTerritories.length === 0 || !territory || !faction) {
     return (
@@ -119,7 +146,6 @@ export function TerritoryScreen() {
   const maxTier = maxBuildableTier(territory.infraLevel);
   const facilityLabel = territory.infraLevel < 3 ? 'Depot' : 'Arsenal';
   const infraCost = infraUpgradeCostPreview(world, territoryId, playerId!);
-  const playerCountry = selectPlayerCountry(world);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

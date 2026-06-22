@@ -213,7 +213,105 @@ export type Order =
   | { kind: 'setPolicy'; factionId: Id; policies: Partial<Policies> }
   | { kind: 'setStance'; unitId: Id; stance: Unit['stance'] }
   | { kind: 'eventChoice'; eventId: Id; choiceId: Id }
-  | { kind: 'covertOp'; spyUnitId: Id; targetId: Id; op: CovertOpKind };
+  | { kind: 'covertOp'; spyUnitId: Id; targetId: Id; op: CovertOpKind }
+  | {
+      kind:
+        | 'diplomatic-mission'
+        | 'cultural-campaign'
+        | 'influence-subversion'
+        | 'cancel-diplomatic-mission';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
+  | {
+      kind: 'diplomatic-pressure';
+      ownerId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      proposalKind: PressureProposalKind;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
+  | {
+      kind: 'tribute-extraction' | 'tribute-cancel';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
+  | {
+      kind: 'coup-attempt';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
+  | {
+      kind: 'defection-claim';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    };
+
+export type InfluenceActionKind =
+  | 'diplomatic-pressure'
+  | 'tribute-extraction'
+  | 'tribute-cancel'
+  | 'coup-attempt'
+  | 'defection-claim';
+
+export type PressureProposalKind =
+  | 'accept-alliance'
+  | 'accept-treaty'
+  | 'concession-territory'
+  | 'concession-resource';
+
+export type InfluenceOrderKind =
+  | 'diplomatic-mission'
+  | 'cultural-campaign'
+  | 'influence-subversion'
+  | InfluenceActionKind;
+
+export interface ActiveDiplomaticMission {
+  ownerId: Id;
+  targetCityId: Id;
+  startedAt: Millis;
+  expiresAt: Millis;
+}
+
+export interface CulturalCampaignRecord {
+  ownerId: Id;
+  targetCityId: Id;
+  appliedAt: Millis;
+  cooldownUntil: Millis;
+}
+
+export interface ActiveTribute {
+  actorId: Id;
+  targetCityId: Id;
+  /** Captured at setup; does not track ownership changes. */
+  targetCountryId: Id;
+  startedAt: Millis;
+  lastAccrualAt: Millis;
+  resentment: number;
+  minorRebellionEmitted: boolean;
+  totalGoldExtracted: number;
+  totalResourceExtracted: Partial<Record<ResourceId, number>>;
+}
+
+export type TributeAutoEndReason =
+  | 'influence-floor'
+  | 'target-defeated'
+  | 'ownership-changed'
+  | 'alliance-formed';
 
 export type CovertOpKind = 'recon' | 'sabotage' | 'subvert' | 'counterintel';
 
@@ -443,8 +541,10 @@ export type SimEventKind =
       kind: 'orderRejected';
       at: Millis;
       factionId: Id;
-      unitId: Id;
-      attemptedDestinationId: Id;
+      unitId?: Id;
+      attemptedDestinationId?: Id;
+      influenceOrderKind?: InfluenceOrderKind | 'cancel-diplomatic-mission';
+      targetCityId?: Id;
       reason: string;
       importance?: DispatchImportance;
     }
@@ -535,6 +635,144 @@ export type SimEventKind =
       /** Alliance partners at the moment of defeat. */
       formerAlliances?: Id[];
       importance?: DispatchImportance;
+    }
+  | {
+      kind: 'diplomaticMissionStarted';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      expiresAt: Millis;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'diplomaticMissionExpired';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'diplomaticMissionExpelled';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      reason: 'alliance-broken' | 'war-declared' | 'target-defeated';
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'culturalCampaignApplied';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      influenceDelta: number;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'subversionApplied';
+      at: Millis;
+      ownerId: Id;
+      targetCityId: Id;
+      influenceDelta: number;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'subversionDiscovered';
+      at: Millis;
+      ownerId: Id;
+      targetCountryId: Id;
+      reputationDeltas: Record<Id, number>;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'diplomaticPressureApplied';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      proposalKind: PressureProposalKind;
+      influenceCost: number;
+      goldCost: number;
+      reputationDeltas: Record<Id, number>;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeStarted';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeAccrued';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      goldTransferred: number;
+      resourcesTransferred: Partial<Record<ResourceId, number>>;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeMinorRebellion';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeMajorRebellion';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      reputationDeltas: Record<Id, number>;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeAutoEnded';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      reason: TributeAutoEndReason;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'tributeVoluntarilyEnded';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'coupSuccess';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      previousLeaderId: Id;
+      successRate: number;
+      rollValue: number;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'coupFailure';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      successRate: number;
+      rollValue: number;
+      influenceLost: number;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'defectionOccurred';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      previousLeaderId: Id;
+      importance?: DispatchImportance;
     };
 
 /** Stable unique identifier assigned at emission time (see `emit` / `stampEvents`). */
@@ -620,6 +858,32 @@ export interface PendingDilemma {
   offeredAt: Millis;
 }
 
+export type InfluenceSourceKind =
+  | 'proximity'
+  | 'alliance'
+  | 'treaty'
+  | 'trade'
+  | 'culture'
+  | 'scout-presence';
+
+export interface InfluenceSource {
+  kind: InfluenceSourceKind;
+  /** Influence per game-day from this source at the current snapshot. */
+  contribution: number;
+  lastAccrualAt: Millis;
+}
+
+export interface InfluenceState {
+  /** 0–100 cap for threshold actions; floor INFLUENCE_FLOOR for war pressure. */
+  value: number;
+  lastAccrualAt: Millis;
+  lastDecayAt: Millis;
+  sources: InfluenceSource[];
+}
+
+/** Per target city, per influencing faction. */
+export type InfluenceStore = Record<Id, Record<Id, InfluenceState>>;
+
 export interface WorldState {
   nowMs: Millis;
   day: number;
@@ -646,4 +910,12 @@ export interface WorldState {
   timeMultiplier?: number;
   /** Monotonic counter for deterministic `eventId` assignment. Starts at 0 on new worlds. */
   nextEventId?: number;
+  /** Per-city, per-actor influence. Backfilled to `{}` by `ensureWorldInfluence`. */
+  influence?: InfluenceStore;
+  /** Active diplomatic missions doubling passive influence accrual. */
+  activeDiplomaticMissions?: ActiveDiplomaticMission[];
+  /** Cultural campaign cooldown records per (actor, city). */
+  culturalCampaigns?: CulturalCampaignRecord[];
+  /** Ongoing tribute extractions with resentment tracking. */
+  activeTributes?: ActiveTribute[];
 }

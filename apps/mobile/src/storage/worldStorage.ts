@@ -4,6 +4,7 @@ import { ensureWorldMigrations, backfillLegacyDispatchEventIds } from 'sim';
 import { LEADERS_BY_ID } from 'shared';
 import { UNIT_TYPES_BY_ID } from 'shared';
 import { STORAGE_KEYS } from '../theme/terminal';
+import { clearTooltipDismissals } from '../game/tooltipDismissal';
 import {
   DEFAULT_DISPATCH_READ_STATE,
   parseDispatchReadState,
@@ -87,4 +88,5 @@ export async function clearCampaignStorage(): Promise<void> {
     STORAGE_KEYS.lastActiveMs,
     STORAGE_KEYS.lastViewedDispatchesAt,
   ]);
+  await clearTooltipDismissals();
 }

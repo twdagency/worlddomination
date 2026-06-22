@@ -15,6 +15,15 @@ import {
   selectDefeatedWorldTerritories,
 } from '../game/defeatedCountrySelector';
 import { playerWorldIntel } from '../game/playerView';
+import { resolvePlayerFactionId } from 'shared';
+import {
+  selectCityInfluence,
+  formatThresholdStars,
+} from '../game/influenceSelector';
+import {
+  formatFoggedActorInfluence,
+  formatInfluenceValue,
+} from '../game/influenceDisplay';
 import { DefeatedCountryBadge } from '../components/country/DefeatedCountryBadge';
 import { LinkText } from '../components/navigation/LinkText';
 import { IntelSourceHint } from '../components/IntelSourceHint';
@@ -37,6 +46,7 @@ function intelSubtitle(state: string, lastObservedAt: number | undefined, nowMs:
 
 export function WorldScreen() {
   const { world } = useGame();
+  const playerId = resolvePlayerFactionId(world);
   const route = useRoute<WorldRoute>();
   const navigateDeep = useDeepLinkNavigation();
   const listRef = useRef<FlatList>(null);
@@ -200,6 +210,13 @@ export function WorldScreen() {
         const isFocused =
           highlightedId === item.territoryId ||
           (focusCountryId !== undefined && ownerId === focusCountryId);
+        const cityInfluence =
+          !isUnknown && playerId ? selectCityInfluence(world, item.territoryId, playerId) : null;
+        const playerOwnsCity = ownerId === playerId;
+        const stars =
+          cityInfluence && cityInfluence.playerInfluence > 0
+            ? formatThresholdStars(cityInfluence.playerInfluence)
+            : '';
 
         return (
           <Pressable
@@ -266,6 +283,21 @@ export function WorldScreen() {
                 <Text style={styles.snapshot}>{formatSnapshotHint(item.snapshot)}</Text>
               ) : null}
               {item.state !== 'unknown' ? <IntelSourceHint sources={item.sources} /> : null}
+              {!isUnknown && cityInfluence && !playerOwnsCity ? (
+                <View testID={`world-influence-${item.territoryId}`}>
+                  {cityInfluence.playerInfluence > 0 ? (
+                    <Text style={styles.influenceLine}>
+                      Influence: {formatInfluenceValue(cityInfluence.playerInfluence)}
+                      {stars ? ` ${stars}` : ''}
+                    </Text>
+                  ) : null}
+                  {cityInfluence.competingActors.map((actor) => (
+                    <Text key={actor.actorId} style={styles.influenceFog}>
+                      {formatFoggedActorInfluence(actor.actorName, actor.visibleMagnitude)}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
               {item.lastObservedAt !== undefined ? (
                 <Text style={styles.tertiary}>
                   Last observed: {formatIntelAge(world.nowMs, item.lastObservedAt)}
@@ -389,6 +421,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     marginTop: 6,
+  },
+  influenceLine: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    marginTop: 6,
+    fontWeight: '700',
+  },
+  influenceFog: {
+    color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    marginTop: 2,
   },
   defeatedCard: {
     opacity: 0.8,

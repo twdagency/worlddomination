@@ -9,6 +9,8 @@ import { toggleExpandedRow } from '../game/expandableRowState';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
+import { OrderInfluencePanel } from '../components/influence/OrderInfluencePanel';
+import { OrderModeSegment } from '../components/influence/OrderModeSegment';
 import { getPlayerVisibleTerritory,
   ownerIdForIntelDisplay,
   playerMovableUnits,
@@ -22,6 +24,10 @@ import {
 } from '../game/orderDestinations';
 import { TerritoryOwnerLabel } from '../components/TerritoryOwnerLabel';
 import type { ActionStackParamList } from '../navigation/types';
+import type { OrderScreenMode } from '../navigation/deepLinks';
+import { navigateTo } from '../navigation/deepLinks';
+import { useNavigation } from '@react-navigation/native';
+import type { InfluenceOrderActionKind } from '../game/influenceSelector';
 import { IntelSourceHint } from '../components/IntelSourceHint';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
@@ -49,17 +55,26 @@ type OrderRoute = RouteProp<ActionStackParamList, 'Order'>;
 
 export function OrderScreen() {
   const route = useRoute<OrderRoute>();
-  const { world, confirmMove, actionFeedback, isTutorialActive, currentBeat } = useGame();
+  const navigation = useNavigation();
+  const { world, confirmMove, issueInfluence, actionFeedback, isTutorialActive, currentBeat } =
+    useGame();
   const playerId = resolvePlayerFactionId(world);
   const movableUnits = playerMovableUnits(world);
   const isMovementBeat = isTutorialActive && currentBeat === 'movement';
 
-  const [unitId, setUnitId] = useState('');
+  const [mode, setMode] = useState<OrderScreenMode>('move');
   const [destinationId, setDestinationId] = useState<string>('');
   const [stance, setStance] = useState<TransitOrder['stanceOnArrival']>('assault');
   const [expandedSection, setExpandedSection] = useState<string | null>('confirm');
   const [presetLocked, setPresetLocked] = useState(false);
   const [presetDestinationId, setPresetDestinationId] = useState<string | null>(null);
+  const [unitId, setUnitId] = useState('');
+
+  useEffect(() => {
+    if (route.params?.orderMode) {
+      setMode(route.params.orderMode);
+    }
+  }, [route.params?.orderMode]);
 
   useEffect(() => {
     const presetDestination = route.params?.presetDestinationId;
@@ -68,6 +83,7 @@ export function OrderScreen() {
       setPresetDestinationId(presetDestination);
       setDestinationId(presetDestination);
       setPresetLocked(true);
+      setMode('move');
     }
     if (presetForce) {
       setUnitId(presetForce);
@@ -171,7 +187,45 @@ export function OrderScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <ScreenBackButton />
-      <Text style={styles.heading}>Issue Move Order</Text>
+      <Text style={styles.heading}>Issue Orders</Text>
+
+      <OrderModeSegment mode={mode} onChange={setMode} />
+
+      {mode === 'build' ? (
+        <TerminalCard testID="order-build-mode">
+          <Text style={styles.optionTitle}>Build & infrastructure</Text>
+          <Text style={styles.optionSub}>
+            Unit production and infrastructure upgrades are managed per territory.
+          </Text>
+          <Pressable
+            style={styles.buildLink}
+            onPress={() =>
+              navigateTo(navigation.getParent()!, { tab: 'actions', screen: 'territory' })
+            }
+            testID="order-open-territory"
+          >
+            <Text style={styles.buildLinkLabel}>Open Territory screen →</Text>
+          </Pressable>
+        </TerminalCard>
+      ) : null}
+
+      {mode === 'influence' && playerId ? (
+        <OrderInfluencePanel
+          world={world}
+          playerId={playerId}
+          actionFeedback={actionFeedback}
+          presetCityId={route.params?.presetCityId}
+          presetAction={route.params?.presetInfluenceAction as InfluenceOrderActionKind | undefined}
+          onExecute={(cityId, kind) => void issueInfluence(cityId, kind)}
+          onOpenTerritory={(cityId) =>
+            navigateTo(navigation.getParent()!, { tab: 'actions', screen: 'territory', territoryId: cityId })
+          }
+        />
+      ) : null}
+
+      {mode === 'move' ? (
+        <>
+      <Text style={styles.headingSection}>Issue Move Order</Text>
 
       <ActionFeedbackBanner action="move" feedback={actionFeedback} />
 
@@ -323,6 +377,8 @@ export function OrderScreen() {
           )
         }
       />
+        </>
+      ) : null}
     </ScrollView>
   );
 }
@@ -342,6 +398,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 16,
+  },
+  headingSection: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  buildLink: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  buildLinkLabel: {
+    color: terminal.accent,
+    fontFamily: terminal.mono,
+    fontSize: 13,
+    fontWeight: '700',
   },
   presetBanner: {
     borderColor: terminal.tutorial,

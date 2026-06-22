@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer, DefaultTheme, type NavigationState } from '@react-navigation/native';
@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { resolveTabBarBottomInset } from './tabBarMetrics';
 import { Ionicons } from '@expo/vector-icons';
 import { useGame } from '../game/GameContext';
+import { useTooltip } from '../components/tooltip/TooltipContext';
 import { PersistentHeader } from '../components/PersistentHeader';
 import { TutorialBanner } from '../components/tutorial/TutorialBanner';
 import { DilemmaModalOverlay } from '../components/dilemma/DilemmaModalOverlay';
@@ -71,10 +72,17 @@ export function RootTabs() {
     dismissDilemmaModal,
     resolvePendingDilemma,
   } = useGame();
+  const { dismissActiveTooltip } = useTooltip();
 
   const tabBarStyle = useTabBarStyle();
   const crisisModalOpen =
     dilemmaModalState.visible && dilemmaModalState.urgency === 'crisis';
+
+  useEffect(() => {
+    if (crisisModalOpen) {
+      dismissActiveTooltip();
+    }
+  }, [crisisModalOpen, dismissActiveTooltip]);
   const skipNavDismissRef = useRef(true);
 
   const onNavigationStateChange = useCallback(

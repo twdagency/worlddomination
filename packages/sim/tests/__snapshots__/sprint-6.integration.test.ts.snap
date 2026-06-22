@@ -12,7 +12,7 @@ Genghis — tick 1700921600000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700921600000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
-INCOME — funding 3355.5000000000005
+INCOME — +$3,355 funding, +204 fuel, +207 steel, +45 rareMetals, +112 food accrued while away
 DIPLOMACY — Alliance formed with Genghis.
 Caesar — tick 1700943200000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
@@ -32,7 +32,7 @@ Caesar — tick 1701072800000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
 Caesar — tick 1701094400000
 INTEL — Infrastructure upgraded at Paris (Rome) (Caesar)
-INCOME — funding 28012.500000000004
+INCOME — +$28,012 funding, +1687 fuel, +1785 steel, +369 rareMetals, +900 food accrued while away
 Philip II — tick 1701094400000
 DIPLOMACY — Philip II has broken alliance with Genghis.",
   "genghisReputationLabel": "Wary",
@@ -52,7 +52,7 @@ DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700981600000
 INTEL — Caesar forces advancing from Bucharest (Rome) toward Belgrade (Britain)
 INTEL — Genghis forces advancing from Sofia (Steppe) toward Belgrade (Britain)
-INCOME — funding 3527.25
+INCOME — +$3,527 funding, +198 fuel, +192 steel, +45 rareMetals, +112 food accrued while away
 DIPLOMACY — Alliance formed with Suleiman.
 INTEL — Genghis forces arrived at Belgrade (Britain) — contact expected
 Bloody clash at Belgrade: Elizabeth prevailed over Genghis (3 casualties, enemy 6 fallen).
@@ -122,7 +122,7 @@ Caesar — tick 1701154400000
 INTEL — Infrastructure upgraded at Bucharest (Rome) (Caesar)
 Elizabeth — tick 1701154400000
 INTEL — Suleiman's forces report Caesar activity at Bucharest (Rome)
-INCOME — funding 29690.38421448937",
+INCOME — +$29,690 funding, +1653 fuel, +1701 steel, +367 rareMetals, +900 food accrued while away",
   "genghisReputationLabel": "Neutral",
   "playerAlliedWithGenghis": true,
 }

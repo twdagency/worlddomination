@@ -22,6 +22,9 @@ import {
 import type { DispatchFeedItem, SimEvent, WorldState } from 'sim';
 import type { TransitOrder } from 'sim';
 import { resolvePlayerFactionId } from 'shared';
+import { resolvePressureOrderFields, type InfluenceOrderActionKind } from './influenceSelector';
+
+export { type InfluenceOrderActionKind };
 
 export function mergeDispatches(
   world: WorldState,
@@ -116,6 +119,49 @@ export function issueUpgradeInfra(
   );
 }
 
+export function issueInfluenceOrder(
+  world: WorldState,
+  kind: InfluenceOrderActionKind,
+  targetCityId: string,
+): { world: WorldState; events: SimEvent[] } {
+  const playerId = resolvePlayerFactionId(world);
+  if (!playerId) return { world, events: [] };
+
+  const tags = taggedOrderFields(playerId, world.nowMs, 'expand');
+
+  if (kind === 'diplomatic-pressure') {
+    const fields = resolvePressureOrderFields(world, playerId, targetCityId);
+    if (!fields) return { world, events: [] };
+    return tick(
+      world,
+      [
+        {
+          kind: 'diplomatic-pressure',
+          ownerId: playerId,
+          targetCityId,
+          targetCountryId: fields.targetCountryId,
+          proposalKind: fields.proposalKind,
+          ...tags,
+        },
+      ],
+      0,
+    );
+  }
+
+  return tick(
+    world,
+    [
+      {
+        kind,
+        ownerId: playerId,
+        targetCityId,
+        ...tags,
+      },
+    ],
+    0,
+  );
+}
+
 export function skipToNextEvent(world: WorldState): {
   world: WorldState;
   events: SimEvent[];
@@ -123,21 +169,6 @@ export function skipToNextEvent(world: WorldState): {
   const target = nextEventMs(world);
   if (target === null) return null;
   return advanceTo(world, target);
-}
-
-function formatIncomeLine(
-  event: Extract<SimEvent, { kind: 'income' }>,
-  world: WorldState,
-): string {
-  const parts = [`+$${Math.floor(event.funding).toLocaleString()} funding`];
-  for (const [territoryId, resources] of Object.entries(event.resourcesByTerritory)) {
-    const place = world.territories[territoryId]?.name ?? territoryId;
-    for (const [key, value] of Object.entries(resources)) {
-      if (!value || value <= 0) continue;
-      parts.push(`+${Math.floor(value)} ${key} at ${place}`);
-    }
-  }
-  return `INCOME — ${parts.join(', ')} accrued while away`;
 }
 
 export function formatDispatchLine(event: SimEvent, world: WorldState): string {
@@ -197,7 +228,8 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
   }
 
   if (event.kind === 'income') {
-    return formatIncomeLine(event, world);
+    const playerId = resolvePlayerFactionId(world);
+    return dispatchLineForEvent(world, event, playerId ?? undefined);
   }
 
   if (event.kind === 'production') {
@@ -212,7 +244,8 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
     return `REJECTED — ${event.reason === 'cannot-assault-own-territory' ? 'Cannot issue assault on own territory.' : event.reason}`;
   }
 
-  return `${event.kind} event`;
+  const playerId = resolvePlayerFactionId(world);
+  return dispatchLineForEvent(world, event, playerId ?? undefined);
 }
 
 export { buildDispatchFeed, compactDispatchFeed, COMPACTION_THRESHOLD_MS };
