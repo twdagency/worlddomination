@@ -553,3 +553,15 @@ Source: Sprint 8 Phase 9 acceptance + Sprint 4 cold-play Spain naming flag.
 When AI behavior has a **different decision cadence** than existing scoring (e.g. military orders per tick vs. influence orders capped per day), add a **dedicated collection pass** (`collectAiInfluenceOrders`) rather than extending `decideOrders` / `collectAiOrders`. Keeps scoring loops from compounding complexity.
 
 Source: Sprint 10 Phase 0 audit — AI agency is a new tick path, not an extension of `decideOrders`.
+
+## Sprint 10 process note — cycle hub cascade resolution (Phase 1)
+
+Leaf-module extraction from cyclic **hub** modules (`dispatch.ts`, `diplomacy.ts`, …) can collapse **transitive** require cycles beyond the directly targeted pairs. Breaking hub edges removes dependencies that downstream chains relied on — the right small refactor may fix more cycles than explicitly scoped.
+
+Source: Sprint 10 Phase 1 — 12 sim cycles targeted (6 scoped), 0 remaining after `beatId.ts` + `diplomaticPair.ts` extractions.
+
+## Sprint 11+ — consolidate `diplomaticDispatch.ts` re-export barrel
+
+`diplomaticDispatch.ts` is a backward-compat re-export over `diplomaticEvents.ts`. When consumer paths are clear, deprecate the barrel and import `diplomaticEvents` directly.
+
+Source: Sprint 10 Phase 1 cycle hygiene.
