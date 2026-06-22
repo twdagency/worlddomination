@@ -1,5 +1,6 @@
 import type { AccruedIncome } from './economy';
 import type { Order, SimEvent, SimEventDraft, WorldState } from './types';
+import { MS_PER_DAY } from './constants';
 import { accrueEconomy } from './economy';
 import { pruneExpiredTreaties } from './diplomacy';
 import { expiredTreatyEvents } from './diplomaticDispatch';
