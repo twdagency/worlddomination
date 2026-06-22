@@ -313,6 +313,7 @@ export {
   getActiveTreaties,
   getAlliancesFor,
   getTreatiesBetween,
+  hasActiveTreatyOn,
   normalizeFactionPair,
   pruneExpiredTreaties,
 } from './diplomacy';

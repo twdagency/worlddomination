@@ -13,6 +13,7 @@ import {
   computeStance,
   diplomaticRelationshipStatus,
   getActiveTreaties,
+  hasActiveTreatyOn,
   pendingProposalsForFaction,
   playerFactionId,
   reputationCategory,
@@ -157,10 +158,6 @@ export function DiplomacyScreen() {
     const rollups = selectInfluenceForDiplomacy(world);
     return new Map(rollups.map((entry) => [entry.countryId, entry]));
   }, [world]);
-
-  const treatyTerritories = Object.values(world.territories)
-    .filter((territory) => territory.ownerId !== playerId)
-    .sort((a, b) => a.name.localeCompare(b.name));
 
   if (!playerId) {
     return (
@@ -366,7 +363,31 @@ export function DiplomacyScreen() {
                       <Text style={styles.pickerHint}>
                         Select territory to offer access (48h default)
                       </Text>
-                      {treatyTerritories.map((territory) => {
+                      {(() => {
+                        const eligibleTreatyTerritories = Object.values(world.territories)
+                          .filter(
+                            (territory) =>
+                              territory.ownerId === item.id &&
+                              !hasActiveTreatyOn(
+                                world,
+                                playerId,
+                                item.id,
+                                territory.id,
+                                world.nowMs,
+                              ),
+                          )
+                          .sort((a, b) => a.name.localeCompare(b.name));
+
+                        if (eligibleTreatyTerritories.length === 0) {
+                          return (
+                            <Text style={styles.muted} testID="treaty-picker-empty">
+                              All eligible territories with {item.name} are already under active
+                              treaty.
+                            </Text>
+                          );
+                        }
+
+                        return eligibleTreatyTerritories.map((territory) => {
                         const selected = selectedTreatyTerritoryId === territory.id;
                         return (
                           <Pressable
@@ -394,7 +415,8 @@ export function DiplomacyScreen() {
                             </View>
                           </Pressable>
                         );
-                      })}
+                      });
+                      })()}
                     </View>
                     <View style={styles.treatyActionRow}>
                       <Pressable

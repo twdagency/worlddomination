@@ -3,6 +3,7 @@ import {
   breakAlliance,
   formAlliance,
   formTreaty,
+  hasActiveTreatyOn,
 } from './diplomacy';
 import {
   allianceBrokenEvent,
@@ -133,6 +134,9 @@ export function playerProposeTreaty(
   if (hasPendingProposalBetween(world, playerId, targetId, 'treaty')) {
     return { world, events: [] };
   }
+  if (hasActiveTreatyOn(world, playerId, targetId, territoryId, atMs)) {
+    return { world, events: [] };
+  }
 
   const acceptanceScore = scoreTreatyAcceptance(world, targetId, playerId, territoryId);
   if (acceptanceScore >= TREATY_ACCEPT_THRESHOLD) {
@@ -177,6 +181,10 @@ export function playerAcceptProposal(
   } else {
     const territoryIds = proposal.scope?.territoryIds ?? [];
     if (territoryIds.length !== 1) return { world, events: [] };
+    const territoryId = territoryIds[0]!;
+    if (hasActiveTreatyOn(next, proposal.from, proposal.to, territoryId, atMs)) {
+      return withEvents(next, []);
+    }
     const durationMs = proposal.durationMs ?? DEFAULT_TREATY_DURATION_MS;
     const beforeIds = new Set(next.treaties.map((treaty) => treaty.id));
     next = formTreaty(next, {

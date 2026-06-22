@@ -109,6 +109,8 @@ export function formatInfluenceOrderRejectedMessage(reason: InfluenceOrderReject
       return 'This diplomatic pressure proposal kind is not yet available.';
     case 'target-country-mismatch':
       return 'Target city is not owned by the specified country.';
+    case 'active-treaty-exists':
+      return 'An active treaty already covers this territory.';
     case 'tribute-already-active':
       return 'A tribute extraction is already active in this city.';
     case 'no-active-tribute':
