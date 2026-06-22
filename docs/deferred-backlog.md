@@ -430,6 +430,11 @@ deps; gate at `openTooltip()` time.
 - **Alliance proposal two-step UX (Sprint 10)** — apply the same select-then-send
   pattern from Sprint 9.5 Phase 1 treaty UX to `Propose alliance` for diplomacy
   consistency (one-step submit remains lower severity but same accidental-submit class).
+- **AI-initiated treaty proposals (Sprint 10)** — AI queues alliances via
+  `queueAllianceProposal` but has no symmetric treaty proposal pipeline; players
+  can target AI with treaties but AI cannot initiate them. Pair with existing
+  Sprint 10 **AI agency for influence threshold actions** theme (Set B expansion).
+  Audit confirmed in Sprint 9.5 Phase 4 (duplicate treaty guard).
 - **Dilemma consequence preview UI tuning** — Phase 6 ships Choose without spelling out
   "+200 gold, -30 standing" on option cards (legibility B: constraints visible,
   consequences hinted).

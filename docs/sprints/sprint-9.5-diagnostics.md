@@ -255,6 +255,23 @@ The cadence issue is the combination of:
 
 ---
 
+## Phase 4 complete — duplicate treaty guard (#27)
+
+**Commit:** `581e233` — `hasActiveTreatyOn`, four-layer defense (UI picker filter,
+`validateDiplomaticPressure`, `playerProposeTreaty`, `formTreaty`). **842 tests**
+(+10). Diplomatic pressure rejects with `active-treaty-exists` (Q1).
+
+**Audit finding:** No AI-initiated treaty proposal pipeline (alliances only). Logged
+to `deferred-backlog.md` — Sprint 10 AI-initiated treaties + AI agency.
+
+**Incidental fix:** DiplomacyScreen treaty picker previously listed all
+non-player territories; Phase 4 filter correctly scopes to
+`territory.ownerId === targetCountry` plus active-treaty exclusion. Pre-existing
+Sprint 6/7 bug, escaped cold-play because wrong-country rows were selectable but
+rarely noticed.
+
+---
+
 ## Phase 0 acceptance
 
 - [x] Branch `sprint-9.5/treaty-income-polish` from `90fa314`
