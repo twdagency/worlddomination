@@ -381,6 +381,30 @@ fix-where-no-bug-exists work.
 unless symptomatic. Noise obscures real bugs. Fix when: undefined-at-import,
 flaky tests, or user-visible incorrect behavior tied to the cycled modules.
 
+## Process — mobile effect lifecycle (Sprint 9)
+
+**AsyncStorage hydration callbacks must not sit in `useEffect` dependency arrays
+when the effect manages timers or other side-effect lifecycles.**
+
+Hydration flips state (e.g. `ready`, dismissed-ID sets) after mount. If that
+callback is a dependency, the effect re-runs, cleanup cancels in-flight timers,
+and UX becomes intermittent (e.g. first-mount tooltips that never fire).
+
+**Pattern:** read hydration-derived state inside the effect body or event
+handlers; depend only on stable inputs (`id`, `enabled`, delay constants). Check
+dismissal/persistence at fire time, not as an effect dep that changes when storage
+loads.
+
+Source: Sprint 9 Phase 9 — `TooltipAnchor` first-mount timer cancelled when
+`isDismissed` (backed by AsyncStorage) was in the effect deps. Fix: remove from
+deps; gate at `openTooltip()` time.
+
+## Sprint 7c issue closures (bundled in Sprint 9)
+
+- **Issue #17 — Foreign TerritoryScreen polymorphism** — closed via Sprint 9
+  Phase 8 as bundled work. Read-only foreign city influence detail and territory
+  screen polymorphism shipped in a single pass (not a separate hotfix iteration).
+
 ## Sprint 7b tutorial follow-ups
 
 ### Sprint 8 candidates
@@ -403,21 +427,68 @@ flaky tests, or user-visible incorrect behavior tied to the cycled modules.
 - **Treaty pinch UX feedback (Sprint 8.5 cold-play)** — treaty offer/decline path
   resolves Beat 4 without clear player feedback; coordinate with dilemma surfacing
   fix (#14) and Sprint 9 dispatch/UX polish.
+- **Alliance proposal two-step UX (Sprint 10)** — apply the same select-then-send
+  pattern from Sprint 9.5 Phase 1 treaty UX to `Propose alliance` for diplomacy
+  consistency (one-step submit remains lower severity but same accidental-submit class).
 - **Dilemma consequence preview UI tuning** — Phase 6 ships Choose without spelling out
   "+200 gold, -30 standing" on option cards (legibility B: constraints visible,
   consequences hinted).
 
 ### Sprint 9 — engineering hygiene (symptom-triggered)
 
-- **`diplomaticAi` ↔ `playerDiplomacy` require cycle (sim)** — Promote to active work
-  if diplomacy proposals show non-deterministic accept/decline behavior,
-  undefined-at-import errors, or test flakiness. Fix scope: extract
-  scoring/thresholds to `diplomaticScoring.ts` (~30–60 min refactor). No symptom
-  as of Sprint 8.5 cold-play prep.
+- **`diplomaticAi` ↔ `playerDiplomacy` require cycle (sim)** — Superseded by
+  **Sim require-cycle hygiene** under Sprint 10 candidates below (inventory item
+  12). Was symptom-triggered defer from Sprint 8.5; promoted to scheduled work
+  after Sprint 9 cycle growth.
 - **VirtualizedList slow-update warnings (mobile)** — Promote if scroll jank is
   reported during cold-play on World, Diplomacy, Dispatches, or Forces screens.
   Fix scope: `React.memo` row components, stable `keyExtractor`, avoid inline
   objects in `renderItem`. Dev warning alone is not sufficient trigger.
+
+### Sprint 10 candidates (engineering)
+
+- **Sim require-cycle hygiene** — Dedicated cleanup of `packages/sim` circular
+  dependencies. Promoted from "deferred until symptomatic" (Sprint 8.5) to
+  scheduled Sprint 10 work after Sprint 9 build added ~10 new cycles on top of
+  Sprint 8.5's two known deferrals — growth rate confirms architectural attention,
+  not incremental one-off fixes.
+
+  **Inventory (12 cycles, `madge --circular packages/sim/src/index.ts`, Sprint 9):**
+
+  1. `diplomacy.ts` ↔ `diplomaticDispatch.ts`
+  2. `country.ts` → `diplomacy.ts` → `diplomaticDispatch.ts` → `dispatch.ts`
+  3. `diplomaticDispatch.ts` → `dispatch.ts`
+  4. `diplomacy.ts` → `diplomaticDispatch.ts` → `dispatch.ts` → `influenceAccelerators.ts`
+  5. `diplomacy.ts` → `diplomaticDispatch.ts` → `dispatch.ts` → `influenceAccelerators.ts` → `influence.ts`
+  6. `country.ts` → … → `influenceActions.ts` (via dispatch / influenceAccelerators)
+  7. `diplomacy.ts` → … → `influenceActions.ts`
+  8. `diplomaticDispatch.ts` → … → `influenceActions.ts`
+  9. `country.ts` → … → `movement.ts` → `arrivalCombat.ts`
+  10. `diplomacy.ts` → … → `arrivalCombat.ts`
+  11. `diplomaticDispatch.ts` → … → `intelDispatch.ts` (via arrivalCombat)
+  12. `dispatch.ts` → `influenceAccelerators.ts` → `movement.ts` → `arrivalCombat.ts` → `intelDispatch.ts`
+
+  **Direct pair of highest concern:** `diplomaticAi.ts` ↔ `playerDiplomacy.ts`
+  (cycle 13 in full madge output; smallest scoring/threshold extraction fix).
+
+  **Other high-priority pairs:** `country.ts` ↔ `influenceActions.ts` (smallest
+  country-layer fix); `diplomacy.ts` ↔ `diplomaticDispatch.ts` (dispatch
+  formatting vs state).
+
+  **Likely root cause:** `dispatch.ts` and `diplomacy.ts` are over-imported;
+  extract shared types/helpers to dedicated modules (`diplomaticScoring.ts`,
+  thin dispatch formatters, etc.).
+
+  **Promotion triggers (any one):**
+
+  - Cold-play finding traceable to module load order or undefined-at-import
+  - Diplomacy proposal non-determinism or test flakiness tied to cycled modules
+  - Sprint 10 feature work blocked by new import cycles
+
+  **Estimated scope:** 3–5 day dedicated cleanup sprint, or 2–3 phases integrated
+  into broader sim architecture work. Re-run `madge --circular src/index.ts` from
+  `packages/sim` before starting to confirm current graph.
+
 
 ## UI — Diplomacy identity axes (Sprint 8+)
 
