@@ -13,13 +13,13 @@ import {
   DEFAULT_TREATY_DURATION_MS,
   treatyDeclinedEvent,
   treatyFormedEvent,
-} from './diplomaticDispatch';
+} from './diplomaticEvents';
 import {
   ALLIANCE_ACCEPT_THRESHOLD,
   scoreAllianceAcceptance,
   scoreTreatyAcceptance,
   TREATY_ACCEPT_THRESHOLD,
-} from './diplomaticAi';
+} from './diplomaticScoring';
 import {
   addPendingProposal,
   deterministicProposalId,
@@ -31,7 +31,7 @@ import {
 import type { Id, Millis, PendingProposal, SimEvent, SimEventDraft, WorldState } from './types';
 import { stampEvents } from './events';
 
-export { DEFAULT_TREATY_DURATION_MS } from './diplomaticDispatch';
+export { DEFAULT_TREATY_DURATION_MS } from './diplomaticEvents';
 
 function withEvents(world: WorldState, events: SimEventDraft[]): { world: WorldState; events: SimEvent[] } {
   return stampEvents(world, events);

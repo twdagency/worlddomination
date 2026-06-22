@@ -1,6 +1,42 @@
-# Sprint 10 Phase 0 — Require-cycle audit
+# Sprint 10 — Require-cycle audit
 
 **Branch:** `sprint-10/ai-agency` from `sprint-9-final` @ `571d909`  
+**Tool:** `madge --circular packages/sim/src/index.ts`
+
+## Phase 1 results (complete)
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Sim cycles | **15** (12 chains + 3 direct edges in madge output) | **0** |
+| Shared-package cycles | 2 | 2 (unchanged — Sprint 11) |
+| Files processed | 58 | 68 |
+
+**All 12 sim require cycles resolved** (exceeded Phase 1 target of 6). Collateral extractions (`beatId.ts`, `diplomaticPair.ts`, `dispatchFormatHelpers.ts`, `tributeLifecycle.ts`) broke remaining hub edges without additional scope.
+
+### Resolved extractions (P1–P6)
+
+| ID | Status | Module(s) |
+|----|--------|-----------|
+| P1 | **Resolved** | `diplomaticScoring.ts` — breaks `diplomaticAi` ↔ `playerDiplomacy` |
+| P2 | **Resolved** | `diplomaticEvents.ts`, `diplomaticPair.ts`, `beatId.ts` — breaks `diplomacy` ↔ `diplomaticDispatch` |
+| P3 | **Resolved** | `diplomaticDispatchLines.ts`, `dispatchFormatHelpers.ts` — breaks `diplomaticDispatch` ↔ `dispatch` |
+| P4 | **Resolved** | `territoryOwnership.ts`, `tributeLifecycle.ts` — breaks `country` ↔ `influenceActions` |
+| P5 | **Resolved** | Verified — no `influenceActions` → `country` import after P4 |
+| P6 | **Resolved** | `influenceOrderMessages.ts`, `influenceOrderValidation.ts` — breaks `dispatch` → `influenceAccelerators` |
+
+`diplomaticDispatch.ts` is now a re-export barrel over `diplomaticEvents.ts` (backward compat).
+
+### Sprint 11 defer
+
+No sim cycles remain. Sprint 11 hygiene is optional hardening only:
+
+- Shared package dilemmas cycles (#14–15): `beatController` ↔ `dilemmas` ↔ `foreignRule`
+- Consider folding `dispatchFormatHelpers` into a broader dispatch layering pass if new formatters accumulate
+
+---
+
+## Phase 0 baseline (pre-Phase 1)
+
 **Tool:** `madge --circular packages/sim/src/index.ts` (58 files processed)
 
 ## Summary
@@ -9,8 +45,8 @@
 |--------|--------|
 | Sim cycles (from `index.ts`) | **12 chains** (+ 1 direct pair = 13 sim concerns) |
 | Shared-package cycles | **2** (dilemmas — out of Sprint 10 Phase 1 scope) |
-| **Phase 1 target** | **6 cycles broken** (moderate scope) |
-| **Sprint 11 defer** | **6** sim chains + shared dilemmas |
+| **Phase 1 target** | **6 cycles broken** (moderate scope) — **exceeded: all 12** |
+| **Sprint 11 defer** | **shared dilemmas only** |
 
 ## Hub modules (files in multiple cycles)
 

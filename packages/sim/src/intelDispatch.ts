@@ -1,4 +1,4 @@
-import { computeBeatId } from './dispatch';
+import { computeBeatId } from './beatId';
 import { garrisonDescriptor } from './diplomaticDispatch';
 import type {
   Id,

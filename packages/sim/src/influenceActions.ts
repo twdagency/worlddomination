@@ -1,11 +1,12 @@
 import { areAllied, formAlliance, formTreaty, getAlliancesFor, hasActiveTreatyOn } from './diplomacy';
 import { MS_PER_DAY, MS_PER_HOUR } from './constants';
-import { findCountry, recordConquerorOnTerritoryCapture } from './country';
+import { findCountry } from './country';
 import {
   allianceFormedEvent,
   DEFAULT_TREATY_DURATION_MS,
   treatyFormedEvent,
-} from './diplomaticDispatch';
+} from './diplomaticEvents';
+import { captureCityForCoup } from './territoryOwnership';
 import { extractionPerHour, incomePerHour } from './economy';
 import {
   applyInfluenceDelta,
@@ -282,18 +283,8 @@ export function applyDiplomaticPressure(
   return { world: next, events };
 }
 
-export function formatDiplomaticPressureProposalLabel(proposalKind: PressureProposalKind): string {
-  switch (proposalKind) {
-    case 'accept-alliance':
-      return 'alliance';
-    case 'accept-treaty':
-      return 'treaty';
-    case 'concession-territory':
-      return 'territory concession';
-    case 'concession-resource':
-      return 'resource concession';
-  }
-}
+export { cancelTributesForDefeatedCountry } from './tributeLifecycle';
+export { formatDiplomaticPressureProposalLabel } from './influenceOrderMessages';
 
 export const TRIBUTE_EXTRACTION_COST = 5000;
 export const TRIBUTE_INFLUENCE_FLOOR = 50;
@@ -579,34 +570,6 @@ export function applyTributeCancel(
       },
     ],
   };
-}
-
-export function cancelTributesForDefeatedCountry(
-  world: WorldState,
-  countryId: Id,
-  at: Millis,
-): { world: WorldState; events: SimEventDraft[] } {
-  let next = ensureWorldTributes(world);
-  const events: SimEventDraft[] = [];
-  const remaining: ActiveTribute[] = [];
-
-  for (const tribute of sortedActiveTributes(next)) {
-    if (tribute.actorId === countryId || tribute.targetCountryId === countryId) {
-      events.push({
-        kind: 'tributeAutoEnded',
-        at,
-        actorId: tribute.actorId,
-        targetCityId: tribute.targetCityId,
-        reason: 'target-defeated',
-        importance: 'medium',
-      });
-      continue;
-    }
-    remaining.push(tribute);
-  }
-
-  if (events.length === 0) return { world: next, events };
-  return { world: { ...next, activeTributes: remaining }, events };
 }
 
 export function accrueTributes(
@@ -941,42 +904,6 @@ function cancelTributesOnCity(
 
   if (events.length === 0) return { world, events };
   return { world: { ...world, activeTributes: remaining }, events };
-}
-
-function captureCityForCoup(
-  world: WorldState,
-  targetCityId: Id,
-  actorId: Id,
-  previousOwnerId: Id,
-  at: Millis,
-): { world: WorldState; events: SimEventDraft[] } {
-  const territory = world.territories[targetCityId];
-  if (!territory) return { world, events: [] };
-
-  const territories = {
-    ...world.territories,
-    [targetCityId]: { ...territory, ownerId: actorId },
-  };
-  const countries = recordConquerorOnTerritoryCapture(
-    { ...world, territories },
-    targetCityId,
-    previousOwnerId,
-    actorId,
-  ).countries;
-
-  return {
-    world: { ...world, territories, countries },
-    events: [
-      {
-        kind: 'territoryCaptured',
-        at,
-        territoryId: targetCityId,
-        previousOwnerId,
-        newOwnerId: actorId,
-        importance: 'high',
-      },
-    ],
-  };
 }
 
 function applyCoupSuccessInfluence(

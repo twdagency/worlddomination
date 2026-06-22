@@ -5,7 +5,7 @@ import {
   getAlliancesFor,
 } from './diplomacy';
 import { clearInfluenceForCountry } from './influence';
-import { cancelTributesForDefeatedCountry } from './influenceActions';
+import { cancelTributesForDefeatedCountry } from './tributeLifecycle';
 
 /**
  * Scenario-specific capital assignments. Same faction ID may map to different
