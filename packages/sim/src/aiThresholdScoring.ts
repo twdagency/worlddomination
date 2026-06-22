@@ -216,7 +216,7 @@ export function scoreAiThresholdAction(
     signals.thresholdFloor = thresholdFloorSignal(influence, COUP_INFLUENCE_FLOOR);
     signals.strategicValue = city.infraLevel * 0.6;
     signals.playerCapital = playerCapital ? 2.0 : 0;
-    signals.coupSuccessRate = calculateCoupSuccessRate(world, actorId, targetCityId) * 2;
+    signals.coupSuccessRate = calculateCoupSuccessRate(world, actorId, targetCityId, at) * 2;
     signals.posture = postureThresholdModifier(posture, action, playerCapital);
   } else {
     const validation = validateDefectionClaim(world, actorId, targetCityId);

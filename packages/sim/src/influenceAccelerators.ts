@@ -11,7 +11,10 @@ import {
   validateInfluenceTarget,
   type InfluenceOrderRejectionReason,
 } from './influenceOrderValidation';
-import { nextRandom } from './rng';
+import {
+  applyGatherIntelligence,
+  validateGatherIntelligence,
+} from './intelligenceGather';
 import {
   applyDiplomaticPressure,
   applyCoupAttempt,
@@ -24,6 +27,7 @@ import {
   validateTributeCancel,
   validateTributeExtraction,
 } from './influenceActions';
+import { nextRandom } from './rng';
 import type {
   ActiveDiplomaticMission,
   CulturalCampaignRecord,
@@ -312,6 +316,18 @@ export function applyInfluenceOrders(
         continue;
       }
       const result = applyDefectionClaim(next, ownerId, targetCityId, at);
+      next = result.world;
+      events.push(...result.events);
+      continue;
+    }
+
+    if (order.kind === 'gather-intelligence') {
+      const validation = validateGatherIntelligence(next, ownerId, targetCityId, at);
+      if (!validation.ok) {
+        rejectInfluenceOrder(next, order, validation.reason, events);
+        continue;
+      }
+      const result = applyGatherIntelligence(next, ownerId, targetCityId, at);
       next = result.world;
       events.push(...result.events);
       continue;

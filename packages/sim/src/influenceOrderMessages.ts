@@ -51,6 +51,10 @@ export function formatInfluenceOrderRejectedMessage(
       return 'A tribute extraction is already active in this city.';
     case 'no-active-tribute':
       return 'No active tribute extraction to cancel.';
+    case 'intelligence-on-cooldown':
+      return 'Intelligence gathering is still on cooldown for this city.';
+    case 'intelligence-fresh':
+      return 'Recent intelligence on this city is still fresh.';
     default:
       return formatOrderRejectedMessage(reason);
   }

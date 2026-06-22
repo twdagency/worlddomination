@@ -80,7 +80,32 @@ export type {
   AiThresholdKind,
   ScoredAiThresholdAction,
 } from './aiThresholdOrders';
-export { AI_INFLUENCE_AGENCY_SUCCESS_KINDS } from './aiInfluenceCadence';
+export {
+  applyAiIntelligenceOrders,
+  canActorGatherIntelligence,
+  collectAiIntelligenceOrders,
+  intelligenceUsesSeparateCadenceFromInfluenceChannel,
+} from './aiIntelligenceOrders';
+export {
+  AI_INTELLIGENCE_MIN_SCORE,
+  pickBestAiIntelligenceAction,
+  scoreAiIntelligenceAction,
+} from './aiIntelligenceScoring';
+export type { ScoredAiIntelligenceAction } from './aiIntelligenceScoring';
+export {
+  applyGatherIntelligence,
+  captureIntelligenceSnapshot,
+  ensureWorldIntelligenceGathers,
+  hasFreshIntelligence,
+  INTELLIGENCE_COOLDOWN_MS,
+  INTELLIGENCE_GATHER_COST,
+  INTELLIGENCE_MIN_INFLUENCE,
+  intelligenceGarrisonCount,
+  isIntelligenceOnCooldown,
+  latestIntelligenceRecord,
+  validateGatherIntelligence,
+} from './intelligenceGather';
+export type { IntelligenceRejectionReason } from './intelligenceGather';
 export { isAiInfluenceAgencyActive, isInfluenceAgencyDisabled, resolvePlayerFactionId } from './aiInfluenceAgency';
 export {
   computeVisibility,

@@ -17,7 +17,9 @@ export type InfluenceOrderRejectionReason =
   | 'target-city-unknown'
   | 'mission-already-active'
   | 'cultural-campaign-cooldown'
-  | 'no-active-mission';
+  | 'no-active-mission'
+  | 'intelligence-on-cooldown'
+  | 'intelligence-fresh';
 
 const INFLUENCE_ORDER_KINDS = new Set<Order['kind']>([
   'diplomatic-mission',
@@ -29,6 +31,7 @@ const INFLUENCE_ORDER_KINDS = new Set<Order['kind']>([
   'tribute-cancel',
   'coup-attempt',
   'defection-claim',
+  'gather-intelligence',
 ]);
 
 export function isInfluenceOrder(order: Order): boolean {

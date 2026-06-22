@@ -58,6 +58,14 @@ Stop-and-report after each phase. Mid-sprint additions → `docs/deferred-backlo
 - 16 tests in `aiThresholdOrders.test.ts`; 8 contract tests promoted live (6 sprint-10 + 2 influence)
 - `aiInfluenceAgencySuppressed` world flag for Sprint 9 player-mechanics test isolation
 
+## Phase 6 — COMPLETE
+
+- `intelligenceGather.ts` — player `gather-intelligence` order, enriched snapshot, per-(actor,city) cooldown
+- `aiIntelligenceScoring.ts` + `aiIntelligenceOrders.ts` — parallel recon outside daily channel
+- `calculateCoupSuccessRate` consumes intelligence garrison detail
+- Keystone: decision-delta tests (strong garrison dissuades coup; weak garrison encourages it)
+- 16 tests in `aiIntelligenceOrders.test.ts`; Phase 6 contract + agency-default guard promoted
+
 - Stop-and-report after each phase
 - `intel.forwardcompat.test.ts` unchanged
 - `tutorial.ts` does not import new AI modules

@@ -32,6 +32,7 @@ export function ensureWorldAiInfluenceAgency(world: WorldState): WorldState {
     ...world,
     aiInfluenceCooldowns: world.aiInfluenceCooldowns ?? {},
     aiSubversionDiscoveryLog: world.aiSubversionDiscoveryLog ?? [],
+    intelligenceGathers: world.intelligenceGathers ?? [],
   };
 }
 

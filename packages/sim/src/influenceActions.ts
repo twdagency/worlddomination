@@ -16,6 +16,7 @@ import {
   getInfluence,
   setInfluence,
 } from './influence';
+import { intelligenceGarrisonCount } from './intelligenceGather';
 import { removePendingProposal } from './pendingProposals';
 import { nextRandom } from './rng';
 import type {
@@ -737,6 +738,10 @@ export const COUP_OPPORTUNIST_POSTURE_BONUS = 0.1;
 export const COUP_ALLIED_INSIDER_BONUS = 0.15;
 export const COUP_SUCCESS_TARGET_REPUTATION_PENALTY = -30;
 export const COUP_FAILURE_TARGET_REPUTATION_PENALTY = -20;
+export const COUP_INTEL_WEAK_GARRISON_THRESHOLD = 10;
+export const COUP_INTEL_WEAK_GARRISON_BONUS = 0.2;
+export const COUP_INTEL_STRONG_GARRISON_THRESHOLD = 40;
+export const COUP_INTEL_STRONG_GARRISON_PENALTY = -0.5;
 
 export type CoupRejectionReason =
   | 'insufficient-influence'
@@ -805,6 +810,7 @@ export function calculateCoupSuccessRate(
   world: WorldState,
   actorId: Id,
   targetCityId: Id,
+  at: Millis = world.nowMs,
 ): number {
   const city = world.territories[targetCityId];
   if (!city?.ownerId) return 0;
@@ -820,6 +826,15 @@ export function calculateCoupSuccessRate(
   if (posture === 'loyal') rate += COUP_LOYAL_POSTURE_PENALTY;
   if (posture === 'opportunist') rate += COUP_OPPORTUNIST_POSTURE_BONUS;
   if (areAllied(world, actorId, targetCountry.id)) rate += COUP_ALLIED_INSIDER_BONUS;
+
+  const garrison = intelligenceGarrisonCount(world, actorId, targetCityId, at);
+  if (garrison !== undefined) {
+    if (garrison <= COUP_INTEL_WEAK_GARRISON_THRESHOLD) {
+      rate += COUP_INTEL_WEAK_GARRISON_BONUS;
+    } else if (garrison >= COUP_INTEL_STRONG_GARRISON_THRESHOLD) {
+      rate += COUP_INTEL_STRONG_GARRISON_PENALTY;
+    }
+  }
 
   return Math.max(0, Math.min(1, rate));
 }

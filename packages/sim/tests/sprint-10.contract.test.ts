@@ -9,9 +9,12 @@ import { UNIT_TYPES_BY_ID } from '../../shared/src/units';
 import {
   applyAiInfluenceOrders,
   applyAiThresholdOrders,
+  applyGatherIntelligence,
   collectAiInfluenceOrders,
   collectAiThresholdOrders,
+  isAiInfluenceAgencyActive,
   isInfluenceAgencyDisabled,
+  latestIntelligenceRecord,
   pickBestAiInfluenceAction,
   scoreAiInfluenceAction,
   type Faction,
@@ -105,9 +108,29 @@ describe('Sprint 10 contracts', () => {
     expect(orders[0]?.targetCityId).toBe(LONDON);
   });
 
-  it.todo(
-    'Phase 6: Intelligence action at 30+ influence emits intelReport with enriched snapshot fields',
-  );
+  it('Phase 6: Intelligence action at 30+ influence emits intelReport with enriched snapshot fields', () => {
+    const world = richAi(
+      setInfluence(
+        migrate(ensureWorldInfluence(createSprint4World(START_MS))),
+        LONDON,
+        STEPPE,
+        35,
+        START_MS,
+      ),
+    );
+    const at = world.startMs + MS_PER_DAY;
+    const result = applyGatherIntelligence(world, STEPPE, LONDON, at);
+    expect(
+      result.events.some((event) => event.kind === 'intelReport' && event.source === 'intelligence'),
+    ).toBe(true);
+    expect(latestIntelligenceRecord(result.world, STEPPE, LONDON, at)?.snapshot.enriched).toBeDefined();
+  });
+
+  it('AI influence agency is active on production factory worlds by default', () => {
+    const world = migrate(createSprint4World(START_MS));
+    expect(world.aiInfluenceAgencySuppressed).toBeUndefined();
+    expect(isAiInfluenceAgencyActive(world)).toBe(true);
+  });
 
   it.todo(
     'Phase 7: Annexation at 70+ influence transfers ownership peacefully and applies reputation cascade',

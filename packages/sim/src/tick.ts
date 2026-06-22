@@ -21,6 +21,7 @@ import { accrueTributes } from './influenceActions';
 import { applyInfluenceOrders, expireActiveInfluenceEffects } from './influenceAccelerators';
 import { applyAiInfluenceOrders } from './aiInfluenceOrders';
 import { applyAiThresholdOrders } from './aiThresholdOrders';
+import { applyAiIntelligenceOrders } from './aiIntelligenceOrders';
 import { stampEvents } from './events';
 
 /**
@@ -34,8 +35,9 @@ import { stampEvents } from './events';
  * 4. resolveProductionCompletions — infra/build finishes
  * 5. resolveArrivals — combat, captures
  * 6. accrueEconomy + accrueManpower
- * 6a. applyAiInfluenceOrders — AI accelerators (daily cadence, end-of-tick)
- * 6a. applyAiThresholdOrders — AI threshold actions (after accelerators, shared cadence)
+ * 6a. applyAiInfluenceOrders — daily slot: accelerate XOR threshold-spend
+ * 6a. applyAiThresholdOrders — threshold spend (shared daily channel)
+ * 6a. applyAiIntelligenceOrders — parallel recon (per-actor,city cooldown)
  * 6b. accruePassiveInfluence — passive accrual + decay
  * 6c. expireActiveInfluenceEffects — mission expiry, campaign cooldown prune
  * 6d. accrueTributes
@@ -134,6 +136,10 @@ export function tick(
     const aiThreshold = applyAiThresholdOrders(afterEconomy, nowMs);
     afterEconomy = aiThreshold.world;
     events.push(...aiThreshold.events);
+
+    const aiIntelligence = applyAiIntelligenceOrders(afterEconomy, nowMs);
+    afterEconomy = aiIntelligence.world;
+    events.push(...aiIntelligence.events);
   }
 
   const afterInfluence = accruePassiveInfluence(afterEconomy, nowMs);

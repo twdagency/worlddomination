@@ -262,6 +262,14 @@ export type Order =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+    }
+  | {
+      kind: 'gather-intelligence';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     };
 
 export type InfluenceActionKind =
@@ -269,7 +277,8 @@ export type InfluenceActionKind =
   | 'tribute-extraction'
   | 'tribute-cancel'
   | 'coup-attempt'
-  | 'defection-claim';
+  | 'defection-claim'
+  | 'gather-intelligence';
 
 export type PressureProposalKind =
   | 'accept-alliance'
@@ -294,6 +303,13 @@ export interface CulturalCampaignRecord {
   ownerId: Id;
   targetCityId: Id;
   appliedAt: Millis;
+  cooldownUntil: Millis;
+}
+
+export interface IntelligenceGatherRecord {
+  ownerId: Id;
+  targetCityId: Id;
+  gatheredAt: Millis;
   cooldownUntil: Millis;
 }
 
@@ -787,7 +803,18 @@ export type SimEvent = SimEventBase & SimEventKind;
 /** Event payload before `eventId` is assigned at emission. */
 export type SimEventDraft = SimEventKind;
 
-export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty';
+export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty' | 'intelligence';
+
+export interface IntelligenceGarrisonDetail {
+  totalCount: number;
+  byTypeId: Record<Id, number>;
+}
+
+export interface IntelligenceEnrichedSnapshot {
+  garrisonDetail: IntelligenceGarrisonDetail;
+  productionQueue: Territory['buildQueue'];
+  standingBreakdown: Record<Id, number>;
+}
 
 export interface TerritorySnapshot {
   ownerId?: Id;
@@ -795,6 +822,7 @@ export interface TerritorySnapshot {
   garrisonCount: number;
   visibleEnemyGarrison: number;
   inTransitCount: number;
+  enriched?: IntelligenceEnrichedSnapshot;
 }
 
 export interface IntelRecord {
@@ -923,6 +951,8 @@ export interface WorldState {
   activeDiplomaticMissions?: ActiveDiplomaticMission[];
   /** Cultural campaign cooldown records per (actor, city). */
   culturalCampaigns?: CulturalCampaignRecord[];
+  /** Intelligence gather cooldown records per (actor, city). */
+  intelligenceGathers?: IntelligenceGatherRecord[];
   /** Ongoing tribute extractions with resentment tracking. */
   activeTributes?: ActiveTribute[];
   /** Per-actor timestamp of last AI influence accelerator order (daily cadence). */
