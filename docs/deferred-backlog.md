@@ -565,3 +565,15 @@ Source: Sprint 10 Phase 1 — 12 sim cycles targeted (6 scoped), 0 remaining aft
 `diplomaticDispatch.ts` is a backward-compat re-export over `diplomaticEvents.ts`. When consumer paths are clear, deprecate the barrel and import `diplomaticEvents` directly.
 
 Source: Sprint 10 Phase 1 cycle hygiene.
+
+## Sprint 11+ — dispatch event payload rename (`factionId` → `countryId`)
+
+Dispatch event payloads and saved AsyncStorage history still use `factionId` field names (IDs are country IDs). Renaming requires save migration and optional event versioning if multiple field renames land together. Pair with slug rename consideration below.
+
+Source: Sprint 10 Phase 3 — deferred per Phase 0 audit.
+
+## Sprint 11+ — country ID slug rename (`faction-*` → `country-*`)
+
+Country IDs remain opaque legacy slugs (`faction-player`, `faction-rome`, …) for save compatibility through Sprint 10. Long-term rename to `country-*` slugs is architecturally cleaner but needs full save + snapshot migration.
+
+Source: Sprint 10 Phase 3 — explicit non-decision; IDs unchanged.

@@ -1,5 +1,5 @@
 import type { Leader, TutorialState, UnitType, WorldState } from './types';
-import { ensureWorldCountries } from './country';
+import { ensureWorldCountries, ensureWorldFactionRename } from './country';
 import { ensureWorldDiplomacy } from './diplomacy';
 import { ensureWorldEventCounter } from './events';
 import { ensureWorldInfluence } from './influence';
@@ -93,6 +93,8 @@ export function ensureWorldMigrations(
   next = ensureFactionFields(next);
 
   next = ensureWorldCountries(next);
+
+  next = ensureWorldFactionRename(next);
 
   next = ensureWorldEventCounter(next);
 

@@ -20,10 +20,10 @@ export function territoryLabelWithOwner(world: WorldState, territoryId: Id): str
   const ownerId = world.territories[territoryId]?.ownerId;
   if (!ownerId) return `${name} (unclaimed)`;
   const country = findCountry(world, ownerId);
-  if (country) return `${name} (${country.name})`;
-  const leaderId = world.factions[ownerId]?.leaderId;
-  const region = world.leaders[leaderId ?? '']?.region;
-  if (region) return `${name} (${region})`;
+  const leaderId = world.factions[ownerId]?.leaderId ?? country?.leaderId;
+  const ownerLabel =
+    country?.name ?? world.leaders[leaderId ?? '']?.region;
+  if (ownerLabel) return `${name} (${ownerLabel})`;
   return name;
 }
 

@@ -559,3 +559,15 @@ Sprint 17+: Naval depth, air depth, multi-step diplomacy depth, content expansio
 Each sprint produces a playable intermediate version. Specific sprint scoping happens at the start of each sprint, informed by current state and play data.
 
 Canon locked through Layer 5. Future modifications happen through deliberate canon-update conversations, not silent drift during implementation sprints. When implementation surfaces a canonical question we didn't anticipate, the answer is "stop and resolve at canon level," not "decide in code."
+
+---
+
+## Version notes
+
+### Sprint 10 Phase 3 — Country canonical type
+
+- **`Country`** is the canonical political-entity type (economic ledger + diplomatic identity).
+- **`Faction`** is a deprecated type alias for `Country`; existing imports continue to typecheck.
+- **`world.countries`** is the preferred runtime store after migration; **`world.factions`** remains a synced mirror field through Sprint 10 for backward compatibility (removed Sprint 11+).
+- **Country IDs** use legacy opaque slug format (`faction-player`, `faction-rome`, …) for save compatibility; slug rename deferred to Sprint 11+.
+- Dispatch event payloads still use `factionId` field names (values are country IDs); field rename deferred to Sprint 11+.

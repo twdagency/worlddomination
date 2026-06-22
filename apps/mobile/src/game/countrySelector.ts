@@ -60,18 +60,19 @@ function countryViewFromRecord(
   const leader = world.leaders[country.leaderId];
   return {
     id: country.id,
-    name: country.name,
+    name: country.name ?? leader?.region ?? country.id,
     leaderId: country.leaderId,
     leaderName: leader?.name ?? country.leaderId,
-    capitalTerritoryId: country.capitalTerritoryId,
-    capitalName: capitalName(world, country.capitalTerritoryId),
-    defeated: country.defeated,
-    cities: buildCityViews(world, country.id, country.capitalTerritoryId),
+    capitalTerritoryId: country.capitalTerritoryId ?? '',
+    capitalName: capitalName(world, country.capitalTerritoryId ?? ''),
+    defeated: country.defeated ?? false,
+    cities: buildCityViews(world, country.id, country.capitalTerritoryId ?? ''),
     isPlayer: country.isPlayer,
   };
 }
 
 function legacyCountryViews(world: WorldState): CountryView[] {
+  if (!world.factions) return [];
   return Object.values(world.factions)
     .map((faction) => {
       const leader = world.leaders[faction.leaderId];
@@ -105,7 +106,7 @@ export function selectCountries(world: WorldState | null): CountryView[] {
 
   if (world.countries && Object.keys(world.countries).length > 0) {
     return Object.values(world.countries)
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id))
       .map((country) => countryViewFromRecord(world, country));
   }
 

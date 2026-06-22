@@ -107,3 +107,19 @@ Renaming `SimEvent.factionId` → `countryId` touches:
 | **Total** | **~8** |
 
 Mechanical rename sweep (remove `Faction` alias) deferred to Sprint 11 per original Sprint 8 plan.
+
+---
+
+## Phase 3 — COMPLETE
+
+**Scope delivered:**
+
+- `Country` is canonical type (economic + diplomatic fields merged); `Faction` is `@deprecated` alias.
+- `world.countries` populated by `ensureWorldFactionRename`; `world.factions` kept as synced mirror field (Q1c).
+- Helper renames with deprecated aliases: `getCountryById`, `getActiveCountries`, `findFaction`, `factionsOf`, etc.
+- `resolvePlayerCountryId` in `shared`; `resolvePlayerFactionId` deprecated.
+- Mobile `diplomacyTargetCountries` prefers `world.countries ?? world.factions`.
+- Dispatch event `factionId` fields **not** renamed (Sprint 11+ backlog).
+- ID slugs unchanged (`faction-player`, etc.) — Sprint 11+ backlog.
+
+**Deferred (Sprint 11+):** event payload field rename, slug rename, remove `world.factions` field, mechanical `Faction` import sweep.

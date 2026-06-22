@@ -133,6 +133,9 @@ describe('country helpers', () => {
           capitalTerritoryId: '',
           defeated: true,
           isPlayer: false,
+          funding: 0,
+          manpower: 0,
+          manpowerCap: 0,
         },
       },
     }).world;
@@ -157,6 +160,9 @@ describe('country helpers', () => {
           capitalTerritoryId: '',
           defeated: true,
           isPlayer: false,
+          funding: 0,
+          manpower: 0,
+          manpowerCap: 0,
         },
       },
     };
