@@ -929,4 +929,6 @@ export interface WorldState {
   aiInfluenceCooldowns?: Record<Id, Millis>;
   /** Recent subversion discoveries — suppresses repeat subversion attempts per actor. */
   aiSubversionDiscoveryLog?: Array<{ actorId: Id; targetCityId: Id; at: Millis }>;
+  /** When true, AI influence accelerators and threshold actions are suppressed for the world. */
+  aiInfluenceAgencySuppressed?: boolean;
 }

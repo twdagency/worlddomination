@@ -47,6 +47,7 @@ function tributeWorld(overrides: Partial<WorldState> = {}): WorldState {
   const base = migrate(createSprint4World(START_MS));
   return {
     ...base,
+    aiInfluenceAgencySuppressed: true,
     factions: {
       ...base.factions,
       [PLAYER]: {

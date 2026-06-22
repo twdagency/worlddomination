@@ -49,6 +49,15 @@ Stop-and-report after each phase. Mid-sprint additions → `docs/deferred-backlo
 - `aiInfluenceCooldowns`, `aiSubversionDiscoveryLog` on WorldState + migration
 - 20 new tests in `aiInfluenceOrders.test.ts`; 7 cold-play snapshots updated (AI influence events)
 
+## Phase 5 — COMPLETE
+
+- `aiInfluenceCadence.ts` — shared daily slot: `resolveAiDailyInfluenceChannel`, unified cooldown events
+- `aiThresholdScoring.ts` — Pressure, Tribute, Coup, Defection multi-signal scoring
+- `aiThresholdOrders.ts` — `collectAiThresholdOrders`, `applyAiThresholdOrders` (step 6a after accelerators)
+- Keystone: 50-day Sprint 4 cold-play — Genghis coups London, ownership transfers
+- 16 tests in `aiThresholdOrders.test.ts`; 8 contract tests promoted live (6 sprint-10 + 2 influence)
+- `aiInfluenceAgencySuppressed` world flag for Sprint 9 player-mechanics test isolation
+
 - Stop-and-report after each phase
 - `intel.forwardcompat.test.ts` unchanged
 - `tutorial.ts` does not import new AI modules

@@ -66,7 +66,22 @@ export type {
   ScoreRationale,
   ScoredAiInfluenceAction,
 } from './aiInfluenceScoring';
-export { isInfluenceAgencyDisabled, resolvePlayerFactionId } from './aiInfluenceAgency';
+export {
+  applyAiThresholdOrders,
+  collectAiThresholdOrders,
+  listAiThresholdCandidates,
+  pickBestAiThresholdAction,
+  resolveAiDailyInfluenceChannel,
+  scoreAiThresholdAction,
+} from './aiThresholdOrders';
+export type {
+  AiInfluenceChannel,
+  AiThresholdCandidate,
+  AiThresholdKind,
+  ScoredAiThresholdAction,
+} from './aiThresholdOrders';
+export { AI_INFLUENCE_AGENCY_SUCCESS_KINDS } from './aiInfluenceCadence';
+export { isAiInfluenceAgencyActive, isInfluenceAgencyDisabled, resolvePlayerFactionId } from './aiInfluenceAgency';
 export {
   computeVisibility,
   getFactionVisibility,

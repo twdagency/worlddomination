@@ -20,6 +20,7 @@ import { accruePassiveInfluence, ensureWorldTributes } from './influence';
 import { accrueTributes } from './influenceActions';
 import { applyInfluenceOrders, expireActiveInfluenceEffects } from './influenceAccelerators';
 import { applyAiInfluenceOrders } from './aiInfluenceOrders';
+import { applyAiThresholdOrders } from './aiThresholdOrders';
 import { stampEvents } from './events';
 
 /**
@@ -33,7 +34,8 @@ import { stampEvents } from './events';
  * 4. resolveProductionCompletions — infra/build finishes
  * 5. resolveArrivals — combat, captures
  * 6. accrueEconomy + accrueManpower
- * 6a. applyAiInfluenceOrders — AI influence accelerators (daily cadence, end-of-tick)
+ * 6a. applyAiInfluenceOrders — AI accelerators (daily cadence, end-of-tick)
+ * 6a. applyAiThresholdOrders — AI threshold actions (after accelerators, shared cadence)
  * 6b. accruePassiveInfluence — passive accrual + decay
  * 6c. expireActiveInfluenceEffects — mission expiry, campaign cooldown prune
  * 6d. accrueTributes
@@ -128,6 +130,10 @@ export function tick(
     const aiInfluence = applyAiInfluenceOrders(afterEconomy, nowMs);
     afterEconomy = aiInfluence.world;
     events.push(...aiInfluence.events);
+
+    const aiThreshold = applyAiThresholdOrders(afterEconomy, nowMs);
+    afterEconomy = aiThreshold.world;
+    events.push(...aiThreshold.events);
   }
 
   const afterInfluence = accruePassiveInfluence(afterEconomy, nowMs);

@@ -1,7 +1,11 @@
 import { MS_PER_DAY } from './constants';
 import { findCountry } from './country';
 import { taggedOrderFields } from './dispatch';
-import { isInfluenceAgencyDisabled } from './aiInfluenceAgency';
+import { isAiInfluenceAgencyActive } from './aiInfluenceAgency';
+import {
+  applyAiInfluenceCooldownsFromEvents,
+  resolveAiDailyInfluenceChannel,
+} from './aiInfluenceCadence';
 import {
   AI_INFLUENCE_MIN_SCORE,
   pickBestAiInfluenceAction,
@@ -20,12 +24,8 @@ export {
   scoreAiInfluenceAction,
 } from './aiInfluenceScoring';
 export type { AiAcceleratorKind, AiInfluenceCandidate, ScoreRationale, ScoredAiInfluenceAction } from './aiInfluenceScoring';
-
-const AI_ACCELERATOR_SUCCESS_KINDS = new Set([
-  'diplomaticMissionStarted',
-  'culturalCampaignApplied',
-  'subversionApplied',
-]);
+export { resolveAiDailyInfluenceChannel } from './aiInfluenceCadence';
+export type { AiInfluenceChannel } from './aiInfluenceCadence';
 
 export function ensureWorldAiInfluenceAgency(world: WorldState): WorldState {
   return {
@@ -68,10 +68,10 @@ function isFactionDefeated(world: WorldState, factionId: Id): boolean {
 
 /**
  * Pure — at most one influence accelerator order per eligible AI country.
- * Respects tutorial suppression and per-actor daily cooldown.
+ * Competes with threshold actions via resolveAiDailyInfluenceChannel; shared cooldown.
  */
 export function collectAiInfluenceOrders(world: WorldState, at: Millis): Order[] {
-  if (isInfluenceAgencyDisabled(world)) return [];
+  if (!isAiInfluenceAgencyActive(world)) return [];
 
   const orders: Order[] = [];
   const actorIds = Object.keys(world.factions).sort();
@@ -81,6 +81,7 @@ export function collectAiInfluenceOrders(world: WorldState, at: Millis): Order[]
     if (!faction || faction.isPlayer) continue;
     if (isFactionDefeated(world, actorId)) continue;
     if (!canActorIssueInfluenceOrder(world, actorId, at)) continue;
+    if (resolveAiDailyInfluenceChannel(world, actorId, at) !== 'accelerator') continue;
 
     const best = pickBestAiInfluenceAction(world, actorId, at);
     if (!best || best.score < AI_INFLUENCE_MIN_SCORE) continue;
@@ -91,21 +92,6 @@ export function collectAiInfluenceOrders(world: WorldState, at: Millis): Order[]
   }
 
   return orders;
-}
-
-function applyCooldownsFromEvents(world: WorldState, events: SimEventDraft[], at: Millis): WorldState {
-  const cooldowns = { ...(world.aiInfluenceCooldowns ?? {}) };
-  let changed = false;
-
-  for (const event of events) {
-    if (!AI_ACCELERATOR_SUCCESS_KINDS.has(event.kind)) continue;
-    if (!('ownerId' in event) || typeof event.ownerId !== 'string') continue;
-    if (!isAiActor(world, event.ownerId)) continue;
-    cooldowns[event.ownerId] = at;
-    changed = true;
-  }
-
-  return changed ? { ...world, aiInfluenceCooldowns: cooldowns } : world;
 }
 
 function applySubversionDiscoveryLog(
@@ -141,7 +127,9 @@ export function applyAiInfluenceOrders(
   }
 
   const result = applyInfluenceOrders(world, orders, at);
-  let next = applyCooldownsFromEvents(result.world, result.events, at);
+  let next = applyAiInfluenceCooldownsFromEvents(result.world, result.events, at, (actorId) =>
+    isAiActor(world, actorId),
+  );
   next = applySubversionDiscoveryLog(next, result.events, orders);
   return { world: next, events: result.events };
 }
