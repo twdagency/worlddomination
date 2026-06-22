@@ -577,3 +577,29 @@ Source: Sprint 10 Phase 3 — deferred per Phase 0 audit.
 Country IDs remain opaque legacy slugs (`faction-player`, `faction-rome`, …) for save compatibility through Sprint 10. Long-term rename to `country-*` slugs is architecturally cleaner but needs full save + snapshot migration.
 
 Source: Sprint 10 Phase 3 — explicit non-decision; IDs unchanged.
+
+## Sprint 10 Phase 9 tuning watch — intelligence channel-flip gap (Phase 6)
+
+Phase 6 keystone proves intel **changes coup success estimate and coup-vs-accelerator ranking** (dual-arm: strong garrison dissuades, weak garrison encourages). On the **strong-garrison informed arm**, `resolveAiDailyInfluenceChannel` did **not** deterministically flip from `'threshold'` to `'accelerator'` — subversion's total score still won the channel even after coup sub-score dropped.
+
+**Open question when next touching scoring weights:** does intelligence ever **flip** what the AI actually does, or only **nudge** sub-scores that get overridden by accelerators (especially subversion)? If the answer is "nudge only," the influence/intel layer may feel less impactful in play than unit tests suggest. Revisit with cold-play observation or a decision-level test that asserts channel flip on a tuned scenario.
+
+Source: Sprint 10 Phase 6 acceptance — honestly reported unasserted channel flip.
+
+## Sprint 10 cleanup — extract shared influence constants (Phase 6)
+
+`intelligenceGather.ts` ↔ `influenceActions.ts` circular import was unblocked by inlining `INTELLIGENCE_MIN_INFLUENCE = 30` as a literal. **Two sources of truth risk** if influence-side thresholds are tuned without updating intelligence. Proper fix: extract shared constants (e.g. `influenceConstants.ts` or extend `constants.ts`) that both modules import — neither imports the other.
+
+Source: Sprint 10 Phase 6 circular-import fix (temporary literal).
+
+## Parked investigation — duplicate treaty / re-proposal stacking (Phase 6 side thread)
+
+**Status:** Parked — not blocking Sprint 10.
+
+**What was being investigated:** A hung inline diagnostic (`playerProposeTreaty` called twice on same target, treaty count via `getTreatiesBetween`, `computePassiveInfluenceSources` with duplicate treaties, treaty-sourced intel record duplication). Goal was to verify whether duplicate proposals or stacked treaties corrupt passive influence accrual or intel emission beyond the Sprint 9.5 Phase 4 `hasActiveTreatyOn` / `active-treaty-exists` guard.
+
+**Why parked:** Script hung (~3.5h, exit 1073807364); unrelated to Phase 6 Intelligence delivery. Sprint 9.5 Phase 4 already shipped four-layer duplicate-treaty **formation** guard (#27). This thread is about **re-proposal / stacking side effects** under repeated player proposes — needs a committed script with timeout + incremental logging, not inline `tsx -e`.
+
+**Next step when picked up:** `packages/sim/scripts/duplicate-treaty-diagnostic.ts` (or similar), assert treaty count, influence sources, and intel records after first + duplicate propose at +1h and same timestamp.
+
+Source: Sprint 10 Phase 6 — diagnostic parked per user; Sprint 9.5 Phase 4 for formation guard context.
