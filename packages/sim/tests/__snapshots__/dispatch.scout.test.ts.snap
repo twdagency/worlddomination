@@ -35,7 +35,7 @@ INTEL — Construction begun at Madrid (Spain) (Philip II)
 PRODUCTION — Your 1× Scout ready at London
 Elizabeth — tick 1700464800000
 INTEL — Scouts report Genghis forces massing at Berlin (Steppe)
-INCOME — funding 10645.5
+INCOME — +$10,645 funding, +624 fuel, +651 steel, +135 rareMetals, +337 food accrued while away
 DEPARTURE — Your forces advancing from London (Britain) toward Berlin (Steppe)
 INTEL — Philip II — 1× Scout ready at Madrid
 Genghis — tick 1700468040000
@@ -70,5 +70,5 @@ Genghis — tick 1700508000000
 INTEL — Philip II's forces report Caesar forces massing at Paris (Rome)
 Philip II — tick 1700508000000
 INTEL — Scouts report Caesar forces massing at Paris (Rome)
-INCOME — funding 7182"
+INCOME — +$7,182 funding, +420 fuel, +444 steel, +90 rareMetals, +225 food accrued while away"
 `;

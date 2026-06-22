@@ -1,4 +1,4 @@
-import type { Id, IntelSource, Millis, Order, OrderIntent, SimEvent, WorldState } from './types';
+import type { Id, IntelSource, Millis, Order, OrderIntent, ResourceId, SimEvent, WorldState } from './types';
 import { findCountry } from './country';
 import { formatInfluenceOrderRejectedMessage } from './influenceAccelerators';
 import { formatDiplomaticPressureProposalLabel } from './influenceActions';
@@ -360,6 +360,62 @@ export interface DispatchFeedItem {
   line: string;
 }
 
+export function hasDisplayableResourceAccrual(
+  byTerritory: Record<Id, Partial<Record<ResourceId, number>>>,
+): boolean {
+  for (const territoryResources of Object.values(byTerritory)) {
+    if (!territoryResources) continue;
+    for (const amount of Object.values(territoryResources)) {
+      if (amount && Math.floor(amount) > 0) return true;
+    }
+  }
+  return false;
+}
+
+export function formatResourceAccruals(
+  byTerritory: Record<Id, Partial<Record<ResourceId, number>>>,
+): string[] {
+  const aggregated: Record<string, number> = {};
+  for (const territoryResources of Object.values(byTerritory)) {
+    if (!territoryResources) continue;
+    for (const [resource, amount] of Object.entries(territoryResources)) {
+      if (!amount || amount <= 0) continue;
+      aggregated[resource] = (aggregated[resource] ?? 0) + amount;
+    }
+  }
+
+  return Object.entries(aggregated)
+    .map(([resource, amount]) => ({ resource, floored: Math.floor(amount) }))
+    .filter(({ floored }) => floored > 0)
+    .map(({ resource, floored }) => `+${floored} ${resource}`);
+}
+
+export function hasDisplayableIncome(event: Extract<SimEvent, { kind: 'income' }>): boolean {
+  if (Math.floor(event.funding) > 0) return true;
+  return hasDisplayableResourceAccrual(event.resourcesByTerritory);
+}
+
+export function formatIncomeDispatchLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'income' }>,
+): string {
+  void world;
+  const fundingFloor = Math.floor(event.funding);
+  const parts: string[] = [];
+
+  if (fundingFloor > 0) {
+    parts.push(`+$${fundingFloor.toLocaleString()} funding`);
+  }
+
+  parts.push(...formatResourceAccruals(event.resourcesByTerritory));
+
+  if (parts.length === 0) {
+    return 'INCOME — minimal accrual';
+  }
+
+  return `INCOME — ${parts.join(', ')} accrued while away`;
+}
+
 export function dispatchLineForEvent(
   world: WorldState,
   event: SimEvent,
@@ -408,7 +464,7 @@ export function dispatchLineForEvent(
     case 'secured':
       return formatSecuredNarrative(world, event.territoryId, event.factionId, event.enemyWithdrew);
     case 'income':
-      return `INCOME — funding ${event.funding}`;
+      return formatIncomeDispatchLine(world, event);
     case 'production':
       return formatProductionNarrative(world, event);
     case 'buildBlocked':

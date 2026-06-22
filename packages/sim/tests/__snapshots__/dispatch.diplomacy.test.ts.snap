@@ -5,7 +5,7 @@ exports[`dispatch diplomacy cold-read snapshot > britain-player 72h digest inclu
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700921600000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
-INCOME — funding 3355.5000000000005
+INCOME — +$3,355 funding, +204 fuel, +207 steel, +45 rareMetals, +112 food accrued while away
 DIPLOMACY — Alliance formed with Genghis.
 Caesar — tick 1700943200000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Spain)
@@ -33,5 +33,5 @@ Caesar — tick 1701159200000
 INTEL — Infrastructure upgraded at Paris (Rome) (Caesar)
 Philip II — tick 1701159200000
 INTEL — Genghis's forces report Genghis activity at Berlin (Steppe)
-INCOME — funding 39503.784244862334"
+INCOME — +$39,503 funding, +2369 fuel, +2518 steel, +562 rareMetals, +1237 food accrued while away"
 `;

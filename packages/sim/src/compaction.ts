@@ -1,4 +1,4 @@
-import { buildDispatchFeed, dispatchLineForEvent, filterDispatchesForFaction } from './dispatch';
+import { buildDispatchFeed, dispatchLineForEvent, filterDispatchesForFaction, formatIncomeDispatchLine } from './dispatch';
 import type { DispatchFeedItem } from './dispatch';
 import {
   COMPACTION_THRESHOLD_MS,
@@ -151,21 +151,22 @@ export function compactDispatchFeed(
     });
   }
 
-  if (incomeFunding > 0) {
+  if (Math.floor(incomeFunding) > 0) {
+    const incomeEvent = {
+      eventId: 'compact-income',
+      kind: 'income' as const,
+      at: incomeAt,
+      funding: incomeFunding,
+      resourcesByTerritory: {},
+      importance: 'low' as const,
+    };
     timed.push({
       at: incomeAt,
       index: events.length,
       item: {
         key: 'compact-income',
-        event: {
-          eventId: 'compact-income',
-          kind: 'income',
-          at: incomeAt,
-          funding: incomeFunding,
-          resourcesByTerritory: {},
-          importance: 'low',
-        },
-        line: `INCOME — +$${Math.floor(incomeFunding).toLocaleString()} funding accrued while away`,
+        event: incomeEvent,
+        line: formatIncomeDispatchLine(world, incomeEvent),
       },
     });
   }
