@@ -567,6 +567,7 @@ Canon locked through Layer 5. Future modifications happen through deliberate can
 ### Sprint 10 Phase 3 — Country canonical type
 
 - **`Country`** is the canonical political-entity type (economic ledger + diplomatic identity).
+- **Economic fields** (`funding`, `manpower`, `manpowerCap`, …) are required on `Country`; diplomatic fields (`name`, `capitalTerritoryId`, `defeated`, …) are optional until migration populates them.
 - **`Faction`** is a deprecated type alias for `Country`; existing imports continue to typecheck.
 - **`world.countries`** is the preferred runtime store after migration; **`world.factions`** remains a synced mirror field through Sprint 10 for backward compatibility (removed Sprint 11+).
 - **Country IDs** use legacy opaque slug format (`faction-player`, `faction-rome`, …) for save compatibility; slug rename deferred to Sprint 11+.

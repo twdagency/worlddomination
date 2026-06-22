@@ -32,6 +32,7 @@ Genghis — tick 1700986400000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700986400000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
+DIPLOMATIC MISSION — envoy to London until day 15
 Elizabeth — tick 1701008000000
 DIPLOMACY — You declined alliance with Genghis.
 Genghis — tick 1701008000000
@@ -56,34 +57,24 @@ Genghis — tick 1701072800000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1701072800000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
+DIPLOMATIC MISSION — envoy to Paris until day 16
+SUBVERSION EXPOSED — Genghis caught influencing Elizabeth
 Elizabeth — tick 1701094400000
 DIPLOMACY — You declined alliance with Genghis.
-Genghis — tick 1701094400000
-DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1701094400000
 INTEL — Infrastructure upgraded at Paris (Rome) (Caesar)
-Elizabeth — tick 1701116000000
-DIPLOMACY — You declined alliance with Genghis.
-Genghis — tick 1701116000000
-DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1701116000000
 INTEL — Infrastructure upgraded at Paris (Rome) (Caesar)
-Elizabeth — tick 1701137600000
-DIPLOMACY — You declined alliance with Genghis.
-Genghis — tick 1701137600000
-DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1701137600000
 INTEL — Infrastructure upgraded at Paris (Rome) (Caesar)
 INTEL — Caesar forces arrived at London (Britain) — contact expected
 Elizabeth at London — Caesar annihilated, no casualties.
-Elizabeth — tick 1701159200000
-DIPLOMACY — You declined alliance with Genghis.
-Genghis — tick 1701159200000
-DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
-INCOME — +$44,172 funding, +2574 fuel, +2725 steel, +609 rareMetals, +1350 food accrued while away",
+CULTURAL CAMPAIGN — +10 influence in Paris
+CULTURAL CAMPAIGN — +10 influence in Paris
+INCOME — +$44,115 funding, +2572 fuel, +2718 steel, +609 rareMetals, +1350 food accrued while away",
   "genghisOrdersAtEnd": [],
   "reputationSample": {
-    "britainViewOfGenghis": 0,
+    "britainViewOfGenghis": 5,
     "caesarViewOfGenghis": 0,
   },
   "scoutBuilds": 0,

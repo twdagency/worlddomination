@@ -925,4 +925,8 @@ export interface WorldState {
   culturalCampaigns?: CulturalCampaignRecord[];
   /** Ongoing tribute extractions with resentment tracking. */
   activeTributes?: ActiveTribute[];
+  /** Per-actor timestamp of last AI influence accelerator order (daily cadence). */
+  aiInfluenceCooldowns?: Record<Id, Millis>;
+  /** Recent subversion discoveries — suppresses repeat subversion attempts per actor. */
+  aiSubversionDiscoveryLog?: Array<{ actorId: Id; targetCityId: Id; at: Millis }>;
 }

@@ -45,6 +45,29 @@ export {
   transitAwareIntelMultiplier,
 } from './ai';
 export {
+  AI_INFLUENCE_MIN_SCORE,
+  AI_SUBVERSION_SUPPRESSION_MS,
+  applyAiInfluenceOrders,
+  canActorIssueInfluenceOrder,
+  collectAiInfluenceOrders,
+  ensureWorldAiInfluenceAgency,
+} from './aiInfluenceOrders';
+export {
+  affordsAccelerator,
+  goldReserveFraction,
+  isSubversionSuppressedForActor,
+  leaderPosture,
+  pickBestAiInfluenceAction,
+  scoreAiInfluenceAction,
+} from './aiInfluenceScoring';
+export type {
+  AiAcceleratorKind,
+  AiInfluenceCandidate,
+  ScoreRationale,
+  ScoredAiInfluenceAction,
+} from './aiInfluenceScoring';
+export { isInfluenceAgencyDisabled, resolvePlayerFactionId } from './aiInfluenceAgency';
+export {
   computeVisibility,
   getFactionVisibility,
   isTerritoryVisible,
@@ -301,6 +324,7 @@ export {
   expireActiveInfluenceEffects,
   formatInfluenceOrderRejectedMessage,
   hasActiveDiplomaticMission,
+  isCulturalCampaignOnCooldown,
   INFLUENCE_SUBVERSION_BURST,
   INFLUENCE_SUBVERSION_COST,
   INFLUENCE_SUBVERSION_DISCOVERY_RATE,

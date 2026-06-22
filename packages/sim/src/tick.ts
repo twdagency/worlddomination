@@ -1,6 +1,5 @@
 import type { AccruedIncome } from './economy';
 import type { Order, SimEvent, SimEventDraft, WorldState } from './types';
-import { MS_PER_DAY } from './constants';
 import { accrueEconomy } from './economy';
 import { pruneExpiredTreaties } from './diplomacy';
 import { expiredTreatyEvents } from './diplomaticDispatch';
@@ -19,27 +18,25 @@ import { applyBuildOrders, resolveProductionCompletions } from './production';
 import { accruePassiveInfluence, ensureWorldTributes } from './influence';
 import { accrueTributes } from './influenceActions';
 import { applyInfluenceOrders, expireActiveInfluenceEffects } from './influenceAccelerators';
+import { applyAiInfluenceOrders } from './aiInfluenceOrders';
 import { stampEvents } from './events';
 
 /**
  * Pure. Advances the world by `elapsedMs`, applies `orders`, resolves events in
  * chronological order. Never mutates `world`. Deterministic given inputs.
  *
- * Tick pipeline (Sprint 8.5 Phase 3 — capture before income):
- * 1. applyMoveOrders — departures enter transit
- * 1b. applyInfluenceOrders — influence accelerators + threshold actions (pressure, tribute, coup)
- * 2. applyBuildOrders — queued construction
- * 3. resolveProductionCompletions — infra/build finishes at nowMs
- * 4. resolveArrivals — combat, captures; ownership transitions complete
- * 5. accrueEconomy + accrueManpower — income/regen from post-combat ownership
- * 5b. accruePassiveInfluence — passive accrual + decay toward neutrality when unsourced
- * 5c. expireActiveInfluenceEffects — mission expiry, expulsion, campaign cooldown prune
- * 5d. accrueTributes — ongoing tribute extraction, resentment, rebellion
- * 6. pruneExpiredTreaties
- * 7. recordIntelObservations → recordAlliedObservations → recordTreatyObservations
- * 8. emitIntelReportEvents
- * 9. syncCountriesFromFactions — capital relocation + defeat detection
- * 10. evaluateBeatProgression
+ * Tick pipeline:
+ * 1. applyInfluenceOrders — player influence accelerators + threshold actions
+ * 2. applyMoveOrders — departures enter transit
+ * 3. applyBuildOrders — queued construction
+ * 4. resolveProductionCompletions — infra/build finishes
+ * 5. resolveArrivals — combat, captures
+ * 6. accrueEconomy + accrueManpower
+ * 6a. applyAiInfluenceOrders — AI influence accelerators (daily cadence, end-of-tick)
+ * 6b. accruePassiveInfluence — passive accrual + decay
+ * 6c. expireActiveInfluenceEffects — mission expiry, campaign cooldown prune
+ * 6d. accrueTributes
+ * 7. pruneExpiredTreaties → intel → syncCountries → beat progression
  */
 export function tick(
   world: WorldState,
@@ -120,11 +117,17 @@ export function tick(
     };
   }
 
-  const afterEconomy: WorldState = {
+  let afterEconomy: WorldState = {
     ...postCombat,
     factions,
     territories: economy.territories,
   };
+
+  if (elapsedMs > 0) {
+    const aiInfluence = applyAiInfluenceOrders(afterEconomy, nowMs);
+    afterEconomy = aiInfluence.world;
+    events.push(...aiInfluence.events);
+  }
 
   const afterInfluence = accruePassiveInfluence(afterEconomy, nowMs);
   const afterInfluenceEffects = expireActiveInfluenceEffects(afterInfluence, nowMs);

@@ -90,6 +90,15 @@ export function hasActiveDiplomaticMission(
   return hasActiveMission(world, ownerId, targetCityId, at);
 }
 
+export function isCulturalCampaignOnCooldown(
+  world: WorldState,
+  ownerId: Id,
+  targetCityId: Id,
+  at: Millis = world.nowMs,
+): boolean {
+  return culturalCampaignOnCooldown(world, ownerId, targetCityId, at);
+}
+
 function culturalCampaignOnCooldown(
   world: WorldState,
   ownerId: Id,

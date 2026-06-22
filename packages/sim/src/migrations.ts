@@ -3,6 +3,7 @@ import { ensureWorldCountries, ensureWorldFactionRename } from './country';
 import { ensureWorldDiplomacy } from './diplomacy';
 import { ensureWorldEventCounter } from './events';
 import { ensureWorldInfluence } from './influence';
+import { ensureWorldAiInfluenceAgency } from './aiInfluenceOrders';
 import { STANDARD_TIME_MULTIPLIER } from './tutorial';
 
 export interface WorldMigrationCatalog {
@@ -99,6 +100,8 @@ export function ensureWorldMigrations(
   next = ensureWorldEventCounter(next);
 
   next = ensureWorldInfluence(next);
+
+  next = ensureWorldAiInfluenceAgency(next);
 
   return next;
 }

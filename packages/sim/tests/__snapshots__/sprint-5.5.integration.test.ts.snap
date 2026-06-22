@@ -64,6 +64,7 @@ Genghis — tick 1700986400000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700986400000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
+DIPLOMATIC MISSION — envoy to London until day 15
 INCOME — +$14,236 funding, +834 fuel, +873 steel, +180 rareMetals, +450 food accrued while away"
 `;
 
@@ -74,7 +75,8 @@ Elizabeth — tick 1700903600000
 DEPARTURE — Your forces advancing from London (Britain) toward Berlin (Steppe)
 ARRIVAL — Your forces arrived at Berlin (Steppe) — contact expected
 Elizabeth — tick 1701462541652.2812
-INTEL — Scouts report Genghis forces massing at Berlin (Steppe)"
+INTEL — Scouts report Genghis forces massing at Berlin (Steppe)
+DIPLOMATIC MISSION — envoy to London until day 21"
 `;
 
 exports[`sprint 5.5 integration > sprint5: 24h cold-play player digest > sprint5-cold-play-24h-digest 1`] = `

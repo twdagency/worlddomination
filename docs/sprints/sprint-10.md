@@ -39,6 +39,16 @@ Remaining 6 cycles, Territory→City rename, 5 Set B actions, AI Tier 3–4, tra
 
 ## Scope discipline
 
+Stop-and-report after each phase. Mid-sprint additions → `docs/deferred-backlog.md`.
+
+## Phase 4 — COMPLETE
+
+- `aiInfluenceOrders.ts` — `collectAiInfluenceOrders`, `applyAiInfluenceOrders`, daily cooldown
+- `aiInfluenceScoring.ts` — multi-signal scoring, posture differentiation, min score 1.0
+- Tick step 6a (before passive accrual); tutorial suppression via `isInfluenceAgencyDisabled`
+- `aiInfluenceCooldowns`, `aiSubversionDiscoveryLog` on WorldState + migration
+- 20 new tests in `aiInfluenceOrders.test.ts`; 7 cold-play snapshots updated (AI influence events)
+
 - Stop-and-report after each phase
 - `intel.forwardcompat.test.ts` unchanged
 - `tutorial.ts` does not import new AI modules
