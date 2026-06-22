@@ -171,21 +171,6 @@ export function skipToNextEvent(world: WorldState): {
   return advanceTo(world, target);
 }
 
-function formatIncomeLine(
-  event: Extract<SimEvent, { kind: 'income' }>,
-  world: WorldState,
-): string {
-  const parts = [`+$${Math.floor(event.funding).toLocaleString()} funding`];
-  for (const [territoryId, resources] of Object.entries(event.resourcesByTerritory)) {
-    const place = world.territories[territoryId]?.name ?? territoryId;
-    for (const [key, value] of Object.entries(resources)) {
-      if (!value || value <= 0) continue;
-      parts.push(`+${Math.floor(value)} ${key} at ${place}`);
-    }
-  }
-  return `INCOME — ${parts.join(', ')} accrued while away`;
-}
-
 export function formatDispatchLine(event: SimEvent, world: WorldState): string {
   if (
     event.kind === 'allianceFormed' ||
@@ -243,7 +228,8 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
   }
 
   if (event.kind === 'income') {
-    return formatIncomeLine(event, world);
+    const playerId = resolvePlayerFactionId(world);
+    return dispatchLineForEvent(world, event, playerId ?? undefined);
   }
 
   if (event.kind === 'production') {

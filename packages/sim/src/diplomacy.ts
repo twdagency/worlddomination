@@ -114,6 +114,24 @@ export function getTreatiesBetween(world: WorldState, factionA: Id, factionB: Id
   );
 }
 
+/** True when parties share an active treaty covering `territoryId` at sim time `at`. */
+export function hasActiveTreatyOn(
+  world: WorldState,
+  factionA: Id,
+  factionB: Id,
+  territoryId: Id,
+  at: Millis,
+): boolean {
+  const [partyA, partyB] = normalizeFactionPair(factionA, factionB);
+  return world.treaties.some(
+    (treaty) =>
+      at < treaty.expiresAt &&
+      treaty.parties[0] === partyA &&
+      treaty.parties[1] === partyB &&
+      treaty.scope.territoryIds.includes(territoryId),
+  );
+}
+
 export function getActiveTreaties(world: WorldState, factionId: Id, gameTime: Millis): Treaty[] {
   return world.treaties.filter(
     (treaty) =>
@@ -256,6 +274,12 @@ export interface FormTreatyParams {
 export function formTreaty(world: WorldState, params: FormTreatyParams): WorldState {
   const parties = normalizeFactionPair(params.partyA, params.partyB);
   const territoryIds = [...params.territoryIds].sort();
+
+  const hasOverlap = territoryIds.some((territoryId) =>
+    hasActiveTreatyOn(world, parties[0], parties[1], territoryId, params.formedAt),
+  );
+  if (hasOverlap) return world;
+
   const id = deterministicTreatyId(parties, params.formedAt, territoryIds);
 
   if (world.treaties.some((treaty) => treaty.id === id)) return world;

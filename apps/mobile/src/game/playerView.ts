@@ -2,6 +2,7 @@ import {
   areAllied,
   dispatchLineForEvent,
   filterDispatchesForFaction,
+  hasDisplayableIncome,
   pendingProposalsForFaction,
   resolveEventImportance,
   type Id,
@@ -591,6 +592,7 @@ export function getDashboardDispatchesDigest(
 
   const ranked = filterDispatchesForFaction(world, events, resolvedFactionId)
     .filter((event): event is SimEvent & { at: number } => isTimestampedEvent(event))
+    .filter((event) => event.kind !== 'income' || hasDisplayableIncome(event))
     .map((event) => {
       const importance = resolveEventImportance(world, event);
       return {
@@ -624,6 +626,7 @@ export function getDashboardUnreadDispatchCount(
   let count = 0;
   for (const event of filterDispatchesForFaction(world, events, resolvedFactionId)) {
     if (!isTimestampedEvent(event) || event.at < crisisSinceMs) continue;
+    if (event.kind === 'income' && !hasDisplayableIncome(event)) continue;
     if (!isDispatchUnreadSince(event, readState)) continue;
     if (resolveEventImportance(world, event) === 'high') count += 1;
   }

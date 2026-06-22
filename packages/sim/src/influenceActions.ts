@@ -1,4 +1,4 @@
-import { areAllied, formAlliance, formTreaty, getAlliancesFor } from './diplomacy';
+import { areAllied, formAlliance, formTreaty, getAlliancesFor, hasActiveTreatyOn } from './diplomacy';
 import { MS_PER_DAY, MS_PER_HOUR } from './constants';
 import { findCountry, recordConquerorOnTerritoryCapture } from './country';
 import {
@@ -49,7 +49,8 @@ export type DiplomaticPressureRejectionReason =
   | 'target-is-allied'
   | 'target-owner-defeated'
   | 'target-city-unknown'
-  | 'target-country-mismatch';
+  | 'target-country-mismatch'
+  | 'active-treaty-exists';
 
 const SUPPORTED_PROPOSAL_KINDS = new Set<PressureProposalKind>([
   'accept-alliance',
@@ -119,6 +120,22 @@ export function validateDiplomaticPressure(
     return { ok: false, reason: 'no-pending-proposal' };
   }
 
+  if (proposalKind === 'accept-treaty') {
+    const proposal = findPendingProposalForPressure(
+      world,
+      actorId,
+      targetCountryId,
+      proposalKind,
+    );
+    const territoryId = proposal?.scope?.territoryIds?.[0];
+    if (
+      territoryId &&
+      hasActiveTreatyOn(world, actorId, targetCountryId, territoryId, world.nowMs)
+    ) {
+      return { ok: false, reason: 'active-treaty-exists' };
+    }
+  }
+
   return { ok: true };
 }
 
@@ -186,6 +203,11 @@ function forceAcceptPendingProposal(
   const territoryIds = proposal.scope?.territoryIds ?? [];
   if (territoryIds.length !== 1) {
     return { world, events: [] };
+  }
+
+  const territoryId = territoryIds[0]!;
+  if (hasActiveTreatyOn(world, proposal.from, proposal.to, territoryId, at)) {
+    return { world: next, events: [] };
   }
 
   const durationMs = proposal.durationMs ?? DEFAULT_TREATY_DURATION_MS;

@@ -40,6 +40,16 @@ Add the influence layer as a strategic depth axis on top of Sprint 8's country/c
 | 9 | Tooltip system + Beat 6 copy + Dashboard influence card | ~12 |
 | 10 | Real-device cold-play + sprint-9-final tag | manual |
 
+## Phase 9 complete
+
+**Commit:** `90fa314` — tooltip system, Beat 6 influence hint, Dashboard first-tap
+onboarding, Order/Territory info tooltips. **812 tests** (545 sim + 267 mobile).
+
+## Phase 10 — cold-play (operator gate)
+
+See `docs/sprints/sprint-9-cold-play.md`. No merge/tag until device session
+complete and findings reported.
+
 ## Phase scope rules
 
 - Stop-and-report after each phase

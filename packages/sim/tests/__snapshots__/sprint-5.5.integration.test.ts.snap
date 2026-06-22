@@ -64,7 +64,7 @@ Genghis — tick 1700986400000
 DIPLOMACY — Genghis proposes alliance. (Expires in 6h.)
 Caesar — tick 1700986400000
 INTEL — Caesar forces advancing from Paris (Rome) toward London (Britain)
-INCOME — funding 14236.5"
+INCOME — +$14,236 funding, +834 fuel, +873 steel, +180 rareMetals, +450 food accrued while away"
 `;
 
 exports[`sprint 5.5 integration > sprint4: live → stale → unknown arc on Berlin > sprint4-intel-arc-digest 1`] = `
@@ -118,7 +118,7 @@ Caesar — tick 1701036400000
 INTEL — Caesar forces advancing from Bucharest (Rome) toward Belgrade (Britain)
 Genghis — tick 1701036400000
 INTEL — Infrastructure upgraded at Sofia (Steppe) (Genghis)
-INCOME — funding 14201.56186860377"
+INCOME — +$14,201 funding, +796 fuel, +778 steel, +180 rareMetals, +450 food accrued while away"
 `;
 
 exports[`sprint 5.5 integration > sprint5: live → stale → unknown arc on Istanbul > sprint5-intel-arc-digest 1`] = `

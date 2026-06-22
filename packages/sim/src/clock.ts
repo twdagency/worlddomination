@@ -1,5 +1,6 @@
 import { haversineKm } from './geo';
 import type { AccruedIncome } from './economy';
+import { hasDisplayableResourceAccrual } from './dispatch';
 import { collectAiOrders, isAiDecisionMs, nextAiDecisionMs } from './ai';
 import { applyAiDiplomaticDecisions } from './diplomaticAi';
 import { emit } from './events';
@@ -45,11 +46,10 @@ export function mergeAccruedIncome(a: AccruedIncome, b: AccruedIncome): AccruedI
   };
 }
 
-function hasTerritoryResourceAccrual(
-  resourcesByTerritory: Record<Id, Partial<Record<ResourceId, number>>>,
-): boolean {
-  return Object.values(resourcesByTerritory).some((resources) =>
-    Object.values(resources).some((amount) => (amount ?? 0) > 0),
+function hasEmittableIncomeAccrual(incomeAccrued: AccruedIncome): boolean {
+  return (
+    Math.floor(incomeAccrued.funding) >= 1 ||
+    hasDisplayableResourceAccrual(incomeAccrued.resourcesByTerritory)
   );
 }
 
@@ -88,10 +88,7 @@ export function advanceTo(
     incomeAccrued = mergeAccruedIncome(incomeAccrued, result.accrued);
   }
 
-  if (
-    incomeAccrued.funding > 0 ||
-    hasTerritoryResourceAccrual(incomeAccrued.resourcesByTerritory)
-  ) {
+  if (hasEmittableIncomeAccrual(incomeAccrued)) {
     const income = emit(current, {
       kind: 'income',
       at: current.nowMs,
