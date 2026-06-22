@@ -547,3 +547,9 @@ Canonical pattern: **country display name derives from `leader.region`; faction/
 Example: `faction-britain` led by Philip II renders as "Spain" (Philip's region), not "Britain". Same pattern as Sprint 7c country-led naming ("Rome — led by Caesar"). Document in player-facing glossary / dev onboarding so future agents do not treat ID slugs as display names.
 
 Source: Sprint 8 Phase 9 acceptance + Sprint 4 cold-play Spain naming flag.
+
+## Sprint 10 process note — AI subsystem collection passes
+
+When AI behavior has a **different decision cadence** than existing scoring (e.g. military orders per tick vs. influence orders capped per day), add a **dedicated collection pass** (`collectAiInfluenceOrders`) rather than extending `decideOrders` / `collectAiOrders`. Keeps scoring loops from compounding complexity.
+
+Source: Sprint 10 Phase 0 audit — AI agency is a new tick path, not an extension of `decideOrders`.
