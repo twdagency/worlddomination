@@ -31,5 +31,10 @@ describe('territory screen influence detail', () => {
     expect(source).toContain('territory-influence-detail');
     expect(source).toContain('formatSourceContribution');
     expect(source).toContain('formatThresholdProximity');
+    expect(source).toContain('gather-intelligence');
+    expect(source).toContain('tribute-cancel');
+    expect(source).toContain('influence-subversion');
+    expect(source).toContain('diplomatic-pressure');
+    expect(source).toContain('tribute-extraction');
   });
 });

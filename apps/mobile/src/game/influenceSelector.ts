@@ -20,11 +20,15 @@ import {
   INFLUENCE_DECAY_PER_DAY,
   INFLUENCE_SUBVERSION_COST,
   INFLUENCE_SUBVERSION_MANPOWER_COST,
+  INTELLIGENCE_GATHER_COST,
+  INTELLIGENCE_MIN_INFLUENCE,
   TRIBUTE_EXTRACTION_COST,
   TRIBUTE_INFLUENCE_FLOOR,
   validateCoupAttempt,
   validateDefectionClaim,
   validateDiplomaticPressure,
+  validateGatherIntelligence,
+  validateTributeCancel,
   validateTributeExtraction,
   type InfluenceActionKind,
   type InfluenceOrderKind,
@@ -120,6 +124,13 @@ const ACTION_CATALOG: {
     manpower: INFLUENCE_SUBVERSION_MANPOWER_COST,
   },
   {
+    kind: 'gather-intelligence',
+    label: 'Intelligence',
+    description: 'Buy a detailed garrison and production snapshot of this city.',
+    thresholdRequired: INTELLIGENCE_MIN_INFLUENCE,
+    gold: INTELLIGENCE_GATHER_COST,
+  },
+  {
     kind: 'diplomatic-pressure',
     label: 'Diplomatic Pressure',
     description: 'Force acceptance of a pending alliance or treaty.',
@@ -132,6 +143,13 @@ const ACTION_CATALOG: {
     description: 'Drain gold from a city under your sway.',
     thresholdRequired: TRIBUTE_INFLUENCE_FLOOR,
     gold: TRIBUTE_EXTRACTION_COST,
+  },
+  {
+    kind: 'tribute-cancel',
+    label: 'Cancel Tribute',
+    description: 'End an active tribute extraction in this city.',
+    thresholdRequired: 0,
+    gold: 0,
   },
   {
     kind: 'coup-attempt',
@@ -158,6 +176,22 @@ function culturalCampaignCooldownRemainingMs(
   at: number,
 ): number {
   const record = (world.culturalCampaigns ?? []).find(
+    (entry) =>
+      entry.ownerId === ownerId &&
+      entry.targetCityId === targetCityId &&
+      at < entry.cooldownUntil,
+  );
+  if (!record) return 0;
+  return record.cooldownUntil - at;
+}
+
+function intelligenceCooldownRemainingMs(
+  world: WorldState,
+  ownerId: Id,
+  targetCityId: Id,
+  at: number,
+): number {
+  const record = (world.intelligenceGathers ?? []).find(
     (entry) =>
       entry.ownerId === ownerId &&
       entry.targetCityId === targetCityId &&
@@ -220,7 +254,9 @@ function evaluateAction(
   const cooldownRemainingMs =
     entry.kind === 'cultural-campaign'
       ? culturalCampaignCooldownRemainingMs(world, actorId, cityId, world.nowMs)
-      : 0;
+      : entry.kind === 'gather-intelligence'
+        ? intelligenceCooldownRemainingMs(world, actorId, cityId, world.nowMs)
+        : 0;
 
   let unlocked = false;
   let rejectionReason: string | undefined;
@@ -235,6 +271,14 @@ function evaluateAction(
     if (!pressure.ok) rejectionReason = pressure.reason;
   } else if (entry.kind === 'tribute-extraction') {
     const validation = validateTributeExtraction(world, actorId, cityId);
+    unlocked = validation.ok;
+    if (!validation.ok) rejectionReason = formatInfluenceOrderRejectedMessage(validation.reason);
+  } else if (entry.kind === 'tribute-cancel') {
+    const validation = validateTributeCancel(world, actorId, cityId);
+    unlocked = validation.ok;
+    if (!validation.ok) rejectionReason = formatInfluenceOrderRejectedMessage(validation.reason);
+  } else if (entry.kind === 'gather-intelligence') {
+    const validation = validateGatherIntelligence(world, actorId, cityId, world.nowMs);
     unlocked = validation.ok;
     if (!validation.ok) rejectionReason = formatInfluenceOrderRejectedMessage(validation.reason);
   } else if (entry.kind === 'coup-attempt') {
@@ -436,6 +480,7 @@ export function formatThresholdProximity(
 ): { label: string; detail: string }[] {
   const thresholds = [
     { value: DIPLOMATIC_PRESSURE_MIN_INFLUENCE, label: 'Pressure' },
+    { value: INTELLIGENCE_MIN_INFLUENCE, label: 'Intelligence' },
     { value: TRIBUTE_INFLUENCE_FLOOR, label: 'Tribute' },
     { value: COUP_INFLUENCE_FLOOR, label: 'Coup' },
     { value: DEFECTION_INFLUENCE_REQUIRED, label: 'Defection' },

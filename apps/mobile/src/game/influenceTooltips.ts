@@ -1,14 +1,12 @@
 import type { InfluenceOrderActionKind } from '../game/influenceSelector';
 import type { TooltipDefinition } from '../components/tooltip/types';
 
-type InfluenceActionTooltipKind = Exclude<InfluenceOrderActionKind, 'tribute-cancel'>;
-
-export type { InfluenceActionTooltipKind };
+export type InfluenceActionTooltipKind = InfluenceOrderActionKind;
 
 export const INFLUENCE_CARD_FIRST_VIEW_TOOLTIP: TooltipDefinition = {
   id: 'influence-card-first-view',
   title: 'Influence',
-  body: 'Influence accumulates over foreign cities. At 30 influence you can pressure their leaders; at 100 they peacefully defect to you.',
+  body: 'Influence accumulates over foreign cities. At 30 you can gather intelligence or pressure their leaders; at 100 they peacefully defect to you.',
   dismissable: true,
   persistDismissal: true,
 };
@@ -46,6 +44,13 @@ export const INFLUENCE_ACTION_TOOLTIPS: Record<InfluenceActionTooltipKind, Toolt
     id: 'tooltip-influence-tribute-extraction',
     title: 'Tribute Extraction',
     body: 'At 50+ influence, drain gold daily from the city. Resentment can spark rebellion if left unchecked.',
+    dismissable: true,
+    showOncePerSession: true,
+  },
+  'tribute-cancel': {
+    id: 'tooltip-influence-tribute-cancel',
+    title: 'Cancel Tribute',
+    body: 'End an active tribute extraction. Extraction stops immediately and no further gold is taken.',
     dismissable: true,
     showOncePerSession: true,
   },
@@ -91,7 +96,7 @@ export const TERRITORY_INFLUENCE_NET_TOOLTIP: TooltipDefinition = {
 export const TERRITORY_INFLUENCE_THRESHOLD_TOOLTIP: TooltipDefinition = {
   id: 'tooltip-territory-influence-threshold',
   title: 'Threshold proximity',
-  body: 'Threshold actions unlock at 30 (pressure), 50 (tribute), 70 (coup), and 100 (defection) influence.',
+  body: 'Actions unlock at 30 (pressure, intelligence), 50 (tribute), 70 (coup), and 100 (defection) influence.',
   dismissable: true,
   showOncePerSession: true,
 };

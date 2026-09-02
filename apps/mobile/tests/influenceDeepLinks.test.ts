@@ -23,4 +23,19 @@ describe('influence deep links', () => {
       },
     });
   });
+
+  it('presets gather-intelligence and tribute-cancel onto the Order screen', () => {
+    expect(deepLinkForInfluenceAction('territory-paris', 'gather-intelligence')).toMatchObject({
+      tab: 'actions',
+      screen: 'order',
+      orderMode: 'influence',
+      presetInfluenceAction: 'gather-intelligence',
+    });
+    expect(deepLinkForInfluenceAction('territory-paris', 'tribute-cancel')).toMatchObject({
+      tab: 'actions',
+      screen: 'order',
+      orderMode: 'influence',
+      presetInfluenceAction: 'tribute-cancel',
+    });
+  });
 });

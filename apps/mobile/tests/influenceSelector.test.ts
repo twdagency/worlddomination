@@ -100,6 +100,70 @@ describe('influenceSelector', () => {
     expect(view?.competingActors).toHaveLength(0);
   });
 
+  it('unlocks gather-intelligence at 30 and reports per-city cooldown', () => {
+    let w = setInfluence(world(), PARIS, PLAYER, 29, START_MS);
+    const locked = selectCityInfluence(w, PARIS, PLAYER)?.availableActions.find(
+      (action) => action.kind === 'gather-intelligence',
+    );
+    expect(locked?.unlocked).toBe(false);
+    expect(locked?.rejectionReason).toContain('30');
+
+    w = setInfluence(w, PARIS, PLAYER, 30, START_MS);
+    const ready = selectCityInfluence(w, PARIS, PLAYER)?.availableActions.find(
+      (action) => action.kind === 'gather-intelligence',
+    );
+    expect(ready?.unlocked).toBe(true);
+
+    w = {
+      ...w,
+      intelligenceGathers: [
+        {
+          ownerId: PLAYER,
+          targetCityId: PARIS,
+          gatheredAt: START_MS,
+          cooldownUntil: START_MS + 12 * 86_400_000,
+        },
+      ],
+    };
+    const cooling = selectCityInfluence(w, PARIS, PLAYER)?.availableActions.find(
+      (action) => action.kind === 'gather-intelligence',
+    );
+    expect(cooling?.unlocked).toBe(false);
+    expect(cooling?.cooldownRemainingMs).toBeGreaterThan(0);
+    expect(cooling?.rejectionReason).toMatch(/Available in|cooldown/i);
+  });
+
+  it('unlocks tribute-cancel only when a tribute is active', () => {
+    let w = setInfluence(world(), PARIS, PLAYER, 55, START_MS);
+    const idle = selectCityInfluence(w, PARIS, PLAYER)?.availableActions.find(
+      (action) => action.kind === 'tribute-cancel',
+    );
+    expect(idle?.unlocked).toBe(false);
+    expect(idle?.rejectionReason).toMatch(/no active tribute/i);
+
+    w = {
+      ...w,
+      activeTributes: [
+        {
+          actorId: PLAYER,
+          targetCityId: PARIS,
+          targetCountryId: ROME,
+          startedAt: START_MS,
+          lastAccrualAt: START_MS,
+          resentment: 0,
+          minorRebellionEmitted: false,
+          totalGoldExtracted: 0,
+          totalResourceExtracted: {},
+        },
+      ],
+    };
+    const active = selectCityInfluence(w, PARIS, PLAYER);
+    expect(active?.hasActiveTribute).toBe(true);
+    expect(active?.availableActions.find((action) => action.kind === 'tribute-cancel')?.unlocked).toBe(
+      true,
+    );
+  });
+
   it('builds diplomacy rollups for countries with 30+ sway', () => {
     const w = setInfluence(world(), PARIS, PLAYER, 35, START_MS);
     const rollups = selectInfluenceForDiplomacy(w);
