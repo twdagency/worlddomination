@@ -17,6 +17,18 @@ import {
   setInfluence,
 } from './influence';
 import { intelligenceGarrisonCount } from './intelligenceGather';
+import {
+  COUP_INFLUENCE_FLOOR,
+  DEFECTION_INFLUENCE_REQUIRED,
+  DIPLOMATIC_PRESSURE_MIN_INFLUENCE,
+  TRIBUTE_INFLUENCE_FLOOR,
+} from './influenceConstants';
+export {
+  COUP_INFLUENCE_FLOOR,
+  DEFECTION_INFLUENCE_REQUIRED,
+  DIPLOMATIC_PRESSURE_MIN_INFLUENCE,
+  TRIBUTE_INFLUENCE_FLOOR,
+} from './influenceConstants';
 import { removePendingProposal } from './pendingProposals';
 import { nextRandom } from './rng';
 import type {
@@ -38,7 +50,6 @@ import type {
 
 export const DIPLOMATIC_PRESSURE_COST = 2000;
 export const DIPLOMATIC_PRESSURE_INFLUENCE_COST = 20;
-export const DIPLOMATIC_PRESSURE_MIN_INFLUENCE = 30;
 export const DIPLOMATIC_PRESSURE_TARGET_REPUTATION_PENALTY = -15;
 export const DIPLOMATIC_PRESSURE_OBSERVER_REPUTATION_PENALTY = -5;
 export const DIPLOMATIC_PRESSURE_ALLY_OF_TARGET_REPUTATION_PENALTY = -10;
@@ -288,7 +299,6 @@ export { cancelTributesForDefeatedCountry } from './tributeLifecycle';
 export { formatDiplomaticPressureProposalLabel } from './influenceOrderMessages';
 
 export const TRIBUTE_EXTRACTION_COST = 5000;
-export const TRIBUTE_INFLUENCE_FLOOR = 50;
 export const TRIBUTE_INFLUENCE_DRAIN_PER_DAY = 1;
 export const TRIBUTE_GOLD_PERCENT = 0.25;
 export const TRIBUTE_RESOURCE_PERCENT = 0.15;
@@ -728,9 +738,9 @@ export function accrueTributes(
 
 export const COUP_ATTEMPT_GOLD_COST = 8000;
 export const COUP_ATTEMPT_MANPOWER_COST = 1;
-export const COUP_INFLUENCE_FLOOR = 70;
 export const COUP_INFLUENCE_COST_SUCCESS = 50;
-export const COUP_INFLUENCE_COST_FAILURE = 70;
+/** Coup failure collapses the actor's influence in the city to this remainder. */
+export const COUP_FAILURE_INFLUENCE_REMAINDER = 0;
 export const COUP_BASE_SUCCESS_RATE = 0.6;
 export const COUP_FORTIFICATION_PENALTY_PER_TIER = -0.05;
 export const COUP_LOYAL_POSTURE_PENALTY = -0.1;
@@ -983,7 +993,7 @@ export function applyCoupAttempt(
     };
   }
 
-  next = setInfluence(next, targetCityId, actorId, 0, at);
+  next = setInfluence(next, targetCityId, actorId, COUP_FAILURE_INFLUENCE_REMAINDER, at);
   const reputationResult = applyCoupFailureReputation(next, actorId, targetCountryId);
   next = reputationResult.world;
 
@@ -1005,8 +1015,8 @@ export function applyCoupAttempt(
   };
 }
 
-export const DEFECTION_INFLUENCE_REQUIRED = 100;
-export const DEFECTION_INFLUENCE_COST = 100;
+/** Claiming consumes the required stack; `clearInfluenceForCity` implements the spend. */
+export const DEFECTION_INFLUENCE_COST = DEFECTION_INFLUENCE_REQUIRED;
 export const DEFECTION_GOLD_COST = 0;
 export const DEFECTION_MANPOWER_COST = 0;
 export const DEFECTION_TARGET_REPUTATION_PENALTY = -25;

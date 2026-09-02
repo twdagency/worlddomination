@@ -9,6 +9,11 @@ import {
   TREATY_ACCEPT_THRESHOLD,
 } from '../src/diplomaticScoring';
 import { ensureWorldMigrations } from '../src/migrations';
+import {
+  DIPLOMATIC_PRESSURE_MIN_INFLUENCE,
+  INTELLIGENCE_MIN_INFLUENCE,
+  INFLUENCE_SWAY_THRESHOLD,
+} from '../src/influenceConstants';
 import { formatInfluenceOrderRejectedMessage } from '../src/influenceOrderMessages';
 import { isInfluenceOrder, validateInfluenceTarget } from '../src/influenceOrderValidation';
 import { captureCityForCoup } from '../src/territoryOwnership';
@@ -81,6 +86,12 @@ describe('cycle hygiene — extracted modules', () => {
     const check = validateInfluenceTarget(w, 'faction-player', 'territory-london');
     expect(check.ok).toBe(false);
     if (!check.ok) expect(check.reason).toBe('target-is-own-city');
+  });
+
+  it('influenceConstants is a leaf with one sway threshold for pressure and intelligence', () => {
+    expect(INFLUENCE_SWAY_THRESHOLD).toBe(30);
+    expect(DIPLOMATIC_PRESSURE_MIN_INFLUENCE).toBe(INTELLIGENCE_MIN_INFLUENCE);
+    expect(INTELLIGENCE_MIN_INFLUENCE).toBe(INFLUENCE_SWAY_THRESHOLD);
   });
 
   it('influenceOrderMessages formats rejection copy without validation imports', () => {

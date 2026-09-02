@@ -145,7 +145,7 @@ Passive baseline: Influence shifts continuously based on world conditions — pr
 Active accumulation: Specific influence actions are the primary lever. Diplomatic envoys, cultural exchanges, subsidized local factions, propaganda campaigns.
 Triggers (threshold-based actions):
 
-30+ influence: Fund factions within the city (cause unrest).
+30+ influence: Diplomatic pressure and intelligence gather. (Canon unrest / “fund factions” is deferred — not implemented.)
 50+ influence: Demand tribute from the city's owner.
 70+ influence: Attempt a coup that flips the city to your control.
 100% influence: City defects to you peacefully without military action.

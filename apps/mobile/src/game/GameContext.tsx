@@ -358,6 +358,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
 
         await applyCatchUp(baseWorld, baseDispatches, worldMatchesScenario ? lastActive : null);
+        if (hasStoredWorld && !worldMatchesScenario) {
+          showToast('Campaign scenario changed — dispatch history was reset.', 'info');
+        }
       } catch {
         if (cancelled) return;
         const id = FIRST_TIME_SCENARIO_ID;

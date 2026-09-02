@@ -1,5 +1,6 @@
 import { MS_PER_DAY } from './constants';
 import { areAllied, getTreatiesBetween } from './diplomacy';
+import { COMPETITOR_INFLUENCE_HALVE_THRESHOLD } from './influenceConstants';
 import { haversineKm } from './geo';
 import { isScoutUnit } from './scout';
 import type {
@@ -322,7 +323,7 @@ export function computePassiveInfluenceSources(
   }
 
   const competitorMax = maxCompetitorInfluence(world, cityId, actorId);
-  const halve = competitorMax >= 50;
+  const halve = competitorMax >= COMPETITOR_INFLUENCE_HALVE_THRESHOLD;
 
   let adjusted = sources.map((source) =>
     halve

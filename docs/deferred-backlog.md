@@ -586,11 +586,11 @@ Phase 6 keystone proves intel **changes coup success estimate and coup-vs-accele
 
 Source: Sprint 10 Phase 6 acceptance — honestly reported unasserted channel flip.
 
-## Sprint 10 cleanup — extract shared influence constants (Phase 6)
+## Sprint 10 cleanup — extract shared influence constants (Phase 6) — DONE
 
-`intelligenceGather.ts` ↔ `influenceActions.ts` circular import was unblocked by inlining `INTELLIGENCE_MIN_INFLUENCE = 30` as a literal. **Two sources of truth risk** if influence-side thresholds are tuned without updating intelligence. Proper fix: extract shared constants (e.g. `influenceConstants.ts` or extend `constants.ts`) that both modules import — neither imports the other.
+Landed as `packages/sim/src/influenceConstants.ts` (leaf module). `DIPLOMATIC_PRESSURE_MIN_INFLUENCE` and `INTELLIGENCE_MIN_INFLUENCE` both alias `INFLUENCE_SWAY_THRESHOLD`. Competitor-halving 50 is `COMPETITOR_INFLUENCE_HALVE_THRESHOLD`.
 
-Source: Sprint 10 Phase 6 circular-import fix (temporary literal).
+Source: Sprint 10 Phase 6 circular-import fix; implemented in the post-Phase-6 review pass.
 
 ## Parked investigation — duplicate treaty / re-proposal stacking (Phase 6 side thread)
 

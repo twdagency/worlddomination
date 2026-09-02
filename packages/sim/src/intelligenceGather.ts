@@ -2,6 +2,7 @@ import { MS_PER_DAY } from './constants';
 import { areAllied } from './diplomacy';
 import { computeBeatId } from './beatId';
 import { getInfluence } from './influence';
+import { INTELLIGENCE_MIN_INFLUENCE } from './influenceConstants';
 import { validateInfluenceTarget } from './influenceOrderValidation';
 import {
   ensureIntelStore,
@@ -18,8 +19,9 @@ import type {
   WorldState,
 } from './types';
 
+export { INTELLIGENCE_MIN_INFLUENCE } from './influenceConstants';
+
 export const INTELLIGENCE_GATHER_COST = 2500;
-export const INTELLIGENCE_MIN_INFLUENCE = 30;
 export const INTELLIGENCE_COOLDOWN_MS = 30 * MS_PER_DAY;
 export const INTELLIGENCE_FRESH_WINDOW_MS = MS_PER_DAY;
 
