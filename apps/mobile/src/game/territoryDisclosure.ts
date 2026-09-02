@@ -1,4 +1,5 @@
 import type { Territory, WorldState } from 'sim';
+import { remainingWallMs } from './timeScale';
 
 export interface ActiveBuildEntry {
   territoryId: string;
@@ -48,7 +49,7 @@ export function collectActiveBuilds(
         territoryName: territory.name,
         unitTypeId: item.unitTypeId,
         count: item.count,
-        remainingMs: Math.max(0, completeAt - world.nowMs),
+        remainingMs: remainingWallMs(world, completeAt),
       });
     }
   }

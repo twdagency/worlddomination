@@ -14,6 +14,7 @@ import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
+import { remainingWallMs } from '../game/timeScale';
 import { formatDuration } from '../utils/format';
 
 export function ForcesScreen() {
@@ -85,7 +86,7 @@ export function ForcesScreen() {
           const originLabel = originId
             ? formatTransitEndpointLabel(world, originId, 'inline', playerId)
             : 'Unknown';
-          const remaining = Math.max(0, inTransit.arriveMs - wallNowMs);
+          const remaining = remainingWallMs(world, inTransit.arriveMs);
           return (
             <View testID={`force-in-transit-${item.id}`}>
               <ExpandableRow

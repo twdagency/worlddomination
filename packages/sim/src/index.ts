@@ -433,6 +433,7 @@ export {
   evaluateBeatProgression,
 } from './beatController';
 export {
+  dropPendingDilemmasForFaction,
   enqueuePendingDilemma,
   getDilemmaById,
   resolveDilemma,

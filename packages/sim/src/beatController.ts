@@ -1,5 +1,6 @@
 import type { SimEventDraft, SimEventKind, TutorialBeatId, WorldState } from './types';
-import { enqueuePendingDilemma } from './dilemmas';
+import { findCountry } from './country';
+import { dropPendingDilemmasForFaction, enqueuePendingDilemma } from './dilemmas';
 import {
   isBeatComplete,
   markBeatComplete,
@@ -38,6 +39,7 @@ export function createBeatController(
     evaluate(event: SimEventKind, world: WorldState): WorldState {
       const tutorial = world.tutorial;
       if (tutorial?.active !== true) return world;
+      if (findCountry(world, PLAYER_TUTORIAL_FACTION_ID)?.defeated === true) return world;
 
       const currentBeat = tutorial.currentBeat;
       if (currentBeat === null) return world;
@@ -90,11 +92,20 @@ function maybeEmitTutorialHandoff(world: WorldState): { world: WorldState; event
 }
 
 /** Feeds tick-emitted events through the beat controller in emission order. */
+function playerCountryId(world: WorldState) {
+  return Object.values(world.factions).find((faction) => faction.isPlayer)?.id;
+}
+
 export function evaluateBeatProgression(
   world: WorldState,
   events: readonly SimEventDraft[],
   controller: BeatController = createBeatController(),
 ): { world: WorldState; events: SimEventDraft[] } {
+  const playerId = playerCountryId(world);
+  if (playerId && findCountry(world, playerId)?.defeated === true) {
+    return { world: dropPendingDilemmasForFaction(world, playerId), events: [] };
+  }
+
   let next = world;
   const emitted: SimEventDraft[] = [];
 

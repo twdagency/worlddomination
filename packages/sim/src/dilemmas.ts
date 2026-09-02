@@ -1,5 +1,6 @@
 import type { Dilemma, DilemmaConsequence, DilemmaOption } from 'shared';
 import type { Faction, Id, Millis, PendingDilemma, Reputation, SimEvent, SimEventDraft, Territory, WorldState } from './types';
+import { findCountry } from './country';
 import { stampEvents } from './events';
 import { FOREIGN_RULE_DILEMMA } from './dilemmas/foreignRule';
 
@@ -11,12 +12,20 @@ export function getDilemmaById(dilemmaId: Id): Dilemma | undefined {
   return DILEMMAS_BY_ID[dilemmaId];
 }
 
+export function dropPendingDilemmasForFaction(world: WorldState, factionId: Id): WorldState {
+  const pending = world.pendingDilemmas ?? [];
+  const next = pending.filter((entry) => entry.factionId !== factionId);
+  if (next.length === pending.length) return world;
+  return { ...world, pendingDilemmas: next };
+}
+
 export function enqueuePendingDilemma(
   world: WorldState,
   dilemmaId: Id,
   factionId: Id,
   at: Millis,
 ): WorldState {
+  if (findCountry(world, factionId)?.defeated === true) return world;
   const pending = world.pendingDilemmas ?? [];
   if (pending.some((entry) => entry.dilemmaId === dilemmaId && entry.factionId === factionId)) {
     return world;

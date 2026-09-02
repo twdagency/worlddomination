@@ -29,6 +29,7 @@ let mockGameState: {
   isTutorialActive: boolean;
   isBannerDismissed: boolean;
   restoreBanner: typeof restoreBanner;
+  returnToMenu: () => void;
 };
 
 function renderHeader() {
@@ -48,6 +49,7 @@ beforeEach(() => {
     isTutorialActive: true,
     isBannerDismissed: true,
     restoreBanner,
+    returnToMenu: vi.fn(),
   };
 });
 

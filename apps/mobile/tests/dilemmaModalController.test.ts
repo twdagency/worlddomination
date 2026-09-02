@@ -88,6 +88,36 @@ describe('shouldShowDilemmaModal', () => {
     ).toBeNull();
   });
 
+  it('hides crisis dilemmas after the player country is defeated', () => {
+    const base = enqueuePendingDilemma(
+      createTutorialWorld(START_MS),
+      'foreign-rule',
+      PLAYER_TUTORIAL_FACTION_ID,
+      START_MS,
+    );
+    const player = base.countries![PLAYER_TUTORIAL_FACTION_ID]!;
+    const defeated = {
+      ...base,
+      countries: {
+        ...base.countries,
+        [PLAYER_TUTORIAL_FACTION_ID]: { ...player, defeated: true },
+      },
+      factions: {
+        ...base.factions,
+        [PLAYER_TUTORIAL_FACTION_ID]: { ...base.factions[PLAYER_TUTORIAL_FACTION_ID]!, defeated: true },
+      },
+    };
+
+    expect(shouldShowDilemmaModal(defeated, new Set())).toBeNull();
+    expect(
+      resolveDilemmaModalState({
+        world: defeated,
+        dismissedDilemmaIds: new Set(),
+        manualDilemmaId: null,
+      }).visible,
+    ).toBe(false);
+  });
+
   it('still returns crisis dilemmas even when listed in dismissed ids', () => {
     const world = enqueuePendingDilemma(
       createTutorialWorld(START_MS),

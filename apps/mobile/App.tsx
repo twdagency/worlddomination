@@ -5,7 +5,7 @@ import { AppErrorBoundary } from './src/components/AppErrorBoundary';
 import { ToastProvider, ToastViewport } from './src/components/feedback/ToastProvider';
 import { TooltipProvider } from './src/components/tooltip/TooltipContext';
 import { GameProvider } from './src/game/GameContext';
-import { RootTabs } from './src/navigation/RootTabs';
+import { AppShell } from './src/navigation/AppShell';
 import { clearCampaignStorage } from './src/storage/worldStorage';
 
 export default function App() {
@@ -21,7 +21,7 @@ export default function App() {
         <ToastProvider>
           <GameProvider key={session}>
             <TooltipProvider>
-              <RootTabs />
+              <AppShell />
             </TooltipProvider>
             <ToastViewport />
             <StatusBar style="light" />

@@ -8,7 +8,12 @@ import { getDashboardUnreadDispatchCount } from '../game/playerView';
 import { navigateTo } from '../navigation/deepLinks';
 import { rootNavigationRef } from '../navigation/navigationRef';
 import { terminal } from '../theme/terminal';
-import { formatAwayDuration, formatGameClock, formatFunding } from '../utils/format';
+import {
+  formatAwayDuration,
+  formatGameClockDate,
+  formatGameClockTime,
+  formatFunding,
+} from '../utils/format';
 import {
   buildPersistentHeaderModel,
   formatUrgentBadgeCount,
@@ -24,6 +29,7 @@ export function PersistentHeader() {
     isTutorialActive,
     isBannerDismissed,
     restoreBanner,
+    returnToMenu,
   } = useGame();
 
   const playerId = resolvePlayerFactionId(world);
@@ -37,7 +43,8 @@ export function PersistentHeader() {
 
   const model = buildPersistentHeaderModel({
     gameDay: world.day,
-    gameDateLabel: formatGameClock(world.nowMs),
+    gameDateLabel: formatGameClockDate(world.nowMs),
+    gameTimeLabel: formatGameClockTime(world.nowMs),
     fundingLabel: formatFunding(faction?.funding ?? 0),
     awayMs,
     urgentCount,
@@ -53,6 +60,9 @@ export function PersistentHeader() {
           <Text style={styles.date} numberOfLines={1}>
             Day {model.gameDay} · {model.gameDateLabel}
           </Text>
+          <Text style={styles.time} numberOfLines={1}>
+            {model.gameTimeLabel}
+          </Text>
           {model.showAwayIndicator && model.awayLabel && (
             <Text style={styles.away} numberOfLines={1}>
               Away {model.awayLabel}
@@ -62,7 +72,8 @@ export function PersistentHeader() {
 
         <View style={styles.right}>
           <Pressable
-            style={styles.urgentTap}
+            style={styles.iconTap}
+            hitSlop={8}
             onPress={() => {
               if (rootNavigationRef.isReady()) {
                 navigateTo(rootNavigationRef as never, {
@@ -84,7 +95,8 @@ export function PersistentHeader() {
 
           {showTutorialRestore ? (
             <Pressable
-              style={styles.tutorialRestore}
+              style={styles.iconTap}
+              hitSlop={8}
               onPress={restoreBanner}
               accessibilityRole="button"
               accessibilityLabel="Restore tutorial banner"
@@ -99,11 +111,12 @@ export function PersistentHeader() {
           </Text>
 
           <Pressable
-            style={styles.settings}
-            accessibilityLabel="Settings"
-            onPress={() => {
-              // SPRINT-7c: settings screen
-            }}
+            style={styles.iconTap}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Main menu"
+            testID="header-main-menu"
+            onPress={() => void returnToMenu()}
           >
             <Ionicons name="settings-outline" size={18} color={terminal.muted} />
           </Pressable>
@@ -130,19 +143,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   left: {
-    flex: 1,
+    flexShrink: 1,
+    flexGrow: 1,
     minWidth: 0,
   },
   right: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 6,
     flexShrink: 0,
   },
   date: {
     color: terminal.text,
     fontFamily: terminal.mono,
     fontSize: 11,
+  },
+  time: {
+    color: terminal.text,
+    fontFamily: terminal.mono,
+    fontSize: 11,
+    marginTop: 1,
   },
   away: {
     color: terminal.warning,
@@ -155,20 +175,14 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 11,
     fontWeight: '700',
-    maxWidth: 96,
+    maxWidth: 72,
   },
-  urgentTap: {
-    minWidth: 44,
-    minHeight: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  tutorialRestore: {
+  iconTap: {
     minWidth: 32,
     minHeight: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   badge: {
     position: 'absolute',
@@ -188,11 +202,5 @@ const styles = StyleSheet.create({
     fontFamily: terminal.mono,
     fontSize: 9,
     fontWeight: '700',
-  },
-  settings: {
-    minWidth: 32,
-    minHeight: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

@@ -20,6 +20,7 @@ import {
 } from 'sim';
 import { resolvePlayerFactionId } from 'shared';
 import { formatDateTime, formatDuration } from '../utils/format';
+import { remainingWallMs } from './timeScale';
 import { formatFactionIdentityLine, getFactionIdentity } from './factionDisplay';
 import { formatTransitEndpointLabel } from './territoryOwnerLabel';
 import {
@@ -650,9 +651,7 @@ export function getDashboardActiveForcesSummary(world: WorldState): DashboardAct
     const destLabel = destId
       ? formatTransitEndpointLabel(world, destId, 'compact', playerId, undefined, true)
       : 'unknown';
-    const eta = formatDuration(
-      Math.max(0, (unit.transit?.arriveMs ?? 0) - world.nowMs),
-    );
+    const eta = formatDuration(remainingWallMs(world, unit.transit?.arriveMs ?? 0));
     return {
       unitId: unit.id,
       label: unitType?.name ?? unit.id,

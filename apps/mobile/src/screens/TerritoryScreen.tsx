@@ -37,6 +37,7 @@ import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { WhyBlock } from '../components/disclosure/WhyBlock';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { showDevControls } from '../game/devFlag';
+import { remainingWallMs } from '../game/timeScale';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import {
@@ -343,7 +344,7 @@ function TerritoryDetail({
           {(territory.buildQueue ?? []).map((item, i) => {
             const unitType = world.unitTypes[item.unitTypeId];
             const completeAt = item.startMs + item.durationMs;
-            const remaining = Math.max(0, completeAt - world.nowMs);
+            const remaining = remainingWallMs(world, completeAt);
             return (
               <Text key={`${item.unitTypeId}-${item.startMs}-${i}`} style={styles.stat}>
                 {unitType?.name ?? item.unitTypeId} ×{item.count} —{' '}

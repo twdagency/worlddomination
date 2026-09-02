@@ -259,4 +259,43 @@ describe('arrivalCombat integration', () => {
       fromTerritoryId: LONDON,
     });
   });
+
+  it('does not annex a city when the arriving country is already defeated', () => {
+    const world = makeCombatWorld({
+      units: {
+        a1: stack('a1', 'mg-armor-t5', 'faction-attacker', 10, CONTESTED.id),
+      },
+      countries: {
+        'faction-attacker': {
+          id: 'faction-attacker',
+          leaderId: 'leader-baseline',
+          isPlayer: true,
+          funding: 10_000,
+          manpower: 5_000,
+          manpowerCap: 10_000,
+          name: 'Attacker',
+          capitalTerritoryId: '',
+          defeated: true,
+        },
+        'faction-defender': {
+          id: 'faction-defender',
+          leaderId: 'leader-baseline',
+          isPlayer: false,
+          funding: 10_000,
+          manpower: 5_000,
+          manpowerCap: 10_000,
+          name: 'Defender',
+          capitalTerritoryId: CONTESTED.id,
+          defeated: false,
+        },
+      },
+    });
+
+    const arriving = { ...world.units.a1, locationId: CONTESTED.id, transit: undefined };
+    const result = resolveHostileArrival(world, arriving, CONTESTED.id, world.nowMs, 'assault');
+
+    expect(result.territories[CONTESTED.id].ownerId).toBe('faction-defender');
+    expect(result.events.some((event) => event.kind === 'territoryCaptured')).toBe(false);
+    expect(result.events.some((event) => event.kind === 'secured')).toBe(false);
+  });
 });

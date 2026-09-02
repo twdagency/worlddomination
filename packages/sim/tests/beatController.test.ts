@@ -3,6 +3,7 @@ import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import { createTutorialWorld } from '../../shared/src/scenario-tutorial';
 import {
   createBeatController,
+  evaluateBeatProgression,
   PLAYER_TUTORIAL_FACTION_ID,
   previewMoveEtaMs,
   TUTORIAL_HOME_TERRITORY_ID,
@@ -130,6 +131,52 @@ describe('beat controller', () => {
     expect(afterMarch.tutorial?.completedBeats).toContain('movement');
     expect(afterMarch.tutorial?.completedBeats).toContain('combat');
     expect(afterMarch.tutorial?.currentBeat).toBe('economy');
+  });
+
+  it('does not complete pinch or offer Foreign Rule after the player is defeated', () => {
+    const base = createTutorialWorld(START_MS);
+    const player = base.countries![PLAYER_TUTORIAL_FACTION_ID]!;
+    const world = {
+      ...base,
+      tutorial: {
+        active: true,
+        currentBeat: 'pinch' as const,
+        completedBeats: ['movement', 'combat', 'economy'] as const,
+        startedAt: 0,
+        graduatedAt: null,
+      },
+      pendingDilemmas: [
+        {
+          dilemmaId: 'foreign-rule',
+          factionId: PLAYER_TUTORIAL_FACTION_ID,
+          offeredAt: START_MS,
+        },
+      ],
+      countries: {
+        ...base.countries,
+        [PLAYER_TUTORIAL_FACTION_ID]: { ...player, defeated: true },
+      },
+      factions: {
+        ...base.factions,
+        [PLAYER_TUTORIAL_FACTION_ID]: { ...base.factions[PLAYER_TUTORIAL_FACTION_ID]!, defeated: true },
+      },
+    };
+    const capture = {
+      kind: 'territoryCaptured' as const,
+      at: START_MS,
+      territoryId: 'territory-burgundy-tutorial',
+      previousOwnerId: 'faction-burgundy-tutorial',
+      newOwnerId: PLAYER_TUTORIAL_FACTION_ID,
+      importance: 'high' as const,
+    };
+
+    const next = controller.evaluate(capture, world);
+    expect(next.tutorial?.currentBeat).toBe('pinch');
+    expect(next.tutorial?.completedBeats).toEqual(['movement', 'combat', 'economy']);
+
+    const progressed = evaluateBeatProgression(world, [capture]);
+    expect(progressed.world.pendingDilemmas ?? []).toHaveLength(0);
+    expect(progressed.world.tutorial?.currentBeat).toBe('pinch');
   });
 
   it('determinism: identical worlds and event sequences yield identical tutorial states', () => {

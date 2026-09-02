@@ -1,4 +1,4 @@
-import { recordConquerorOnTerritoryCapture } from './country';
+import { findCountry, recordConquerorOnTerritoryCapture } from './country';
 import type { Id, Millis, SimEventDraft, WorldState } from './types';
 
 /** Peaceful or coup-driven city ownership transfer with conqueror tracking. */
@@ -11,6 +11,7 @@ export function captureCityForCoup(
 ): { world: WorldState; events: SimEventDraft[] } {
   const territory = world.territories[targetCityId];
   if (!territory) return { world, events: [] };
+  if (findCountry(world, actorId)?.defeated === true) return { world, events: [] };
 
   const territories = {
     ...world.territories,

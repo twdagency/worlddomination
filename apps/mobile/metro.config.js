@@ -1,3 +1,7 @@
+// Gradle's release embed resolves the entry relative to Metro's server root.
+// In this pnpm workspace that would be the repo root, which has no index.ts.
+process.env.EXPO_NO_METRO_WORKSPACE_ROOT = '1';
+
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
