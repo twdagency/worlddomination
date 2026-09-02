@@ -63,6 +63,13 @@ export const INFLUENCE_ACTION_TOOLTIPS: Record<InfluenceActionTooltipKind, Toolt
     dismissable: true,
     showOncePerSession: true,
   },
+  'gather-intelligence': {
+    id: 'tooltip-influence-gather-intelligence',
+    title: 'Intelligence',
+    body: 'At 30+ influence, buy a detailed read on the city — full garrison strength and production queue. Sharpens your coup odds estimate. 30-day cooldown per city.',
+    dismissable: true,
+    showOncePerSession: true,
+  },
 };
 
 export const TERRITORY_INFLUENCE_SOURCES_TOOLTIP: TooltipDefinition = {

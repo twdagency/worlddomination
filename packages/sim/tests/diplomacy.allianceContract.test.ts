@@ -67,7 +67,7 @@ describe('diplomacy alliance contract', () => {
   });
 
   it('allied assault arrival resolves peacefully with allyArrivalPeaceful event', () => {
-    let world = formAlliance(createSprint4World(START_MS), PLAYER, GENGHIS, START_MS).world;
+    const world = formAlliance(createSprint4World(START_MS), PLAYER, GENGHIS, START_MS).world;
 
     const attacker = {
       ...world.units['unit-steppe-mg'],

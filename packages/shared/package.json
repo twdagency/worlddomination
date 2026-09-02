@@ -9,7 +9,13 @@
     ".": "./src/index.ts",
     "./tutorialConstants": "./src/tutorialConstants.ts"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
     "sim": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
   }
 }

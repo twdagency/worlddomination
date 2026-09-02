@@ -44,7 +44,7 @@ describe('tutorial state', () => {
   });
 
   it('markBeatComplete is idempotent for the same beat', () => {
-    let state = markBeatComplete(createInitialTutorialState(START_MS), 'movement', START_MS);
+    const state = markBeatComplete(createInitialTutorialState(START_MS), 'movement', START_MS);
     const again = markBeatComplete(state, 'movement', START_MS + 1);
     expect(again.completedBeats).toEqual(['movement']);
     expect(again.currentBeat).toBe('combat');

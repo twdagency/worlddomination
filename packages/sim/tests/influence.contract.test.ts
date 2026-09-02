@@ -20,7 +20,6 @@ const START_MS = 1_700_900_000_000;
 const PLAYER = 'faction-player';
 const STEPPE = 'faction-steppe';
 const PARIS = 'territory-paris';
-const LONDON = 'territory-london';
 
 function migrate(world: WorldState): WorldState {
   return ensureWorldMigrations(world, {

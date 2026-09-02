@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import type { DashboardCatchUpSummary } from '../../game/playerView';
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';

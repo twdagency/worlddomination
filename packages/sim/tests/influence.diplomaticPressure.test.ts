@@ -37,7 +37,6 @@ const STEPPE = 'faction-steppe';
 const BRITAIN = 'faction-britain';
 const PARIS = 'territory-paris';
 const BERLIN = 'territory-berlin';
-const MS_DAY = 86_400_000;
 
 function migrate(world: WorldState): WorldState {
   return ensureWorldMigrations(world, {

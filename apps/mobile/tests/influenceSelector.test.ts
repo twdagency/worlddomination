@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSprint4World, LEADERS_BY_ID, resolvePlayerFactionId, UNIT_TYPES_BY_ID } from 'shared';
+import { createSprint4World, LEADERS_BY_ID, UNIT_TYPES_BY_ID } from 'shared';
 import { ensureWorldMigrations, setInfluence } from 'sim';
 import {
   influenceMagnitude,
@@ -101,7 +101,7 @@ describe('influenceSelector', () => {
   });
 
   it('builds diplomacy rollups for countries with 30+ sway', () => {
-    let w = setInfluence(world(), PARIS, PLAYER, 35, START_MS);
+    const w = setInfluence(world(), PARIS, PLAYER, 35, START_MS);
     const rollups = selectInfluenceForDiplomacy(w);
     expect(rollups).toHaveLength(1);
     expect(rollups[0]?.countryId).toBe(ROME);

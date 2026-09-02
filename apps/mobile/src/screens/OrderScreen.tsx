@@ -158,7 +158,6 @@ export function OrderScreen() {
     unitId && destinationId && unit?.locationId !== destinationId
       ? moveDistanceKm(world, unitId, destinationId)
       : null;
-  const destOwner = selectedDestOwner;
   const isHostile = selectedDestStance === 'hostile';
 
   const canConfirm = Boolean(

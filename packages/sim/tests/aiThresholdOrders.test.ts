@@ -4,11 +4,9 @@ import { createTutorialWorld } from '../../shared/src/scenario-tutorial';
 import { LEADERS_BY_ID } from '../../shared/src/leaders';
 import { UNIT_TYPES_BY_ID } from '../../shared/src/units';
 import {
-  applyAiInfluenceOrders,
   applyAiThresholdOrders,
   applyInfluenceOrders,
   canActorIssueInfluenceOrder,
-  collectAiInfluenceOrders,
   collectAiThresholdOrders,
   COUP_INFLUENCE_FLOOR,
   formAlliance,
@@ -40,7 +38,6 @@ const START_MS = 1_700_900_000_000;
 const PLAYER = 'faction-player';
 const STEPPE = 'faction-steppe';
 const BRITAIN = 'faction-britain';
-const ROME = 'faction-rome';
 const LONDON = 'territory-london';
 const PARIS = 'territory-paris';
 

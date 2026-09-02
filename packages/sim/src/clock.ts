@@ -5,10 +5,9 @@ import { collectAiOrders, isAiDecisionMs, nextAiDecisionMs } from './ai';
 import { applyAiDiplomaticDecisions } from './diplomaticAi';
 import { emit } from './events';
 import { buildTransit, effectiveSpeedKmh, pendingArrivalMs } from './movement';
-import { unitPosition } from './position';
 import { pendingProductionMs } from './production';
 import { tick } from './tick';
-import type { Coord, Id, Millis, ResourceId, SimEvent, WorldState } from './types';
+import type { Id, Millis, ResourceId, SimEvent, WorldState } from './types';
 import { STANDARD_TIME_MULTIPLIER } from './tutorial';
 
 /**

@@ -1,11 +1,6 @@
-import type { Millis, SimEvent, SimEventDraft, TutorialBeatId, TutorialState, WorldState } from './types';
+import type { Millis, SimEvent, TutorialBeatId, TutorialState, WorldState } from './types';
 import {
   PLAYER_TUTORIAL_FACTION_ID,
-  TUTORIAL_BURGUNDY_FACTION_ID,
-  TUTORIAL_BURGUNDY_TERRITORY_ID,
-  TUTORIAL_CALAIS_TERRITORY_ID,
-  TUTORIAL_HOME_TERRITORY_ID,
-  TUTORIAL_PARIS_TERRITORY_ID,
 } from '../../shared/src/tutorialConstants';
 import { stampEvents } from './events';
 import { playerFactionId } from './dispatch';

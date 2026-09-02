@@ -1,6 +1,6 @@
 import { MS_PER_DAY } from './constants';
 import { resolvePlayerFactionId } from './aiInfluenceAgency';
-import { affordsAccelerator, goldReserveFraction, leaderPosture } from './aiInfluenceScoring';
+import { affordsAccelerator, leaderPosture } from './aiInfluenceScoring';
 import {
   COUP_INFLUENCE_FLOOR,
   calculateCoupSuccessRate,

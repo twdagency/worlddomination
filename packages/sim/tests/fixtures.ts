@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import type { Faction, Id, Leader, Order, OrderIntent, Territory, Unit, UnitType, WorldState } from '../src/types';
 import { diplomacyDefaults } from '../src/diplomacy';
 import { intentFromMoveStance, taggedOrderFields } from '../src/dispatch';

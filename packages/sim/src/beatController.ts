@@ -1,4 +1,4 @@
-import type { SimEvent, SimEventDraft, SimEventKind, TutorialBeatId, WorldState } from './types';
+import type { SimEventDraft, SimEventKind, TutorialBeatId, WorldState } from './types';
 import { enqueuePendingDilemma } from './dilemmas';
 import {
   isBeatComplete,

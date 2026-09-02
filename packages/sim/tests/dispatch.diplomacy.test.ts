@@ -150,7 +150,7 @@ describe('dispatch diplomacy', () => {
 
   it('72h cold-play as Britain includes alliance formation in digest', () => {
     let world = britainPlayerWorld(createSprint4World(START_MS));
-    let allEvents: SimEvent[] = [];
+    const allEvents: SimEvent[] = [];
     const firstTick = START_MS + 6 * 3_600_000;
     const step1 = advanceTo(world, firstTick);
     world = step1.world;
@@ -233,7 +233,7 @@ describe('dispatch diplomacy', () => {
 describe('dispatch diplomacy cold-read snapshot', () => {
   it('britain-player 72h digest includes diplomatic layer', () => {
     let world = britainPlayerWorld(createSprint4World(START_MS));
-    let allEvents: SimEvent[] = [];
+    const allEvents: SimEvent[] = [];
     const firstTick = START_MS + 6 * 3_600_000;
     const step1 = advanceTo(world, firstTick);
     world = step1.world;

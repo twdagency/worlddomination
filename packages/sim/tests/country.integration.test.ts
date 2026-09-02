@@ -103,7 +103,7 @@ describe('country scenario integration', () => {
   });
 
   it('tutorial: paris assault emits countryDefeated for france (Beat 2 precondition)', () => {
-    let world = ensureWorldCountries(createTutorialWorld(START_MS));
+    const world = ensureWorldCountries(createTutorialWorld(START_MS));
     const order = tagOrder(
       world,
       {
@@ -175,7 +175,7 @@ describe('country scenario integration', () => {
   });
 
   it('tutorial: france defeat cascade is precondition for Beat 2 hook', () => {
-    let world = ensureWorldCountries(createTutorialWorld(START_MS));
+    const world = ensureWorldCountries(createTutorialWorld(START_MS));
     const order = tagOrder(
       world,
       {

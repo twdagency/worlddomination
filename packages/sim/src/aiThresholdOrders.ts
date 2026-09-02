@@ -10,7 +10,6 @@ import { AI_INFLUENCE_MIN_SCORE } from './aiInfluenceScoring';
 import {
   pickBestAiThresholdAction,
   type AiThresholdCandidate,
-  type AiThresholdKind,
 } from './aiThresholdScoring';
 import { applyInfluenceOrders } from './influenceAccelerators';
 import type { Id, Millis, Order, SimEventDraft, WorldState } from './types';

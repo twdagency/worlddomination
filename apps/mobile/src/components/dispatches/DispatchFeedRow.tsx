@@ -6,7 +6,6 @@ import { IntelSourceHint } from '../IntelSourceHint';
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';
 import { formatDateTime } from '../../utils/format';
-import { isDispatchDetailEvent } from '../../game/actions';
 
 function dispatchAccent(kind: string): string {
   if (kind === 'battle') return terminal.danger;
@@ -37,7 +36,6 @@ export function DispatchFeedRow({
   onPress,
   testID,
 }: DispatchFeedRowProps) {
-  const showDetail = isDispatchDetailEvent(item.event) && item.event.kind === 'battle';
   const content = (
     <TerminalCard style={highlighted ? styles.highlighted : undefined}>
       {item.header ? <Text style={styles.beatHeader}>{item.header}</Text> : null}

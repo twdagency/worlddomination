@@ -4,7 +4,7 @@ import {
   INFRA_YIELD_MULT,
   MS_PER_HOUR,
 } from './constants';
-import type { Faction, Id, Leader, ResourceId, Territory, WorldState } from './types';
+import type { Id, Leader, ResourceId, Territory, WorldState } from './types';
 
 export interface AccruedIncome {
   funding: number;
@@ -67,8 +67,8 @@ export function accrueEconomy(
     };
   }
 
-  let factions = { ...world.factions };
-  let territories = { ...world.territories };
+  const factions = { ...world.factions };
+  const territories = { ...world.territories };
   let totalFunding = 0;
   let resourcesByTerritory: Record<Id, Partial<Record<ResourceId, number>>> = {};
 

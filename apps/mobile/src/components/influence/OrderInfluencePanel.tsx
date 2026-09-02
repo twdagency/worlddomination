@@ -28,11 +28,9 @@ interface OrderInfluencePanelProps {
 
 function InfluenceActionCard({
   action,
-  selectedCityId,
   onExecute,
 }: {
   action: AvailableInfluenceAction;
-  selectedCityId: string;
   onExecute: (kind: InfluenceOrderActionKind) => void;
 }) {
   const disabled = !action.unlocked;
@@ -159,7 +157,6 @@ export function OrderInfluencePanel({
         <InfluenceActionCard
           key={action.kind}
           action={action}
-          selectedCityId={cityId}
           onExecute={(kind) => onExecute(cityId, kind)}
         />
       ))}
@@ -169,7 +166,6 @@ export function OrderInfluencePanel({
         <InfluenceActionCard
           key={action.kind}
           action={action}
-          selectedCityId={cityId}
           onExecute={(kind) => onExecute(cityId, kind)}
         />
       ))}

@@ -431,7 +431,7 @@ function mergeCountryRecords(factionRow: Country, countryRow?: Country): Country
  * Idempotent — safe to call on every load via `ensureWorldMigrations`.
  */
 export function ensureWorldFactionRename(world: WorldState): WorldState {
-  let next = world.countries ? world : ensureWorldCountries(world);
+  const next = world.countries ? world : ensureWorldCountries(world);
   if (!next.countries || Object.keys(next.factions).length === 0) {
     return next;
   }

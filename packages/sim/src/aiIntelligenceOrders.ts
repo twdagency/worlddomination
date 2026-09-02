@@ -17,11 +17,6 @@ export {
 } from './aiIntelligenceScoring';
 export type { ScoredAiIntelligenceAction } from './aiIntelligenceScoring';
 
-function isAiActor(world: WorldState, actorId: Id): boolean {
-  const faction = world.factions[actorId];
-  return Boolean(faction && !faction.isPlayer);
-}
-
 function isFactionDefeated(world: WorldState, factionId: Id): boolean {
   return findCountry(world, factionId)?.defeated === true;
 }
@@ -35,8 +30,12 @@ function buildIntelligenceOrder(actorId: Id, targetCityId: Id, at: Millis): Orde
   };
 }
 
-/** First intelligence order requires one game-day since world start (mirrors influence agency). */
-export function canActorGatherIntelligence(world: WorldState, actorId: Id, at: Millis): boolean {
+/**
+ * First intelligence order requires one game-day since world start (mirrors influence agency).
+ * `_actorId` is kept for signature symmetry with `canActorIssueInfluenceOrder`; the gate is
+ * world-wide, not per-actor.
+ */
+export function canActorGatherIntelligence(world: WorldState, _actorId: Id, at: Millis): boolean {
   if (at - world.startMs < MS_PER_DAY) return false;
   return true;
 }

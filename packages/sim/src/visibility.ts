@@ -1,4 +1,4 @@
-import { activeSight, scoutRangeKm } from './sight';
+import { activeSight } from './sight';
 import { mergeAllTerritoryVisibility } from './intel';
 import type { Id, Territory, Unit, WorldState } from './types';
 import type { TerritoryVisibilityState } from './types';

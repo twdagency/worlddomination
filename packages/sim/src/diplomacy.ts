@@ -4,7 +4,6 @@ import type {
   Id,
   Millis,
   Reputation,
-  SimEvent,
   SimEventDraft,
   Treaty,
   WorldState,

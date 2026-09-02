@@ -13,7 +13,6 @@ import { recordDestroyedScoutIntel, ensureIntelStore } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import {
   formatBattleNarrative,
-  formatSecuredNarrative,
 } from './reports';
 import type { Id, IntelStore, Millis, SimEventDraft, Unit, WorldState } from './types';
 

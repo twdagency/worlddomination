@@ -648,7 +648,7 @@ export function accrueTributes(
       100,
       tribute.resentment + TRIBUTE_RESENTMENT_GROWTH_PER_DAY * daysElapsed,
     );
-    let minorRebellionEmitted = tribute.minorRebellionEmitted;
+    const minorRebellionEmitted = tribute.minorRebellionEmitted;
     let updatedTribute: ActiveTribute = {
       ...tribute,
       lastAccrualAt: at,
@@ -928,7 +928,7 @@ function applyCoupSuccessInfluence(
   at: Millis,
 ): WorldState {
   const prior = getInfluence(world, targetCityId, actorId);
-  let next = clearInfluenceForCity(world, targetCityId);
+  const next = clearInfluenceForCity(world, targetCityId);
   return setInfluence(next, targetCityId, actorId, prior - COUP_INFLUENCE_COST_SUCCESS, at);
 }
 

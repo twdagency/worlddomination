@@ -15,7 +15,6 @@ import type {
   Order,
   ResourceId,
   SimEventDraft,
-  Territory,
   Unit,
   UnitType,
   WorldState,
@@ -227,8 +226,8 @@ export function applyBuildOrders(
   territories: WorldState['territories'];
   events: SimEventDraft[];
 } {
-  let factions = { ...world.factions };
-  let territories = { ...world.territories };
+  const factions = { ...world.factions };
+  const territories = { ...world.territories };
   const events: SimEventDraft[] = [];
 
   for (const order of orders) {
@@ -361,7 +360,7 @@ export function resolveProductionCompletions(
   events: SimEventDraft[];
 } {
   let units = { ...world.units };
-  let territories = { ...world.territories };
+  const territories = { ...world.territories };
   const events: SimEventDraft[] = [];
 
   for (const territory of Object.values(world.territories)) {

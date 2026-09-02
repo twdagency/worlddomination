@@ -6,7 +6,6 @@ import { UNIT_TYPES_BY_ID } from 'shared';
 import { STORAGE_KEYS } from '../theme/terminal';
 import { clearTooltipDismissals } from '../game/tooltipDismissal';
 import {
-  DEFAULT_DISPATCH_READ_STATE,
   parseDispatchReadState,
   serializeDispatchReadState,
   type DispatchReadState,

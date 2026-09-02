@@ -26,7 +26,6 @@ import type { Country, WorldState } from '../src/types';
 
 const START_MS = 1_700_900_000_000;
 const STEPPE = 'faction-steppe';
-const PLAYER = 'faction-player';
 const LONDON = 'territory-london';
 
 function migrate(world: WorldState): WorldState {

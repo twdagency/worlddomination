@@ -1,5 +1,4 @@
 import type { Id, SimEventKind, TutorialBeatId, WorldState } from './types';
-import { enqueuePendingDilemma } from './dilemmas';
 import {
   PLAYER_TUTORIAL_FACTION_ID,
   TUTORIAL_BURGUNDY_FACTION_ID,

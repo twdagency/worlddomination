@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import type { BeatCopy } from 'shared';
-import type { SimEvent, TransitOrder, TutorialBeatId, WorldState, Millis } from 'sim';
+import type { SimEvent, TransitOrder, TutorialBeatId, WorldState } from 'sim';
 import {
   evaluateBeatProgression,
   getDilemmaById,

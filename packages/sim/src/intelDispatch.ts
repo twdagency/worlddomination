@@ -3,11 +3,9 @@ import { garrisonDescriptor } from './diplomaticDispatch';
 import type {
   Id,
   IntelRecord,
-  IntelSource,
   IntelStore,
   Millis,
   OrderIntent,
-  SimEvent,
   SimEventDraft,
   WorldState,
 } from './types';

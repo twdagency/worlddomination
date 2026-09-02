@@ -16,7 +16,6 @@ import {
   ensureWorldMigrations,
   formAlliance,
   getInfluence,
-  hasFreshIntelligence,
   INTELLIGENCE_COOLDOWN_MS,
   INTELLIGENCE_GATHER_COST,
   INTELLIGENCE_MIN_INFLUENCE,

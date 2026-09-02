@@ -14,7 +14,7 @@ export function cancelTributesForDefeatedCountry(
   countryId: Id,
   at: Millis,
 ): { world: WorldState; events: SimEventDraft[] } {
-  let next = ensureWorldTributes(world);
+  const next = ensureWorldTributes(world);
   const events: SimEventDraft[] = [];
   const remaining: ActiveTribute[] = [];
 

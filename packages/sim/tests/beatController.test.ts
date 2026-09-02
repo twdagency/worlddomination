@@ -5,7 +5,6 @@ import {
   createBeatController,
   PLAYER_TUTORIAL_FACTION_ID,
   previewMoveEtaMs,
-  TUTORIAL_BEAT_PREDICATES,
   TUTORIAL_HOME_TERRITORY_ID,
   tick,
 } from '../src';

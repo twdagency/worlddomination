@@ -32,7 +32,6 @@ import type {
   ActiveDiplomaticMission,
   CulturalCampaignRecord,
   Id,
-  InfluenceOrderKind,
   Millis,
   Order,
   Reputation,
@@ -223,7 +222,6 @@ function hasActiveAssaultAgainstOwner(
 function missionExpulsionReason(
   world: WorldState,
   mission: ActiveDiplomaticMission,
-  at: Millis,
 ): 'alliance-broken' | 'war-declared' | 'target-defeated' | null {
   const ownerId = targetOwnerId(world, mission.targetCityId);
   if (!ownerId || isOwnerDefeated(world, ownerId)) return 'target-defeated';
@@ -492,7 +490,7 @@ export function expireActiveInfluenceEffects(
       continue;
     }
 
-    const expulsion = missionExpulsionReason(next, mission, at);
+    const expulsion = missionExpulsionReason(next, mission);
     if (expulsion) {
       events.push({
         kind: 'diplomaticMissionExpelled',

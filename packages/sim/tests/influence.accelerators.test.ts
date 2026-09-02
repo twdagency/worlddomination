@@ -112,7 +112,7 @@ describe('influence accelerators (Sprint 9 Phase 2)', () => {
   });
 
   it('diplomatic mission expires after 14 game-days', () => {
-    let world = applyInfluenceOrders(influenceWorld(), [missionOrder(influenceWorld())], START_MS).world;
+    const world = applyInfluenceOrders(influenceWorld(), [missionOrder(influenceWorld())], START_MS).world;
     const expired = expireActiveInfluenceEffects(world, START_MS + DIPLOMATIC_MISSION_DURATION_MS);
     expect(expired.world.activeDiplomaticMissions).toHaveLength(0);
     expect(expired.events.some((event) => event.kind === 'diplomaticMissionExpired')).toBe(true);

@@ -16,7 +16,7 @@ import { syncCountriesFromFactions } from './country';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
-import { accruePassiveInfluence, ensureWorldTributes } from './influence';
+import { accruePassiveInfluence } from './influence';
 import { accrueTributes } from './influenceActions';
 import { applyInfluenceOrders, expireActiveInfluenceEffects } from './influenceAccelerators';
 import { applyAiInfluenceOrders } from './aiInfluenceOrders';
@@ -51,7 +51,7 @@ export function tick(
   const events: SimEventDraft[] = [];
 
   const influenceOrders = applyInfluenceOrders(world, orders, world.nowMs);
-  let workingWorld = influenceOrders.world;
+  const workingWorld = influenceOrders.world;
   events.push(...influenceOrders.events);
 
   const { units: unitsAfterMoves, events: departureEvents } = applyMoveOrders(workingWorld, orders);

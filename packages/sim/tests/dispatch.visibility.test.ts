@@ -3,7 +3,6 @@ import {
   computeBeatId,
   filterDispatchesForFaction,
   isDispatchVisibleToFaction,
-  renderDigestText,
 } from '../src/dispatch';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import type { SimEvent } from '../src/types';

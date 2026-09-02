@@ -1,7 +1,6 @@
 import React, { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import TestRenderer from 'react-test-renderer';
-import { Pressable, Text } from 'react-native';
 import { TUTORIAL_BEAT_COPY } from 'shared';
 import { TutorialBanner } from '../src/components/tutorial/TutorialBanner';
 

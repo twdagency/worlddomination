@@ -1,6 +1,5 @@
 import { MS_PER_DAY } from './constants';
 import { areAllied } from './diplomacy';
-import { findCountry } from './country';
 import { computeBeatId } from './beatId';
 import { getInfluence } from './influence';
 import { validateInfluenceTarget } from './influenceOrderValidation';

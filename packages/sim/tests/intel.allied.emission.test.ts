@@ -17,7 +17,6 @@ import type { IntelRecord, WorldState } from '../src/types';
 const START_MS = 1_700_900_000_000;
 const CAESAR = 'faction-rome';
 const GENGHIS = 'faction-steppe';
-const ELIZABETH = 'faction-player';
 const BRITAIN = 'faction-britain';
 const BERLIN = 'territory-berlin';
 const PARIS = 'territory-paris';

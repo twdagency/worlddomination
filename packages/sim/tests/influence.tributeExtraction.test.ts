@@ -18,8 +18,6 @@ import {
   TRIBUTE_MAJOR_REBELLION_OBSERVER_REPUTATION_PENALTY,
   TRIBUTE_MAJOR_REBELLION_TARGET_REPUTATION_PENALTY,
   TRIBUTE_RESENTMENT_GROWTH_PER_DAY,
-  TRIBUTE_RESENTMENT_MAJOR_REBELLION,
-  TRIBUTE_RESENTMENT_MINOR_REBELLION,
 } from '../src';
 import { MS_PER_DAY, MS_PER_HOUR } from '../src/constants';
 import { formAlliance } from '../src/diplomacy';
@@ -95,7 +93,7 @@ function startTribute(world: WorldState, cityId: string = PARIS) {
 
 describe('tribute extraction (Sprint 9 Phase 5)', () => {
   it('rejects when influence is below 50', () => {
-    let world = withInfluence(tributeWorld(), 49);
+    const world = withInfluence(tributeWorld(), 49);
     const result = applyInfluenceOrders(world, [tributeStartOrder(world)], START_MS);
     expect(result.events[0]?.kind).toBe('orderRejected');
     expect(result.events[0]?.reason).toBe('insufficient-influence');
@@ -103,7 +101,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   });
 
   it('rejects when gold is insufficient', () => {
-    let world = withInfluence(
+    const world = withInfluence(
       tributeWorld({
         factions: {
           ...tributeWorld().factions,
@@ -126,7 +124,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   });
 
   it('creates ActiveTribute and deducts setup cost on success', () => {
-    let world = withInfluence(tributeWorld(), 55);
+    const world = withInfluence(tributeWorld(), 55);
     const beforeGold = world.factions[PLAYER]!.funding;
     const result = startTribute(world);
     expect(result.events.some((event) => event.kind === 'tributeStarted')).toBe(true);
@@ -166,13 +164,13 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   });
 
   it('drains influence by 1 per game-day', () => {
-    let world = withInfluence(startTribute(withInfluence(tributeWorld(), 55)).world, 55);
+    const world = withInfluence(startTribute(withInfluence(tributeWorld(), 55)).world, 55);
     const after = accrueTributes(world, START_MS + MS_DAY);
     expect(getInfluence(after.world, PARIS, PLAYER)).toBe(55 - TRIBUTE_INFLUENCE_DRAIN_PER_DAY);
   });
 
   it('grows resentment at 2 per day without events below minor threshold', () => {
-    let world = startTribute(withInfluence(tributeWorld(), 65)).world;
+    const world = startTribute(withInfluence(tributeWorld(), 65)).world;
     const after = accrueTributes(world, START_MS + MS_DAY * 10);
     const tribute = findActiveTribute(after.world, PLAYER, PARIS)!;
     expect(tribute.resentment).toBe(TRIBUTE_RESENTMENT_GROWTH_PER_DAY * 10);
@@ -180,14 +178,14 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   });
 
   it('emits minor rebellion when resentment reaches 40', () => {
-    let world = startTribute(withInfluence(tributeWorld(), 75)).world;
+    const world = startTribute(withInfluence(tributeWorld(), 75)).world;
     const after = accrueTributes(world, START_MS + MS_DAY * 20);
     expect(after.events.some((event) => event.kind === 'tributeMinorRebellion')).toBe(true);
     expect(findActiveTribute(after.world, PLAYER, PARIS)?.minorRebellionEmitted).toBe(true);
   });
 
   it('emits major rebellion at resentment 80 and ends tribute', () => {
-    let world = startTribute(withInfluence(tributeWorld(), 80)).world;
+    const world = startTribute(withInfluence(tributeWorld(), 80)).world;
     const after = accrueTributes(world, START_MS + MS_DAY * 40);
     expect(after.events.some((event) => event.kind === 'tributeMajorRebellion')).toBe(true);
     expect(findActiveTribute(after.world, PLAYER, PARIS)).toBeUndefined();
@@ -201,7 +199,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   });
 
   it('auto-ends when influence drops below 50', () => {
-    let world = startTribute(withInfluence(tributeWorld(), 52)).world;
+    const world = startTribute(withInfluence(tributeWorld(), 52)).world;
     const after = accrueTributes(world, START_MS + MS_DAY * 3);
     expect(findActiveTribute(after.world, PLAYER, PARIS)).toBeUndefined();
     const ended = after.events.find((event) => event.kind === 'tributeAutoEnded');
@@ -223,7 +221,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   });
 
   it('voluntarily cancels without reputation penalty', () => {
-    let world = startTribute(withInfluence(tributeWorld(), 60)).world;
+    const world = startTribute(withInfluence(tributeWorld(), 60)).world;
     const beforeRep = world.reputation[ROME]?.[PLAYER] ?? 0;
     const cancelled = applyInfluenceOrders(world, [tributeCancelOrder(world)], START_MS + MS_DAY);
     expect(cancelled.events.some((event) => event.kind === 'tributeVoluntarilyEnded')).toBe(true);
@@ -232,7 +230,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   });
 
   it('is deterministic for identical worlds and ticks', () => {
-    let world = startTribute(withInfluence(tributeWorld(), 60)).world;
+    const world = startTribute(withInfluence(tributeWorld(), 60)).world;
     const at = START_MS + MS_DAY * 5;
     const a = accrueTributes(world, at);
     const b = accrueTributes(world, at);
@@ -253,7 +251,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
 
   it('integration: 50-day campaign reaches major rebellion organically', () => {
     let world = startTribute(withInfluence(tributeWorld(), 90)).world;
-    let events: string[] = [];
+    const events: string[] = [];
     for (let day = 1; day <= 50; day++) {
       const step = tick(world, [], MS_DAY);
       world = step.world;
@@ -297,7 +295,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   });
 
   it('runs tribute accrual inside tick at step 5d', () => {
-    let world = startTribute(withInfluence(tributeWorld(), 60)).world;
+    const world = startTribute(withInfluence(tributeWorld(), 60)).world;
     const { events } = tick(world, [], MS_DAY);
     expect(events.some((event) => event.kind === 'tributeAccrued')).toBe(true);
   });

@@ -8,7 +8,7 @@ import {
   territoryName,
 } from './dispatchFormatHelpers';
 import { findCountry } from './country';
-import type { Id, Millis, SimEvent, WorldState } from './types';
+import type { Id, SimEvent, WorldState } from './types';
 
 export function formatAllianceFormedLine(
   world: WorldState,

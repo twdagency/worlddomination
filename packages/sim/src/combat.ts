@@ -204,8 +204,6 @@ export function resolveBattle(input: ResolveBattleInput): ResolveBattleResult {
   const winnerId = attackerWins ? attackerId : defenderId;
   const winRatio = attackerWins ? ratio : powerRatio(defenderPower, attackerPower);
 
-  const winnerUnits = attackerWins ? attackerUnits : defenderUnits;
-  const loserUnits = attackerWins ? defenderUnits : attackerUnits;
   const winnerCount = attackerWins ? attacker.totalCount : defender.totalCount;
 
   const winnerLossesTotal = Math.min(

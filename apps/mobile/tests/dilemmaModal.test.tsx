@@ -1,7 +1,6 @@
 import React, { act } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import TestRenderer from 'react-test-renderer';
-import { Pressable } from 'react-native';
 import { FOREIGN_RULE_DILEMMA } from 'sim';
 import { DilemmaModal } from '../src/components/dilemma/DilemmaModal';
 

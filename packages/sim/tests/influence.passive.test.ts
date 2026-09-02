@@ -12,7 +12,6 @@ import { haversineKm } from '../src/geo';
 import {
   accruePassiveInfluence,
   computePassiveInfluenceSources,
-  ensureWorldInfluence,
   getInfluence,
   INFLUENCE_ADJACENCY_THRESHOLD_KM,
   INFLUENCE_CAP,
@@ -96,7 +95,7 @@ describe('influence passive accumulation (Sprint 9 Phase 1)', () => {
   });
 
   it('accrues alliance contribution for allied city owners', () => {
-    let world = migrate(createSprint4World(START_MS));
+    const world = migrate(createSprint4World(START_MS));
     const allied = formAlliance(world, PLAYER, ROME, START_MS).world;
     const after = accruePassiveInfluence(allied, START_MS + MS_DAY);
     const sources = computePassiveInfluenceSources(allied, PARIS, PLAYER, START_MS + MS_DAY);
@@ -105,7 +104,7 @@ describe('influence passive accumulation (Sprint 9 Phase 1)', () => {
   });
 
   it('accrues treaty contribution only for treaty-scoped cities', () => {
-    let world = migrate(createSprint4World(START_MS));
+    const world = migrate(createSprint4World(START_MS));
     const treaty = formTreaty(world, {
       partyA: PLAYER,
       partyB: STEPPE,
