@@ -9,6 +9,7 @@ import {
   resolveDilemma,
   TUTORIAL_BEAT_ORDER,
   TUTORIAL_BURGUNDY_TERRITORY_ID,
+  TUTORIAL_CALAIS_TERRITORY_ID,
   TUTORIAL_PARIS_TERRITORY_ID,
   tick,
 } from '../src';
@@ -68,6 +69,22 @@ function completeTutorialPlaythrough() {
   );
   const progressed = evaluateBeatProgression(resolved.world, resolved.events);
   world = progressed.world;
+  expect(world.tutorial?.currentBeat).toBe('influence');
+
+  const targetCityId =
+    world.territories[BURGUNDY]?.ownerId === BURGUNDY_FACTION
+      ? BURGUNDY
+      : TUTORIAL_CALAIS_TERRITORY_ID;
+  const mission = tagOrder(
+    world,
+    {
+      kind: 'diplomatic-mission',
+      ownerId: PLAYER_TUTORIAL_FACTION_ID,
+      targetCityId,
+    },
+    PLAYER_TUTORIAL_FACTION_ID,
+  );
+  world = tick(world, [mission], 0).world;
 
   expect(world.tutorial?.completedBeats).toEqual([...TUTORIAL_BEAT_ORDER]);
   expect(world.tutorial?.active).toBe(true);

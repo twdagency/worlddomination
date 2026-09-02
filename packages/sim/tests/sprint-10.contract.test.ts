@@ -45,6 +45,14 @@ function richAi(world: WorldState): WorldState {
 }
 
 describe('Sprint 10 contracts', () => {
+  it('tutorial isolation: tutorial.ts and tutorialBeats.ts do not import influence modules', () => {
+    const srcDir = dirname(fileURLToPath(import.meta.url));
+    const tutorialSource = readFileSync(join(srcDir, '../src/tutorial.ts'), 'utf8');
+    const beatSource = readFileSync(join(srcDir, '../src/tutorialBeats.ts'), 'utf8');
+    expect(tutorialSource).not.toMatch(/from '\.\/influence/);
+    expect(beatSource).not.toMatch(/from '\.\/influence/);
+  });
+
   it('Phase 1: country.ts does not import influenceActions or influenceAccelerators directly', () => {
     const countrySource = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), '../src/country.ts'),

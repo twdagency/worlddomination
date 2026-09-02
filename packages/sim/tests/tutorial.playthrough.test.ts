@@ -10,6 +10,7 @@ import {
   TUTORIAL_BEAT_ORDER,
   TUTORIAL_BURGUNDY_FACTION_ID,
   TUTORIAL_BURGUNDY_TERRITORY_ID,
+  TUTORIAL_CALAIS_TERRITORY_ID,
   TUTORIAL_HOME_TERRITORY_ID,
   TUTORIAL_PARIS_TERRITORY_ID,
   tick,
@@ -77,6 +78,13 @@ function completeThroughEconomy(world: ReturnType<typeof createTutorialWorld>) {
   return next;
 }
 
+function remainingBurgundyCity(world: ReturnType<typeof createTutorialWorld>) {
+  for (const cityId of [BURGUNDY, TUTORIAL_CALAIS_TERRITORY_ID]) {
+    if (world.territories[cityId]?.ownerId === BURGUNDY_FACTION) return cityId;
+  }
+  return TUTORIAL_CALAIS_TERRITORY_ID;
+}
+
 function finishGovernance(world: ReturnType<typeof createTutorialWorld>) {
   expect(world.tutorial?.completedBeats).toContain('pinch');
   expect(world.tutorial?.currentBeat).toBe('governance');
@@ -91,22 +99,38 @@ function finishGovernance(world: ReturnType<typeof createTutorialWorld>) {
     'conciliation',
     world.nowMs,
   );
-  const progressed = evaluateBeatProgression(resolved.world, resolved.events);
-  const next = progressed.world;
-
-  expect(next.tutorial?.completedBeats).toEqual([...TUTORIAL_BEAT_ORDER]);
-  expect(next.tutorial?.currentBeat).toBeNull();
-  expect(next.tutorial?.active).toBe(true);
-  expect(next.factions[PLAYER_TUTORIAL_FACTION_ID]?.identityTags).toEqual([
+  const afterGovernance = evaluateBeatProgression(resolved.world, resolved.events).world;
+  expect(afterGovernance.tutorial?.completedBeats).toContain('governance');
+  expect(afterGovernance.tutorial?.currentBeat).toBe('influence');
+  expect(afterGovernance.tutorial?.completedBeats).not.toContain('handoff');
+  expect(afterGovernance.factions[PLAYER_TUTORIAL_FACTION_ID]?.identityTags).toEqual([
     'liberal',
     'merciful',
   ]);
-  expect(progressed.events.some((event) => event.kind === 'tutorialHandoffReady')).toBe(true);
-  return next;
+
+  const targetCityId = remainingBurgundyCity(afterGovernance);
+  const mission = tagOrder(
+    afterGovernance,
+    {
+      kind: 'diplomatic-mission',
+      ownerId: PLAYER_TUTORIAL_FACTION_ID,
+      targetCityId,
+    },
+    PLAYER_TUTORIAL_FACTION_ID,
+  );
+  const afterInfluence = tick(afterGovernance, [mission], 0);
+  expect(afterInfluence.events.some((event) => event.kind === 'diplomaticMissionStarted')).toBe(
+    true,
+  );
+  expect(afterInfluence.world.tutorial?.completedBeats).toEqual([...TUTORIAL_BEAT_ORDER]);
+  expect(afterInfluence.world.tutorial?.currentBeat).toBeNull();
+  expect(afterInfluence.world.tutorial?.active).toBe(true);
+  expect(afterInfluence.events.some((event) => event.kind === 'tutorialHandoffReady')).toBe(true);
+  return afterInfluence.world;
 }
 
 describe('tutorial playthrough', () => {
-  it('runs the conquest-path tutorial deterministically through all six beats', () => {
+  it('runs the conquest-path tutorial deterministically through all seven beats', () => {
     let world = createTutorialWorld(START_MS);
     expect(world.tutorial?.currentBeat).toBe('movement');
     expect(totalFood(world)).toBe(25);
@@ -126,7 +150,7 @@ describe('tutorial playthrough', () => {
     finishGovernance(world);
   });
 
-  it('runs the treaty-path tutorial through all six beats', () => {
+  it('runs the treaty-path tutorial through all seven beats', () => {
     let world = completeThroughEconomy(createTutorialWorld(START_MS));
 
     const treaty = playerProposeTreaty(
@@ -143,7 +167,7 @@ describe('tutorial playthrough', () => {
     finishGovernance(world);
   });
 
-  it('runs the food-infra-path tutorial through all six beats', () => {
+  it('runs the food-infra-path tutorial through all seven beats', () => {
     const base = completeThroughEconomy(createTutorialWorld(START_MS));
     let world = {
       ...base,

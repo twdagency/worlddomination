@@ -424,6 +424,7 @@ export {
 } from './tutorial';
 export {
   type BeatPredicate,
+  hasTutorialForeignInfluenceTarget,
   TUTORIAL_BEAT_PREDICATES,
 } from './tutorialBeats';
 export {

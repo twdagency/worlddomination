@@ -11,6 +11,7 @@ export const TUTORIAL_BEAT_ORDER: readonly TutorialBeatId[] = [
   'economy',
   'pinch',
   'governance',
+  'influence',
   'handoff',
 ] as const;
 

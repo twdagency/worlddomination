@@ -129,7 +129,13 @@ Territory count drives income (`incomePerHour`, `economy.ts:24-28`) and manpower
 
 Sprint 4/5 player starts with 10× `mg-armor-t5` against Rome's 120× `levy-t1`. With `TECH_FACTOR = 1.6` and the tier exponent (`constants.ts:21`, `combat.ts:34`), direct assault is dramatically cheaper than the 20,000 gold influence path to the same city. The influence layer needs a reason to exist relative to the army the player already has.
 
-### P1-8 — Tutorial teaches none of the influence/diplomacy layer
+### P1-8 — Tutorial teaches none of the influence/diplomacy layer — FIXED
+
+Seventh beat `influence` sits between governance and handoff. Completes on a player influence-channel success or bought intelligence. Skips only when no undefeated foreign city remains. AI influence agency stays suppressed.
+
+Original finding:
+
+### P1-8 — Tutorial teaches none of the influence/diplomacy layer (original)
 
 Six beats (`tutorialBeats.ts:98-105`): movement, combat, economy, pinch, governance, handoff. Influence appears only in handoff hint copy (`packages/shared/src/tutorialBeatCopy.ts:45`). The deepest system in the game — four sprints of work — is entirely untaught. AI influence agency is also fully suppressed during tutorial (`aiInfluenceAgency.ts:4-6`), correctly, but that means no exposure at all.
 

@@ -26,6 +26,7 @@ import { TerritoryOwnerLabel } from '../components/TerritoryOwnerLabel';
 import type { ActionStackParamList } from '../navigation/types';
 import type { OrderScreenMode } from '../navigation/deepLinks';
 import { navigateTo } from '../navigation/deepLinks';
+import { selectTutorialInfluencePresetCityId } from '../game/tutorialBeatNavigation';
 import { useNavigation } from '@react-navigation/native';
 import type { InfluenceOrderActionKind } from '../game/influenceSelector';
 import { IntelSourceHint } from '../components/IntelSourceHint';
@@ -61,6 +62,7 @@ export function OrderScreen() {
   const playerId = resolvePlayerFactionId(world);
   const movableUnits = playerMovableUnits(world);
   const isMovementBeat = isTutorialActive && currentBeat === 'movement';
+  const isInfluenceBeat = isTutorialActive && currentBeat === 'influence';
 
   const [mode, setMode] = useState<OrderScreenMode>('move');
   const [destinationId, setDestinationId] = useState<string>('');
@@ -73,8 +75,12 @@ export function OrderScreen() {
   useEffect(() => {
     if (route.params?.orderMode) {
       setMode(route.params.orderMode);
+      return;
     }
-  }, [route.params?.orderMode]);
+    if (isInfluenceBeat) {
+      setMode('influence');
+    }
+  }, [route.params?.orderMode, isInfluenceBeat]);
 
   useEffect(() => {
     const presetDestination = route.params?.presetDestinationId;
@@ -213,8 +219,14 @@ export function OrderScreen() {
           world={world}
           playerId={playerId}
           actionFeedback={actionFeedback}
-          presetCityId={route.params?.presetCityId}
-          presetAction={route.params?.presetInfluenceAction as InfluenceOrderActionKind | undefined}
+          presetCityId={
+            route.params?.presetCityId ??
+            (isInfluenceBeat ? selectTutorialInfluencePresetCityId(world) : undefined)
+          }
+          presetAction={
+            (route.params?.presetInfluenceAction as InfluenceOrderActionKind | undefined) ??
+            (isInfluenceBeat ? 'diplomatic-mission' : undefined)
+          }
           onExecute={(cityId, kind) => void issueInfluence(cityId, kind)}
           onOpenTerritory={(cityId) =>
             navigateTo(navigation.getParent()!, { tab: 'actions', screen: 'territory', territoryId: cityId })

@@ -178,7 +178,7 @@ describe('dilemmas', () => {
     );
     const progressed = evaluateBeatProgression(world, events);
     expect(progressed.world.tutorial?.completedBeats).toContain('governance');
-    expect(progressed.world.tutorial?.completedBeats).toContain('handoff');
-    expect(progressed.world.tutorial?.currentBeat).toBeNull();
+    expect(progressed.world.tutorial?.currentBeat).toBe('influence');
+    expect(progressed.world.tutorial?.completedBeats).not.toContain('handoff');
   });
 });

@@ -872,10 +872,11 @@ export type TutorialBeatId =
   | 'economy'
   | 'pinch'
   | 'governance'
+  | 'influence'
   | 'handoff';
 
 export interface TutorialState {
-  /** True during beats 1–6; false after graduation. */
+  /** True during beats 1–7; false after graduation. */
   active: boolean;
   currentBeat: TutorialBeatId | null;
   completedBeats: TutorialBeatId[];

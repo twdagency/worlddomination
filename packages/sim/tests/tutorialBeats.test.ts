@@ -124,6 +124,32 @@ describe('tutorial beat predicates', () => {
     expect(predicateFor('governance').isComplete(event, world)).toBe(true);
   });
 
+  it('influence completes on a player diplomatic mission', () => {
+    const event: SimEvent = {
+      kind: 'diplomaticMissionStarted',
+      at: START_MS,
+      ownerId: PLAYER_TUTORIAL_FACTION_ID,
+      targetCityId: TUTORIAL_BURGUNDY_TERRITORY_ID,
+      expiresAt: START_MS + 14 * 86_400_000,
+    };
+    expect(predicateFor('influence').isComplete(event, world)).toBe(true);
+  });
+
+  it('influence ignores ordinary sight intel reports', () => {
+    const event: SimEvent = {
+      kind: 'intelReport',
+      at: START_MS,
+      observerFaction: PLAYER_TUTORIAL_FACTION_ID,
+      territoryId: TUTORIAL_BURGUNDY_TERRITORY_ID,
+      source: 'direct',
+      variant: 'activity',
+      intent: 'expand',
+      beatId: 'test',
+      decisionTickMs: START_MS,
+    };
+    expect(predicateFor('influence').isComplete(event, world)).toBe(false);
+  });
+
   it('handoff completes on tutorialHandoffReady synthetic event', () => {
     const event: SimEvent = {
       kind: 'tutorialHandoffReady',

@@ -38,10 +38,16 @@ export const TUTORIAL_BEAT_COPY: Record<TutorialBeatId, BeatCopy> = {
     body: "With Henry IV defeated, the French throne is yours to claim. Your decision will shape your country's identity.",
     hint: 'Why: You are not just a general — you are a leader. The policies you set and the dilemmas you resolve define what your empire becomes.',
   },
+  influence: {
+    beat: 'influence',
+    title: 'Sway a foreign city',
+    body: 'Open Order and start a Diplomatic Mission in a Burgundian city. Influence is the non-military path — one deliberate action per day. Intelligence is separate and can run the same day.',
+    hint: 'Why: Armies take cities. Influence takes them without a fight — pressure, tribute, coup, and defection all require sway you build over time.',
+  },
   handoff: {
     beat: 'handoff',
     title: 'Your campaign begins',
     body: 'The tutorial is complete. Continue into the full Europe sandbox to pursue your chosen path to victory.',
-    hint: 'New systems unlock as you play — including influence over foreign cities. Build influence through alliances, scouts, and diplomatic missions. Use it to pressure, extract from, or claim foreign cities. Watch the influence card on your Dashboard for opportunities.',
+    hint: 'Keep using the Dashboard influence card. Build sway, then pressure, extract from, or claim foreign cities.',
   },
 };

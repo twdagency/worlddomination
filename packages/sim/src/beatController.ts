@@ -5,7 +5,11 @@ import {
   markBeatComplete,
   PLAYER_TUTORIAL_FACTION_ID,
 } from './tutorial';
-import { type BeatPredicate, TUTORIAL_BEAT_PREDICATES } from './tutorialBeats';
+import {
+  hasTutorialForeignInfluenceTarget,
+  type BeatPredicate,
+  TUTORIAL_BEAT_PREDICATES,
+} from './tutorialBeats';
 
 export interface BeatController {
   /** Returns world with tutorial state updated when the current beat predicate matches. */
@@ -52,6 +56,17 @@ export function createBeatController(
   };
 }
 
+function maybeSkipInfluenceWithoutTarget(world: WorldState): WorldState {
+  const tutorial = world.tutorial;
+  if (!tutorial?.active || tutorial.currentBeat !== 'influence') return world;
+  if (isBeatComplete(tutorial, 'influence')) return world;
+  if (hasTutorialForeignInfluenceTarget(world)) return world;
+  return {
+    ...world,
+    tutorial: markBeatComplete(tutorial, 'influence', world.nowMs),
+  };
+}
+
 function maybeEmitTutorialHandoff(world: WorldState): { world: WorldState; events: SimEventDraft[] } {
   const tutorial = world.tutorial;
   if (!tutorial?.active || tutorial.currentBeat !== 'handoff') {
@@ -85,11 +100,13 @@ export function evaluateBeatProgression(
 
   for (const event of events) {
     next = controller.evaluate(event, next);
+    next = maybeSkipInfluenceWithoutTarget(next);
     const handoff = maybeEmitTutorialHandoff(next);
     next = handoff.world;
     emitted.push(...handoff.events);
   }
 
+  next = maybeSkipInfluenceWithoutTarget(next);
   const trailingHandoff = maybeEmitTutorialHandoff(next);
   next = trailingHandoff.world;
   emitted.push(...trailingHandoff.events);

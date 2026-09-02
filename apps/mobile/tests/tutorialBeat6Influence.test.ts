@@ -1,24 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import type { TutorialBeatId } from 'sim';
+import { TUTORIAL_BEAT_ORDER, type TutorialBeatId } from 'sim';
 import { TUTORIAL_BEAT_COPY } from 'shared';
 import { createTutorialWorld } from 'shared';
 import { selectTutorialState } from '../src/game/tutorialSelector';
+import {
+  selectTutorialInfluencePresetCityId,
+  TUTORIAL_BEAT_NAV_TARGET,
+} from '../src/game/tutorialBeatNavigation';
+import { TUTORIAL_BURGUNDY_TERRITORY_ID } from 'sim';
 
 const START_MS = 1_700_700_000_000;
-const HANDOFF_BEATS: TutorialBeatId[] = [
-  'movement',
-  'combat',
-  'economy',
-  'pinch',
-  'governance',
-  'handoff',
-];
 
-describe('tutorial Beat 6 influence copy', () => {
-  it('includes influence onboarding in handoff hint', () => {
-    expect(TUTORIAL_BEAT_COPY.handoff.hint).toContain('influence');
-    expect(TUTORIAL_BEAT_COPY.handoff.hint).toContain('Dashboard');
-    expect(TUTORIAL_BEAT_COPY.handoff.title).toBe('Your campaign begins');
+describe('tutorial influence beat', () => {
+  it('teaches the daily slot and diplomatic mission in dedicated beat copy', () => {
+    expect(TUTORIAL_BEAT_COPY.influence.title).toMatch(/sway/i);
+    expect(TUTORIAL_BEAT_COPY.influence.body).toMatch(/diplomatic mission/i);
+    expect(TUTORIAL_BEAT_COPY.influence.body).toMatch(/one deliberate action per day/i);
+    expect(TUTORIAL_BEAT_COPY.influence.hint).toMatch(/influence/i);
+    expect(TUTORIAL_BEAT_NAV_TARGET.influence).toBe('Order');
+  });
+
+  it('presets Burgundy as the influence-beat target while it remains foreign', () => {
+    const world = createTutorialWorld(START_MS);
+    expect(selectTutorialInfluencePresetCityId(world)).toBe(TUTORIAL_BURGUNDY_TERRITORY_ID);
   });
 
   it('keeps handoff readiness at graduation without regression', () => {
@@ -28,7 +32,7 @@ describe('tutorial Beat 6 influence copy', () => {
       tutorial: {
         ...base.tutorial!,
         active: true,
-        completedBeats: HANDOFF_BEATS,
+        completedBeats: [...TUTORIAL_BEAT_ORDER] as TutorialBeatId[],
         currentBeat: null,
       },
     };

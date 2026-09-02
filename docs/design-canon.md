@@ -350,7 +350,7 @@ Each continent expansion includes geography, era-appropriate leaders, regional r
 Scenarios
 Launch scenario set:
 
-Tutorial: small geography, 3-5 leaders, six-beat scripted onboarding.
+Tutorial: small geography, 3-5 leaders, seven-beat scripted onboarding.
 Punic Wars: ancient Mediterranean focus, Carthage vs. Rome.
 Crusader Europe: medieval era, religious conflict, European powers vs. Levantine kingdoms.
 Napoleon's Europe: industrial era, France vs. coalition.
@@ -448,7 +448,7 @@ No "silent" actions.
 No "navigation-required" feedback.
 No "ephemeral-only" feedback.
 First-session path
-Tutorial campaign with six-beat scripted onboarding, graduating to Europe sandbox.
+Tutorial campaign with seven-beat scripted onboarding, graduating to Europe sandbox.
 
 Six beats in dependency order:
 
