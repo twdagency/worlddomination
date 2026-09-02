@@ -55,7 +55,11 @@ This directly undercuts the Phase 4 goal ("player faces real competition for inf
 
 ---
 
-### P0-3 — `gather-intelligence` unreachable for the player
+### P0-3 — `gather-intelligence` unreachable for the player — FIXED
+
+Surfaced in the Order influence panel (Reconnaissance section), territory shortcuts, tooltips, and `issueInfluenceOrder`. `tribute-cancel` is on the same path. Selector unlocks intelligence at 30+ (with per-city cooldown) and cancel only when a tribute is active.
+
+Original finding:
 
 Phase 6 shipped the intelligence action sim-side (`intelligenceGather.ts`) and wired AI usage (`aiIntelligenceOrders.ts`). Mobile has **no path to issue it**:
 
@@ -121,11 +125,19 @@ Six beats (`tutorialBeats.ts:98-105`): movement, combat, economy, pinch, governa
 
 ## P1 — UI/UX and resilience
 
-### P1-11 — No error boundary anywhere in `apps/mobile`
+### P1-11 — No error boundary anywhere in `apps/mobile` — FIXED
+
+`AppErrorBoundary` wraps the app tree; Reset campaign clears storage and remounts `GameProvider`.
+
+Original finding:
 
 Any render throw crashes to a blank screen with no recovery.
 
-### P1-12 — Corrupt save is unrecoverable
+### P1-12 — Corrupt save is unrecoverable — FIXED
+
+`loadWorld` / `loadDispatches` now return null / `[]` on `JSON.parse` or migration failure. `GameContext` boot is wrapped in try/finally so `ready` always flips. `persist` swallows disk-write failures so an action is not rolled back in memory. `clearCampaignStorage` now also clears `scenarioId`.
+
+Original finding:
 
 `worldStorage.ts:18` and `:31` call `JSON.parse` with no try/catch. A corrupt world or dispatch blob produces an unhandled rejection, `ready` never flips in `GameContext`, and the app hangs permanently on "Loading campaign…" (`RootTabs.tsx:116-122`) with no reset path reachable from the UI.
 
@@ -135,7 +147,11 @@ Related: `clearCampaignStorage` (`worldStorage.ts:84-91`) does not clear `scenar
 
 `GameContext.tsx:347-349` discards all stored dispatches when `storedWorld.scenarioId !== resolvedScenarioId`, without warning the player.
 
-### P1-14 — Territory influence shortcuts inconsistent with the Order panel
+### P1-14 — Territory influence shortcuts inconsistent with the Order panel — FIXED
+
+Shortcuts now include subversion, intelligence, pressure, tribute, and cancel (cancel only while a tribute is active), matching the Order panel catalog.
+
+Original finding:
 
 `ForeignTerritoryInfluenceDetail.tsx:131-134` offers diplomatic mission, cultural campaign, coup, defection. Missing: subversion, diplomatic pressure, tribute extraction — all available on the Order screen panel. Two different action surfaces disagree on what exists.
 

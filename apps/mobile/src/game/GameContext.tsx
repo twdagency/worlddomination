@@ -118,11 +118,15 @@ interface GameContextValue extends TutorialContextSlice {
 const GameContext = React.createContext<GameContextValue | null>(null);
 
 async function persist(world: WorldState, dispatches: SimEvent[]): Promise<void> {
-  await Promise.all([
-    saveWorld(world),
-    saveDispatches(dispatches),
-    saveLastActiveMs(Date.now()),
-  ]);
+  try {
+    await Promise.all([
+      saveWorld(world),
+      saveDispatches(dispatches),
+      saveLastActiveMs(Date.now()),
+    ]);
+  } catch {
+    // In-memory campaign continues if disk write fails.
+  }
 }
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
@@ -326,34 +330,42 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [storedWorld, storedDispatches, lastActive, storedScenarioId, storedReadState] =
-        await Promise.all([
-        loadWorld(),
-        loadDispatches(),
-        loadLastActiveMs(),
-        loadScenarioId(),
-        loadDispatchReadState(),
-      ]);
-      if (cancelled) return;
+      try {
+        const [storedWorld, storedDispatches, lastActive, storedScenarioId, storedReadState] =
+          await Promise.all([
+            loadWorld(),
+            loadDispatches(),
+            loadLastActiveMs(),
+            loadScenarioId(),
+            loadDispatchReadState(),
+          ]);
+        if (cancelled) return;
 
-      if (storedReadState !== null) {
-        setDispatchReadState(storedReadState);
+        if (storedReadState !== null) {
+          setDispatchReadState(storedReadState);
+        }
+
+        const hasStoredWorld = storedWorld !== null;
+        const id = resolveScenarioId(storedScenarioId, hasStoredWorld);
+        setScenarioId(id);
+
+        const worldMatchesScenario = hasStoredWorld && storedWorld!.scenarioId === id;
+        const baseWorld = worldMatchesScenario ? storedWorld! : createWorldForScenario(id);
+        const baseDispatches = worldMatchesScenario ? storedDispatches : [];
+
+        if (!hasStoredWorld) {
+          await saveScenarioId(id);
+        }
+
+        await applyCatchUp(baseWorld, baseDispatches, worldMatchesScenario ? lastActive : null);
+      } catch {
+        if (cancelled) return;
+        const id = FIRST_TIME_SCENARIO_ID;
+        setScenarioId(id);
+        await applyCatchUp(createWorldForScenario(id), [], null);
+      } finally {
+        if (!cancelled) setReady(true);
       }
-
-      const hasStoredWorld = storedWorld !== null;
-      const id = resolveScenarioId(storedScenarioId, hasStoredWorld);
-      setScenarioId(id);
-
-      const worldMatchesScenario = hasStoredWorld && storedWorld!.scenarioId === id;
-      const baseWorld = worldMatchesScenario ? storedWorld! : createWorldForScenario(id);
-      const baseDispatches = worldMatchesScenario ? storedDispatches : [];
-
-      if (!hasStoredWorld) {
-        await saveScenarioId(id);
-      }
-
-      await applyCatchUp(baseWorld, baseDispatches, worldMatchesScenario ? lastActive : null);
-      if (!cancelled) setReady(true);
     })();
     return () => {
       cancelled = true;
