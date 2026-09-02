@@ -7,6 +7,11 @@ import {
   INFLUENCE_CAP,
 } from './influence';
 import {
+  applyAiInfluenceCooldownsFromEvents,
+  canActorIssueInfluenceOrder,
+  isInfluenceChannelOrderKind,
+} from './influenceChannel';
+import {
   isInfluenceOrder,
   validateInfluenceTarget,
   type InfluenceOrderRejectionReason,
@@ -242,8 +247,17 @@ export function applyInfluenceOrders(
     if (!isInfluenceOrder(order)) continue;
     if (!('ownerId' in order) || !('targetCityId' in order)) continue;
 
+    next = applyAiInfluenceCooldownsFromEvents(next, events, at);
     const ownerId = order.ownerId;
     const targetCityId = order.targetCityId;
+
+    if (
+      isInfluenceChannelOrderKind(order.kind) &&
+      !canActorIssueInfluenceOrder(next, ownerId, at)
+    ) {
+      rejectInfluenceOrder(next, order, 'influence-channel-on-cooldown', events);
+      continue;
+    }
 
     if (order.kind === 'diplomatic-pressure') {
       const validation = validateDiplomaticPressure(
@@ -467,6 +481,7 @@ export function applyInfluenceOrders(
     }
   }
 
+  next = applyAiInfluenceCooldownsFromEvents(next, events, at);
   return { world: next, events };
 }
 

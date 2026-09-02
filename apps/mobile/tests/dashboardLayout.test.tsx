@@ -36,6 +36,7 @@ const gameState = vi.hoisted(() => ({
   world: null as import('sim').WorldState | null,
   dispatches: [] as import('sim').SimEvent[],
   dispatchReadState: { atMs: 0, throughEventSerial: -1 },
+  awayMs: 0,
   markDispatchesViewed: vi.fn(),
 }));
 
@@ -44,6 +45,7 @@ vi.mock('../src/game/GameContext', () => ({
     world: gameState.world ?? createSprint4World(START_MS),
     dispatches: gameState.dispatches,
     dispatchReadState: gameState.dispatchReadState,
+    awayMs: gameState.awayMs,
     markDispatchesViewed: gameState.markDispatchesViewed,
     resolvePendingDilemma: vi.fn(),
     openDilemmaModal: vi.fn(),
@@ -71,6 +73,7 @@ describe('dashboard layout', () => {
     parentNavigateMock.mockReset();
     gameState.world = createSprint4World();
     gameState.dispatches = [];
+    gameState.awayMs = 0;
   });
 
   it('places the dispatches card before country status and quick actions', () => {
@@ -200,5 +203,19 @@ describe('dashboard layout', () => {
     });
 
     expect(navigateMock).toHaveBeenCalledWith('Dispatches', undefined);
+  });
+
+  it('shows the catch-up summary after a long away window', () => {
+    gameState.awayMs = 6 * 3_600_000;
+    const tree = renderDashboard();
+    expect(findByTestId(tree.root, 'dashboard-catch-up')).not.toBeNull();
+  });
+
+  it('shows the victory overlay when the player is the last country standing', () => {
+    const world = createSprint4World();
+    const playerId = resolvePlayerFactionId(world)!;
+    gameState.world = { ...world, victorId: playerId };
+    const tree = renderDashboard();
+    expect(findByTestId(tree.root, 'player-victory-overlay')).not.toBeNull();
   });
 });

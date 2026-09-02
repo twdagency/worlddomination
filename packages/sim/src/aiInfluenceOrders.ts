@@ -1,9 +1,9 @@
-import { MS_PER_DAY } from './constants';
 import { findCountry } from './country';
 import { taggedOrderFields } from './dispatch';
 import { isAiInfluenceAgencyActive } from './aiInfluenceAgency';
 import {
   applyAiInfluenceCooldownsFromEvents,
+  canActorIssueInfluenceOrder,
   resolveAiDailyInfluenceChannel,
 } from './aiInfluenceCadence';
 import {
@@ -24,7 +24,11 @@ export {
   scoreAiInfluenceAction,
 } from './aiInfluenceScoring';
 export type { AiAcceleratorKind, AiInfluenceCandidate, ScoreRationale, ScoredAiInfluenceAction } from './aiInfluenceScoring';
-export { resolveAiDailyInfluenceChannel } from './aiInfluenceCadence';
+export {
+  canActorIssueInfluenceOrder,
+  isInfluenceChannelOrderKind,
+  resolveAiDailyInfluenceChannel,
+} from './aiInfluenceCadence';
 export type { AiInfluenceChannel } from './aiInfluenceCadence';
 
 export function ensureWorldAiInfluenceAgency(world: WorldState): WorldState {
@@ -34,14 +38,6 @@ export function ensureWorldAiInfluenceAgency(world: WorldState): WorldState {
     aiSubversionDiscoveryLog: world.aiSubversionDiscoveryLog ?? [],
     intelligenceGathers: world.intelligenceGathers ?? [],
   };
-}
-
-export function canActorIssueInfluenceOrder(world: WorldState, actorId: Id, at: Millis): boolean {
-  const last = world.aiInfluenceCooldowns?.[actorId];
-  if (last === undefined) {
-    return at - world.startMs >= MS_PER_DAY;
-  }
-  return at - last >= MS_PER_DAY;
 }
 
 function isAiActor(world: WorldState, actorId: Id): boolean {

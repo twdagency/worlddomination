@@ -12,7 +12,7 @@ import {
 } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import { evaluateBeatProgression } from './beatController';
-import { syncCountriesFromFactions } from './country';
+import { evaluateLastCountryStanding, syncCountriesFromFactions } from './country';
 import { accrueManpower } from './manpower';
 import { applyMoveOrders, resolveArrivals } from './movement';
 import { applyBuildOrders, resolveProductionCompletions } from './production';
@@ -41,7 +41,7 @@ import { stampEvents } from './events';
  * 6b. accruePassiveInfluence — passive accrual + decay
  * 6c. expireActiveInfluenceEffects — mission expiry, campaign cooldown prune
  * 6d. accrueTributes
- * 7. pruneExpiredTreaties → intel → syncCountries → beat progression
+ * 7. pruneExpiredTreaties → intel → syncCountries → last-standing victory → beat progression
  */
 export function tick(
   world: WorldState,
@@ -172,6 +172,10 @@ export function tick(
   const countrySync = syncCountriesFromFactions(next);
   next = countrySync.world;
   events.push(...countrySync.events);
+
+  const standing = evaluateLastCountryStanding(next, nowMs);
+  next = standing.world;
+  events.push(...standing.events);
 
   const progression = evaluateBeatProgression(next, events);
   next = progression.world;

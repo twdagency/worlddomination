@@ -360,6 +360,41 @@ export function activeCountries(world: WorldState): Country[] {
   return Object.values(source).filter((country) => !country.defeated);
 }
 
+/**
+ * Last country standing: emit `victory` once when exactly one undefeated country
+ * remains and at least one other country has already been defeated.
+ * Tutorial worlds are skipped — France falls in beat 2 while Burgundy still stands.
+ */
+export function evaluateLastCountryStanding(
+  world: WorldState,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  if (world.victorId) return { world, events: [] };
+  if (world.scenarioId?.startsWith('tutorial')) return { world, events: [] };
+
+  const source = world.countries ?? world.factions;
+  const countries = Object.values(source);
+  const standing = countries.filter((country) => !country.defeated);
+  const defeated = countries.filter((country) => country.defeated === true);
+
+  if (standing.length !== 1 || defeated.length < 1) {
+    return { world, events: [] };
+  }
+
+  const winner = standing[0]!;
+  return {
+    world: { ...world, victorId: winner.id },
+    events: [
+      {
+        kind: 'victory',
+        at,
+        factionId: winner.id,
+        importance: 'high',
+      },
+    ],
+  };
+}
+
 /** @deprecated Use findCountry */
 export function factionToCountry(world: WorldState, factionId: Id): Country | undefined {
   return findCountry(world, factionId);

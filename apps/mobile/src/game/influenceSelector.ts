@@ -1,4 +1,5 @@
 import {
+  canActorIssueInfluenceOrder,
   computePassiveInfluenceSources,
   COUP_ATTEMPT_GOLD_COST,
   COUP_ATTEMPT_MANPOWER_COST,
@@ -22,6 +23,8 @@ import {
   INFLUENCE_SUBVERSION_MANPOWER_COST,
   INTELLIGENCE_GATHER_COST,
   INTELLIGENCE_MIN_INFLUENCE,
+  isInfluenceChannelOrderKind,
+  MS_PER_DAY,
   TRIBUTE_EXTRACTION_COST,
   TRIBUTE_INFLUENCE_FLOOR,
   validateCoupAttempt,
@@ -251,7 +254,7 @@ function evaluateAction(
   entry: (typeof ACTION_CATALOG)[number],
 ): AvailableInfluenceAction {
   const influence = getInfluence(world, cityId, actorId);
-  const cooldownRemainingMs =
+  let cooldownRemainingMs =
     entry.kind === 'cultural-campaign'
       ? culturalCampaignCooldownRemainingMs(world, actorId, cityId, world.nowMs)
       : entry.kind === 'gather-intelligence'
@@ -317,6 +320,17 @@ function evaluateAction(
       rejectionReason = 'Cannot apply influence in your own cities.';
     } else {
       unlocked = true;
+    }
+  }
+
+  if (unlocked && isInfluenceChannelOrderKind(entry.kind)) {
+    const last = world.aiInfluenceCooldowns?.[actorId];
+    const channelRemainingMs =
+      last === undefined ? 0 : Math.max(0, MS_PER_DAY - (world.nowMs - last));
+    if (channelRemainingMs > 0 || !canActorIssueInfluenceOrder(world, actorId, world.nowMs)) {
+      unlocked = false;
+      rejectionReason = formatInfluenceOrderRejectedMessage('influence-channel-on-cooldown');
+      cooldownRemainingMs = channelRemainingMs;
     }
   }
 

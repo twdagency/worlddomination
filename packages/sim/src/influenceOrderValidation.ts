@@ -19,7 +19,8 @@ export type InfluenceOrderRejectionReason =
   | 'cultural-campaign-cooldown'
   | 'no-active-mission'
   | 'intelligence-on-cooldown'
-  | 'intelligence-fresh';
+  | 'intelligence-fresh'
+  | 'influence-channel-on-cooldown';
 
 const INFLUENCE_ORDER_KINDS = new Set<Order['kind']>([
   'diplomatic-mission',

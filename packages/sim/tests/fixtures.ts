@@ -160,7 +160,8 @@ export function tagOrder(
     order.kind === 'tribute-extraction' ||
     order.kind === 'tribute-cancel' ||
     order.kind === 'coup-attempt' ||
-    order.kind === 'defection-claim'
+    order.kind === 'defection-claim' ||
+    order.kind === 'gather-intelligence'
   ) {
     return {
       ...order,

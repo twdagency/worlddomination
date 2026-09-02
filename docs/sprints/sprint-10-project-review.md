@@ -20,7 +20,13 @@ Review conducted across four parallel audits: sim architecture/stability, mobile
 
 ## P0 — Blocking
 
-### P0-1 — No victory condition implemented
+### P0-1 — No victory condition implemented — FIXED
+
+Last-country-standing: `evaluateLastCountryStanding` emits `victory` and sets `world.victorId` after country sync when exactly one undefeated country remains and at least one other country has been defeated. Tutorial worlds are skipped. Player win surfaces `PlayerVictoryOverlay` on the dashboard.
+
+Original finding:
+
+### P0-1 — No victory condition implemented (original)
 
 `kind: 'victory'` exists as a `SimEvent` variant (`packages/sim/src/types.ts:572`) and `victoryThreshold?: number` exists on `WorldState` (`types.ts:941`). **Neither is read or emitted anywhere in the codebase.** Grep confirms the only other references are in `docs/sprints/sim-foundation.md:178,201` (Sprint 6 plan).
 
@@ -34,7 +40,13 @@ Review conducted across four parallel audits: sim architecture/stability, mobile
 
 ---
 
-### P0-2 — Player influence actions are free and unopposed
+### P0-2 — Player influence actions are free and unopposed — FIXED
+
+Player now shares the AI daily influence channel (accelerate XOR threshold). Intelligence and tribute-cancel stay outside the slot. First-day delay remains AI-only so the player can still act at t=0; a second same-timestamp channel action is rejected with `influence-channel-on-cooldown`.
+
+Original finding:
+
+### P0-2 — Player influence actions are free and unopposed (original)
 
 `apps/mobile/src/game/actions.ts:151-162` — `issueInfluenceOrder` dispatches every influence order through `tick(world, [order], 0)` with **zero elapsed milliseconds**.
 
@@ -79,7 +91,11 @@ Mobile *renders* intel report lines produced by the action (`DispatchFeedRow.tsx
 
 `TRIBUTE_INFLUENCE_FLOOR = 50` (`influenceActions.ts:290-291`), drain `TRIBUTE_INFLUENCE_DRAIN_PER_DAY = 1` (`:292`), auto-end when influence `< 50` (`:504-506`). Starting a tribute at exactly 50 yields **one day** of extraction for a 5,000 gold setup — roughly 742 gold on Paris (25% of 2,970 daily). Net loss unless influence is well above the floor.
 
-### P1-2 — Dead constants that misdescribe actual behavior
+### P1-2 — Dead constants that misdescribe actual behavior — FIXED
+
+Coup failure now uses `COUP_FAILURE_INFLUENCE_REMAINDER = 0` (the wipe the tooltip already described). `COUP_INFLUENCE_COST_FAILURE = 70` is gone. `DEFECTION_INFLUENCE_COST` is aliased to `DEFECTION_INFLUENCE_REQUIRED` and documented as the stack `clearInfluenceForCity` consumes. Shared thresholds live in `influenceConstants.ts`.
+
+Original finding:
 
 | Constant | Declared | Actual behavior |
 |---|---|---|
@@ -97,7 +113,11 @@ Exported constants that don't describe behavior are a correctness hazard for any
 
 `postureThresholdModifier` returns **−3.0** for loyal + `coup-attempt` (`aiThresholdScoring.ts:95`), against typical positive signal totals of ~2–4. Confirmed: loyal AIs will effectively never coup except against a player capital with high intel-informed success rate. Existing backlog entry stands.
 
-### P1-5 — Design canon divergence at threshold 30
+### P1-5 — Design canon divergence at threshold 30 — DOCUMENTED
+
+`design-canon.md` now states 30 unlocks pressure and intelligence; unrest / fund-factions remains deferred.
+
+Original finding:
 
 `design-canon.md:148` specifies 30 unlocks "fund factions / unrest." Implementation uses 30 for `DIPLOMATIC_PRESSURE_MIN_INFLUENCE` and `INTELLIGENCE_MIN_INFLUENCE` only. No unrest mechanic exists. Either implement or amend canon.
 
@@ -143,7 +163,11 @@ Original finding:
 
 Related: `clearCampaignStorage` (`worldStorage.ts:84-91`) does not clear `scenarioId` or `tutorialOnboarded`, so a "reset" leaves state behind.
 
-### P1-13 — Silent dispatch history loss on scenario skew
+### P1-13 — Silent dispatch history loss on scenario skew — FIXED
+
+Boot now toasts `Campaign scenario changed — dispatch history was reset.` when a stored world does not match the resolved scenario.
+
+Original finding:
 
 `GameContext.tsx:347-349` discards all stored dispatches when `storedWorld.scenarioId !== resolvedScenarioId`, without warning the player.
 
@@ -164,7 +188,11 @@ Original finding:
 - Color-only encoding: diplomacy stance (`DiplomacyScreen.tsx:327`), threshold stars `★/★★/★★★` with no text alternative (`WorldScreen.tsx:286-298`), stale intel card border (`:231`)
 - `hitSlop` only on `LinkText`, `TutorialBanner`, `TooltipOverlay`
 
-### P1-16 — Completed dashboard components never mounted
+### P1-16 — Completed dashboard components never mounted — PARTIAL
+
+`CatchUpSummary` now mounts on the Dashboard when `awayMs` is past the collapse window. `UrgentQueue` and `NavigationGrid` stay unmounted — they overlap DispatchesCard / QuickActionsCard.
+
+Original finding:
 
 Built, styled, tested, wired to nothing:
 

@@ -51,6 +51,7 @@ export {
   canActorIssueInfluenceOrder,
   collectAiInfluenceOrders,
   ensureWorldAiInfluenceAgency,
+  isInfluenceChannelOrderKind,
 } from './aiInfluenceOrders';
 export {
   affordsAccelerator,
@@ -105,6 +106,10 @@ export {
   latestIntelligenceRecord,
   validateGatherIntelligence,
 } from './intelligenceGather';
+export {
+  COMPETITOR_INFLUENCE_HALVE_THRESHOLD,
+  INFLUENCE_SWAY_THRESHOLD,
+} from './influenceConstants';
 export type { IntelligenceRejectionReason } from './intelligenceGather';
 export { isAiInfluenceAgencyActive, isInfluenceAgencyDisabled, resolvePlayerFactionId } from './aiInfluenceAgency';
 export {
@@ -256,6 +261,7 @@ export {
   citiesOf,
   countryToFaction,
   defeatCountry,
+  evaluateLastCountryStanding,
   ensureWorldCountries,
   ensureWorldFactionRename,
   factionToCountry,
@@ -320,6 +326,7 @@ export {
   COUP_BASE_SUCCESS_RATE,
   COUP_FAILURE_TARGET_REPUTATION_PENALTY,
   COUP_FORTIFICATION_PENALTY_PER_TIER,
+  COUP_FAILURE_INFLUENCE_REMAINDER,
   COUP_INFLUENCE_COST_SUCCESS,
   COUP_INFLUENCE_FLOOR,
   COUP_LOYAL_POSTURE_PENALTY,

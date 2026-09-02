@@ -569,7 +569,7 @@ export type SimEventKind =
     }
   | { kind: 'procedural'; at: Millis; catalogEventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
-  | { kind: 'victory'; at: Millis; factionId: Id }
+  | { kind: 'victory'; at: Millis; factionId: Id; importance?: DispatchImportance }
   | { kind: 'espionage'; at: Millis; report: string; exposed: boolean }
   | {
       kind: 'territoryCaptured';
@@ -939,6 +939,8 @@ export interface WorldState {
   pendingDilemmas?: PendingDilemma[];
   scenarioId: Id;
   victoryThreshold?: number;
+  /** Set once when last-country-standing victory is awarded. Missing means no victor yet. */
+  victorId?: Id;
   /** Undefined on non-tutorial worlds. Populated by tutorial scenario or migration backfill. */
   tutorial?: TutorialState;
   /** Game-time pacing knob. 30 during active tutorial; 1 otherwise. Set by migration if missing. */
@@ -955,7 +957,7 @@ export interface WorldState {
   intelligenceGathers?: IntelligenceGatherRecord[];
   /** Ongoing tribute extractions with resentment tracking. */
   activeTributes?: ActiveTribute[];
-  /** Per-actor timestamp of last AI influence accelerator order (daily cadence). */
+  /** Per-actor timestamp of last successful influence-channel order (daily cadence). */
   aiInfluenceCooldowns?: Record<Id, Millis>;
   /** Recent subversion discoveries — suppresses repeat subversion attempts per actor. */
   aiSubversionDiscoveryLog?: Array<{ actorId: Id; targetCityId: Id; at: Millis }>;

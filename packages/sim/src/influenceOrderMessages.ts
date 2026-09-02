@@ -55,6 +55,8 @@ export function formatInfluenceOrderRejectedMessage(
       return 'Intelligence gathering is still on cooldown for this city.';
     case 'intelligence-fresh':
       return 'Recent intelligence on this city is still fresh.';
+    case 'influence-channel-on-cooldown':
+      return "You have already used today's influence action.";
     default:
       return formatOrderRejectedMessage(reason);
   }

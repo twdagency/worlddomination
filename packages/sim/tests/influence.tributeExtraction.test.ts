@@ -87,8 +87,8 @@ function missionOrder(world: WorldState, targetCityId: string = PARIS) {
   );
 }
 
-function startTribute(world: WorldState, cityId: string = PARIS) {
-  return applyInfluenceOrders(world, [tributeStartOrder(world, cityId)], START_MS);
+function startTribute(world: WorldState, cityId: string = PARIS, at: number = START_MS) {
+  return applyInfluenceOrders(world, [tributeStartOrder(world, cityId)], at);
 }
 
 describe('tribute extraction (Sprint 9 Phase 5)', () => {
@@ -118,7 +118,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
   it('rejects when a tribute is already active on the city', () => {
     let world = withInfluence(tributeWorld(), 55);
     world = startTribute(world).world;
-    const result = applyInfluenceOrders(world, [tributeStartOrder(world)], START_MS);
+    const result = startTribute(world, PARIS, START_MS + MS_DAY);
     expect(result.events[0]?.kind).toBe('orderRejected');
     expect(result.events[0]?.reason).toBe('tribute-already-active');
   });
@@ -238,14 +238,11 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
     expect(a.events.map((event) => event.kind)).toEqual(b.events.map((event) => event.kind));
   });
 
-  it('allows simultaneous tributes on multiple cities', () => {
+  it('allows tributes on multiple cities on successive days', () => {
     let world = withInfluence(tributeWorld(), 55, PARIS);
     world = withInfluence(world, 55, BERLIN);
-    world = applyInfluenceOrders(
-      world,
-      [tributeStartOrder(world, PARIS), tributeStartOrder(world, BERLIN)],
-      START_MS,
-    ).world;
+    world = startTribute(world, PARIS, START_MS).world;
+    world = startTribute(world, BERLIN, START_MS + MS_DAY).world;
     expect(world.activeTributes).toHaveLength(2);
   });
 
@@ -264,11 +261,8 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
 
   it('integration: diplomatic mission offsets tribute drain for net-stable influence', () => {
     let world = withInfluence(tributeWorld(), 70);
-    world = applyInfluenceOrders(
-      world,
-      [tributeStartOrder(world), missionOrder(world)],
-      START_MS,
-    ).world;
+    world = startTribute(world, PARIS, START_MS).world;
+    world = applyInfluenceOrders(world, [missionOrder(world)], START_MS + MS_DAY).world;
     expect(world.factions[PLAYER]!.funding).toBe(50_000 - TRIBUTE_EXTRACTION_COST - DIPLOMATIC_MISSION_COST);
     const after = accrueTributes(world, START_MS + MS_DAY);
     expect(getInfluence(after.world, PARIS, PLAYER)).toBeGreaterThanOrEqual(TRIBUTE_INFLUENCE_FLOOR);
@@ -279,7 +273,7 @@ describe('tribute extraction (Sprint 9 Phase 5)', () => {
     world = accrueTributes(world, START_MS + MS_DAY * 10).world;
     world = applyInfluenceOrders(world, [tributeCancelOrder(world)], START_MS + MS_DAY * 10).world;
     expect(findActiveTribute(world, PLAYER, PARIS)).toBeUndefined();
-    const restarted = startTribute(withInfluence(world, 55));
+    const restarted = startTribute(withInfluence(world, 55), PARIS, START_MS + MS_DAY * 10);
     expect(restarted.events.some((event) => event.kind === 'tributeStarted')).toBe(true);
     expect(findActiveTribute(restarted.world, PLAYER, PARIS)?.resentment).toBe(0);
   });

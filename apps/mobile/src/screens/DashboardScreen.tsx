@@ -8,16 +8,19 @@ import { selectDefeatedCountries } from '../game/defeatedCountrySelector';
 import { selectPendingDilemmaCards } from '../game/dilemmaSelector';
 import {
   getDashboardActiveForcesSummary,
+  getDashboardCatchUpSummary,
   getDashboardDispatchesDigest,
   getDashboardUnreadDispatchCount,
 } from '../game/playerView';
 import { navigateTo } from '../navigation/deepLinks';
 import type { HomeStackParamList } from '../navigation/types';
 import { selectPlayerInfluenceSummary } from '../game/influenceSelector';
+import { CatchUpSummary } from '../components/dashboard/CatchUpSummary';
 import { ActiveForcesCard } from '../components/dashboard/ActiveForcesCard';
 import { CountryStatusCard } from '../components/dashboard/CountryStatusCard';
 import { InfluenceCard } from '../components/dashboard/InfluenceCard';
 import { PlayerFallenOverlay } from '../components/dashboard/PlayerFallenOverlay';
+import { PlayerVictoryOverlay } from '../components/dashboard/PlayerVictoryOverlay';
 import { DispatchesCard } from '../components/dashboard/DispatchesCard';
 import { QuickActionsCard, type QuickActionId } from '../components/dashboard/QuickActionsCard';
 import { ScrollFadeFooter } from '../components/ScrollFadeFooter';
@@ -27,9 +30,10 @@ type DashboardNavigation = NativeStackNavigationProp<HomeStackParamList, 'Dashbo
 
 export function DashboardScreen() {
   const navigation = useNavigation<DashboardNavigation>();
-  const { world, dispatches, dispatchReadState, markDispatchesViewed, openDilemmaModal } =
+  const { world, dispatches, dispatchReadState, awayMs, markDispatchesViewed, openDilemmaModal } =
     useGame();
   const [fallenAcknowledged, setFallenAcknowledged] = useState(false);
+  const [victoryAcknowledged, setVictoryAcknowledged] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -50,6 +54,10 @@ export function DashboardScreen() {
   );
   const activeForces = useMemo(() => getDashboardActiveForcesSummary(world), [world]);
   const influenceSummary = useMemo(() => selectPlayerInfluenceSummary(world), [world]);
+  const catchUpSummary = useMemo(
+    () => getDashboardCatchUpSummary(world, dispatches, awayMs ?? 0),
+    [world, dispatches, awayMs],
+  );
 
   const openDispatches = (dispatchId?: string) => {
     navigation.navigate('Dispatches', dispatchId ? { dispatchId } : undefined);
@@ -84,10 +92,20 @@ export function DashboardScreen() {
     navigation.navigate('DefeatedCountries');
   };
 
-  const showFallenOverlay = Boolean(playerCountry?.defeated && !fallenAcknowledged);
+  const showVictoryOverlay = Boolean(
+    world?.victorId === playerCountry?.id && !victoryAcknowledged,
+  );
+  const showFallenOverlay = Boolean(
+    playerCountry?.defeated && !fallenAcknowledged && !showVictoryOverlay,
+  );
 
   return (
     <View style={styles.scrollWrap}>
+      <PlayerVictoryOverlay
+        visible={showVictoryOverlay}
+        countryName={playerCountry?.name ?? 'Your country'}
+        onContinue={() => setVictoryAcknowledged(true)}
+      />
       <PlayerFallenOverlay
         visible={showFallenOverlay}
         countryName={playerCountry?.name ?? 'Your country'}
@@ -100,6 +118,13 @@ export function DashboardScreen() {
         persistentScrollbar
       >
         <Text style={styles.heading}>Dashboard</Text>
+
+        {catchUpSummary.mode === 'away' ? (
+          <>
+            <CatchUpSummary summary={catchUpSummary} onOpenDispatches={() => openDispatches()} />
+            <View style={styles.spacer} />
+          </>
+        ) : null}
 
         {pendingDilemmas[0] ? (
           <>

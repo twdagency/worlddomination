@@ -159,6 +159,15 @@ export function formatCountryDefeatedLine(
   return `${countryLabel} has fallen. ${leader}'s reign ends at ${finalCity}.`;
 }
 
+export function formatVictoryLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'victory' }>,
+): string {
+  const country = findCountry(world, event.factionId);
+  const countryLabel = country?.name ?? event.factionId;
+  return `${countryLabel} is the last country standing.`;
+}
+
 export function formatIntentDepartureLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'departure' }>,

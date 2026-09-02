@@ -10,6 +10,7 @@ import {
   formatBuildStartedLine,
   formatCapitalRelocatedLine,
   formatCountryDefeatedLine,
+  formatVictoryLine,
   formatCoupFailureLine,
   formatCoupSuccessLine,
   formatCulturalCampaignLine,
@@ -267,6 +268,8 @@ export function dispatchLineForEvent(
       return formatCapitalRelocatedLine(world, event);
     case 'countryDefeated':
       return formatCountryDefeatedLine(world, event);
+    case 'victory':
+      return formatVictoryLine(world, event);
     default:
       return `${event.kind} event`;
   }
@@ -418,6 +421,7 @@ export function isDispatchVisibleToFaction(
     case 'allianceBroken':
     case 'capitalRelocated':
     case 'countryDefeated':
+    case 'victory':
       return true;
 
     case 'treatyFormed':

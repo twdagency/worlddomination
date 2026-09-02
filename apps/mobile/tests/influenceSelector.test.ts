@@ -164,6 +164,20 @@ describe('influenceSelector', () => {
     );
   });
 
+  it('locks channel actions after the player spends the daily slot', () => {
+    let w = setInfluence(world(), PARIS, PLAYER, 40, START_MS);
+    w = {
+      ...w,
+      aiInfluenceCooldowns: { [PLAYER]: START_MS },
+    };
+    const view = selectCityInfluence(w, PARIS, PLAYER);
+    const mission = view?.availableActions.find((action) => action.kind === 'diplomatic-mission');
+    const intel = view?.availableActions.find((action) => action.kind === 'gather-intelligence');
+    expect(mission?.unlocked).toBe(false);
+    expect(mission?.rejectionReason).toMatch(/today.s influence action/i);
+    expect(intel?.unlocked).toBe(true);
+  });
+
   it('builds diplomacy rollups for countries with 30+ sway', () => {
     const w = setInfluence(world(), PARIS, PLAYER, 35, START_MS);
     const rollups = selectInfluenceForDiplomacy(w);
