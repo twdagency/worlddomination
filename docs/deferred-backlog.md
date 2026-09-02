@@ -603,3 +603,24 @@ Source: Sprint 10 Phase 6 circular-import fix (temporary literal).
 **Next step when picked up:** `packages/sim/scripts/duplicate-treaty-diagnostic.ts` (or similar), assert treaty count, influence sources, and intel records after first + duplicate propose at +1h and same timestamp.
 
 Source: Sprint 10 Phase 6 — diagnostic parked per user; Sprint 9.5 Phase 4 for formation guard context.
+
+## Sprint 11+ — sim test-file type debt (~210 errors)
+
+Adding a `typecheck` script (Sprint 10 review, infrastructure pass) revealed that `packages/sim` had **never been type-checked** — there was no script, and `apps/mobile`'s tsconfig only covers `apps/mobile/**`. `packages/sim/src` and `packages/shared/src` are **clean**; the debt is entirely in test files and one perf bench.
+
+**Current gating:** `pnpm typecheck` runs `packages/sim/tsconfig.src.json` (src only) and **is green** — this is what CI enforces. `pnpm --filter sim typecheck:tests` runs the full surface (`src` + `tests` + `perf`) and currently reports **~210 errors**. The broad `tsconfig.json` is retained so the IDE still type-checks tests.
+
+**Error classes (all in tests, none affect runtime — vitest transpiles without type-checking):**
+
+| Class | Example | Rough count |
+|---|---|---|
+| `SimEvent` literals missing `eventId` | `tutorialBeats.test.ts:26` — required by `SimEventBase` | largest group |
+| Order literals missing tagging fields / wrong shape for `Omit<Order, 'intent' \| 'beatId' \| 'decisionTickMs'>` | `tutorial.playthrough.test.ts:39` | many |
+| Over-narrow inferred fixture types | `tutorial.playthrough.test.ts:164` — `WorldState` not assignable to inferred literal faction map | a few |
+| Incomplete event literals in perf bench | `perf/tutorialQuick.bench.ts:21` | 1 |
+
+**Highest-value fix:** a typed test-event factory in `tests/fixtures.ts` (e.g. `simEvent(kind, fields)` that stamps `eventId`) would clear the largest class in one pass. Do this before flipping `typecheck:tests` into the CI gate.
+
+**Also fixed during the same pass (for context):** `packages/sim/tsconfig.json` had `rootDir: "."` under `noEmit: true`, which produced 13 spurious `TS6059` errors on every cross-package import from `packages/shared`. `rootDir`/`outDir` removed — they were meaningless without emit.
+
+Source: Sprint 10 full project review — infrastructure pass (`docs/sprints/sprint-10-project-review.md`, P2-4).
