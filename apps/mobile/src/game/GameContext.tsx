@@ -3,7 +3,6 @@ import { AppState, type AppStateStatus } from 'react-native';
 import type { BeatCopy } from 'shared';
 import type { SimEvent, TransitOrder, TutorialBeatId, WorldState } from 'sim';
 import {
-  evaluateBeatProgression,
   getDilemmaById,
   graduateTutorial,
   hasPendingProposalBetween,
@@ -17,7 +16,6 @@ import {
   playerProposeTreaty,
   previewMoveEtaMs,
   resolveDilemma,
-  stampEvents,
 } from 'sim';
 import type { InfluenceOrderActionKind } from './actions';
 import {
@@ -36,6 +34,7 @@ import {
   type ActionFeedbackContext,
   type ActionKind,
 } from './actionFeedback';
+import { withBeatProgression } from './beatProgression';
 import { useToast } from '../components/feedback/ToastProvider';
 import {
   createWorldForScenario,
@@ -243,10 +242,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         optionId,
         Date.now(),
       );
-      const progressed = evaluateBeatProgression(resolved.world, resolved.events);
-      const handoffStamped = stampEvents(progressed.world, progressed.events);
-      const allEvents = [...resolved.events, ...handoffStamped.events];
-      const nextWorld = handoffStamped.world;
+      const progressed = withBeatProgression(resolved);
+      const nextWorld = progressed.world;
+      const allEvents = progressed.events;
       const merged = mergeDispatches(nextWorld, dispatchesRef.current, allEvents);
       setWorld(nextWorld);
       setDispatches(merged);
@@ -299,7 +297,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       context: ActionFeedbackContext,
       execute: () => { world: WorldState; events: SimEvent[] },
     ) => {
-      const result = execute();
+      const result = withBeatProgression(execute());
       const applied = dispatchActionFeedback(
         {
           action,
