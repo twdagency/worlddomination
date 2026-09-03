@@ -10,6 +10,7 @@ export const AI_INFLUENCE_AGENCY_SUCCESS_KINDS = new Set([
   'tributeStarted',
   'coupSuccess',
   'defectionOccurred',
+  'annexationCompleted',
 ]);
 
 /** Player and AI share this channel. Intelligence and tribute-cancel stay outside it. */
@@ -21,6 +22,7 @@ export const INFLUENCE_CHANNEL_ORDER_KINDS = new Set<Order['kind']>([
   'tribute-extraction',
   'coup-attempt',
   'defection-claim',
+  'annexation-claim',
 ]);
 
 export function isInfluenceChannelOrderKind(kind: Order['kind']): boolean {

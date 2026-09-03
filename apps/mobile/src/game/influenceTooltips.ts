@@ -6,7 +6,7 @@ export type InfluenceActionTooltipKind = InfluenceOrderActionKind;
 export const INFLUENCE_CARD_FIRST_VIEW_TOOLTIP: TooltipDefinition = {
   id: 'influence-card-first-view',
   title: 'Influence',
-  body: 'Influence accumulates over foreign cities. At 30 you can gather intelligence or pressure their leaders; at 100 they peacefully defect to you.',
+  body: 'Influence accumulates over foreign cities. At 30 you can gather intelligence or pressure their leaders; at 70 you can coup or annex; at 100 they peacefully defect to you.',
   dismissable: true,
   persistDismissal: true,
 };
@@ -61,6 +61,13 @@ export const INFLUENCE_ACTION_TOOLTIPS: Record<InfluenceActionTooltipKind, Toolt
     dismissable: true,
     showOncePerSession: true,
   },
+  'annexation-claim': {
+    id: 'tooltip-influence-annexation-claim',
+    title: 'Annexation',
+    body: 'At 70+ influence, spend 16k gold for a guaranteed peaceful transfer. Consumes your daily influence action, clears all influence in the city, and costs reputation with the victim and observers.',
+    dismissable: true,
+    showOncePerSession: true,
+  },
   'defection-claim': {
     id: 'tooltip-influence-defection-claim',
     title: 'Defection',
@@ -96,7 +103,7 @@ export const TERRITORY_INFLUENCE_NET_TOOLTIP: TooltipDefinition = {
 export const TERRITORY_INFLUENCE_THRESHOLD_TOOLTIP: TooltipDefinition = {
   id: 'tooltip-territory-influence-threshold',
   title: 'Threshold proximity',
-  body: 'Actions unlock at 30 (pressure, intelligence), 50 (tribute), 70 (coup), and 100 (defection) influence.',
+  body: 'Actions unlock at 30 (pressure, intelligence), 50 (tribute), 70 (coup or annex), and 100 (defection) influence.',
   dismissable: true,
   showOncePerSession: true,
 };

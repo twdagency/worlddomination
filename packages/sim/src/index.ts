@@ -319,6 +319,7 @@ export {
 } from './influence';
 export {
   applyDiplomaticPressure,
+  applyAnnexationClaim,
   applyCoupAttempt,
   applyDefectionClaim,
   applyTributeCancel,
@@ -338,6 +339,11 @@ export {
   COUP_LOYAL_POSTURE_PENALTY,
   COUP_OPPORTUNIST_POSTURE_BONUS,
   COUP_SUCCESS_TARGET_REPUTATION_PENALTY,
+  ANNEXATION_GOLD_COST,
+  ANNEXATION_INFLUENCE_FLOOR,
+  ANNEXATION_MANPOWER_COST,
+  ANNEXATION_OBSERVER_REPUTATION_PENALTY,
+  ANNEXATION_TARGET_REPUTATION_PENALTY,
   DEFECTION_GOLD_COST,
   DEFECTION_INFLUENCE_COST,
   DEFECTION_INFLUENCE_REQUIRED,
@@ -361,6 +367,7 @@ export {
   TRIBUTE_RESENTMENT_GROWTH_PER_DAY,
   TRIBUTE_RESENTMENT_MAJOR_REBELLION,
   TRIBUTE_RESENTMENT_MINOR_REBELLION,
+  validateAnnexationClaim,
   validateDefectionClaim,
   validateDiplomaticPressure,
   validateCoupAttempt,

@@ -22,10 +22,12 @@ import {
 } from './intelligenceGather';
 import {
   applyDiplomaticPressure,
+  applyAnnexationClaim,
   applyCoupAttempt,
   applyDefectionClaim,
   applyTributeCancel,
   applyTributeExtraction,
+  validateAnnexationClaim,
   validateCoupAttempt,
   validateDefectionClaim,
   validateDiplomaticPressure,
@@ -135,7 +137,8 @@ function rejectInfluenceOrder(
           order.kind === 'tribute-extraction' ||
           order.kind === 'tribute-cancel' ||
           order.kind === 'coup-attempt' ||
-          order.kind === 'defection-claim'
+          order.kind === 'defection-claim' ||
+          order.kind === 'annexation-claim'
         ? order.kind
         : order.kind;
   events.push({
@@ -328,6 +331,18 @@ export function applyInfluenceOrders(
         continue;
       }
       const result = applyDefectionClaim(next, ownerId, targetCityId, at);
+      next = result.world;
+      events.push(...result.events);
+      continue;
+    }
+
+    if (order.kind === 'annexation-claim') {
+      const validation = validateAnnexationClaim(next, ownerId, targetCityId);
+      if (!validation.ok) {
+        rejectInfluenceOrder(next, order, validation.reason, events);
+        continue;
+      }
+      const result = applyAnnexationClaim(next, ownerId, targetCityId, at);
       next = result.world;
       events.push(...result.events);
       continue;

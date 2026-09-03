@@ -397,3 +397,10 @@ export function formatDefectionOccurredLine(
     world.leaders[event.previousLeaderId]?.name ?? factionName(world, event.targetCountryId);
   return `City defected: ${city} chose ${actor} over ${targetCountry}. ${leader}'s influence wanes.`;
 }
+
+export function formatAnnexationCompletedLine(
+  world: WorldState,
+  event: Extract<SimEvent, { kind: 'annexationCompleted' }>,
+): string {
+  return `ANNEXATION — ${factionName(world, event.actorId)} annexed ${territoryName(world, event.targetCityId)} from ${factionName(world, event.targetCountryId)}`;
+}

@@ -80,7 +80,7 @@ describe('cycle hygiene — extracted modules', () => {
     const w = world();
     expect(
       isInfluenceOrder({
-        kind: 'diplomatic-mission',
+        kind: 'annexation-claim',
         ownerId: 'faction-player',
         targetCityId: 'territory-paris',
       }),

@@ -21,6 +21,7 @@ describe('influence action tooltips', () => {
       'diplomatic-pressure',
       'tribute-extraction',
       'coup-attempt',
+      'annexation-claim',
       'defection-claim',
     ] as const;
 

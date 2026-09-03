@@ -37,5 +37,11 @@ describe('influence deep links', () => {
       orderMode: 'influence',
       presetInfluenceAction: 'tribute-cancel',
     });
+    expect(deepLinkForInfluenceAction('territory-paris', 'annexation-claim')).toMatchObject({
+      tab: 'actions',
+      screen: 'order',
+      orderMode: 'influence',
+      presetInfluenceAction: 'annexation-claim',
+    });
   });
 });

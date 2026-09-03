@@ -9,5 +9,6 @@ describe('dispatchAccent', () => {
     expect(dispatchAccent('culturalCampaignApplied')).toBe(terminal.stale);
     expect(dispatchAccent('diplomaticMissionStarted')).toBe(terminal.stale);
     expect(dispatchAccent('coupSuccess')).toBe(terminal.warning);
+    expect(dispatchAccent('annexationCompleted')).toBe(terminal.warning);
   });
 });

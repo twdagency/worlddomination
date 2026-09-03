@@ -161,6 +161,7 @@ export function tagOrder(
     order.kind === 'tribute-cancel' ||
     order.kind === 'coup-attempt' ||
     order.kind === 'defection-claim' ||
+    order.kind === 'annexation-claim' ||
     order.kind === 'gather-intelligence'
   ) {
     return {

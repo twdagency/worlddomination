@@ -33,6 +33,7 @@ describe('order screen influence mode', () => {
     expect(catalog).toContain("'gather-intelligence'");
     expect(catalog).toContain("'tribute-cancel'");
     expect(catalog).toContain("'defection-claim'");
+    expect(catalog).toContain("'annexation-claim'");
   });
 
   it('shows rejection reason on disabled actions', () => {

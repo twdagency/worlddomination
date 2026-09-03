@@ -105,6 +105,7 @@ function isPlayerInfluenceLesson(event: SimEventKind, _world: WorldState): boole
     case 'tributeStarted':
     case 'coupSuccess':
     case 'defectionOccurred':
+    case 'annexationCompleted':
       return event.actorId === PLAYER_TUTORIAL_FACTION_ID;
     case 'intelReport':
       return (

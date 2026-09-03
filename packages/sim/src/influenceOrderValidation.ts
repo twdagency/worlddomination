@@ -32,6 +32,7 @@ const INFLUENCE_ORDER_KINDS = new Set<Order['kind']>([
   'tribute-cancel',
   'coup-attempt',
   'defection-claim',
+  'annexation-claim',
   'gather-intelligence',
 ]);
 

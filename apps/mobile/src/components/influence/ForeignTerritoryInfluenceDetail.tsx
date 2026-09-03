@@ -139,6 +139,7 @@ export function ForeignTerritoryInfluenceDetail({
             <ActionShortcut view={view} kind="tribute-cancel" label="Cancel tribute" />
           ) : null}
           <ActionShortcut view={view} kind="coup-attempt" label="Coup attempt" />
+          <ActionShortcut view={view} kind="annexation-claim" label="Annexation" />
           <ActionShortcut view={view} kind="defection-claim" label="Defection" />
         </View>
       </TerminalCard>

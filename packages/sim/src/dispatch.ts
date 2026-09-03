@@ -15,6 +15,7 @@ import {
   formatCoupSuccessLine,
   formatCulturalCampaignLine,
   formatDefectionOccurredLine,
+  formatAnnexationCompletedLine,
   formatDiplomaticMissionExpiredLine,
   formatDiplomaticMissionExpelledLine,
   formatDiplomaticMissionLine,
@@ -256,6 +257,8 @@ export function dispatchLineForEvent(
       return formatCoupFailureLine(world, event);
     case 'defectionOccurred':
       return formatDefectionOccurredLine(world, event);
+    case 'annexationCompleted':
+      return formatAnnexationCompletedLine(world, event);
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
     case 'tutorialHandoffReady':
@@ -502,6 +505,7 @@ export function isDispatchVisibleToFaction(
     case 'coupSuccess':
     case 'coupFailure':
     case 'defectionOccurred':
+    case 'annexationCompleted':
       return true;
 
     case 'tutorialHandoffReady':

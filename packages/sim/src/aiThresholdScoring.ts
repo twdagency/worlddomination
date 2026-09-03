@@ -4,8 +4,10 @@ import { areAllied } from './diplomacy';
 import { findCountry } from './country';
 import {
   calculateCoupSuccessRate,
+  ANNEXATION_GOLD_COST,
   COUP_ATTEMPT_GOLD_COST,
   COUP_ATTEMPT_MANPOWER_COST,
+  ANNEXATION_INFLUENCE_FLOOR,
   COUP_INFLUENCE_FLOOR,
   DEFECTION_INFLUENCE_REQUIRED,
   DIPLOMATIC_PRESSURE_COST,
@@ -13,6 +15,7 @@ import {
   findPendingProposalForPressure,
   TRIBUTE_EXTRACTION_COST,
   TRIBUTE_INFLUENCE_FLOOR,
+  validateAnnexationClaim,
   validateCoupAttempt,
   validateDefectionClaim,
   validateDiplomaticPressure,
@@ -32,7 +35,11 @@ import type { ScoreRationale } from './aiInfluenceScoring';
 
 export type AiThresholdKind = Extract<
   InfluenceActionKind,
-  'diplomatic-pressure' | 'tribute-extraction' | 'coup-attempt' | 'defection-claim'
+  | 'diplomatic-pressure'
+  | 'tribute-extraction'
+  | 'coup-attempt'
+  | 'annexation-claim'
+  | 'defection-claim'
 >;
 
 export interface AiThresholdCandidate {
@@ -52,6 +59,7 @@ const THRESHOLD_COSTS: Record<AiThresholdKind, number> = {
   'diplomatic-pressure': DIPLOMATIC_PRESSURE_COST,
   'tribute-extraction': TRIBUTE_EXTRACTION_COST,
   'coup-attempt': COUP_ATTEMPT_GOLD_COST,
+  'annexation-claim': ANNEXATION_GOLD_COST,
   'defection-claim': 0,
 };
 
@@ -84,7 +92,9 @@ function postureThresholdModifier(
   targetIsPlayerCapital: boolean,
 ): number {
   if (posture === 'opportunist') {
-    if (action === 'coup-attempt') return targetIsPlayerCapital ? 1.5 : 0.8;
+    if (action === 'coup-attempt' || action === 'annexation-claim') {
+      return targetIsPlayerCapital ? 1.5 : 0.8;
+    }
     if (action === 'defection-claim') return targetIsPlayerCapital ? 1.0 : 0.5;
     if (action === 'tribute-extraction') return 0.3;
     return -0.3;
@@ -92,11 +102,13 @@ function postureThresholdModifier(
   if (posture === 'loyal') {
     if (action === 'diplomatic-pressure') return 1.2;
     if (action === 'tribute-extraction') return 0.8;
-    if (action === 'coup-attempt') return -3.0;
+    if (action === 'coup-attempt' || action === 'annexation-claim') return -3.0;
     return 0.1;
   }
   if (action === 'diplomatic-pressure') return 0.4;
-  if (action === 'coup-attempt' || action === 'defection-claim') return -0.6;
+  if (action === 'coup-attempt' || action === 'annexation-claim' || action === 'defection-claim') {
+    return -0.6;
+  }
   return 0.2;
 }
 
@@ -139,6 +151,7 @@ export function listAiThresholdCandidates(world: WorldState, actorId: Id): AiThr
 
     candidates.push({ targetCityId: territory.id, action: 'tribute-extraction' });
     candidates.push({ targetCityId: territory.id, action: 'coup-attempt' });
+    candidates.push({ targetCityId: territory.id, action: 'annexation-claim' });
     candidates.push({ targetCityId: territory.id, action: 'defection-claim' });
   }
 
@@ -162,7 +175,7 @@ export function scoreAiThresholdAction(
   if (posture === 'isolationist' && !isolationistShouldAct(world, actorId)) {
     return { candidate, score: -Infinity, rationale: { signals: { isolationistDormant: -1 } } };
   }
-  if (posture === 'isolationist' && (action === 'coup-attempt' || action === 'defection-claim')) {
+  if (posture === 'isolationist' && (action === 'coup-attempt' || action === 'annexation-claim' || action === 'defection-claim')) {
     return { candidate, score: -Infinity, rationale: { signals: { isolationistDefensiveOnly: -1 } } };
   }
 
@@ -217,6 +230,16 @@ export function scoreAiThresholdAction(
     signals.strategicValue = city.infraLevel * 0.6;
     signals.playerCapital = playerCapital ? 2.0 : 0;
     signals.coupSuccessRate = calculateCoupSuccessRate(world, actorId, targetCityId, at) * 2;
+    signals.posture = postureThresholdModifier(posture, action, playerCapital);
+  } else if (action === 'annexation-claim') {
+    const validation = validateAnnexationClaim(world, actorId, targetCityId);
+    if (!validation.ok) {
+      return { candidate, score: -Infinity, rationale: { signals: { invalidAnnexation: -1 } } };
+    }
+    signals.thresholdFloor = thresholdFloorSignal(influence, ANNEXATION_INFLUENCE_FLOOR);
+    signals.strategicValue = city.infraLevel * 0.6;
+    signals.playerCapital = playerCapital ? 2.0 : 0;
+    signals.certainty = 0.8;
     signals.posture = postureThresholdModifier(posture, action, playerCapital);
   } else {
     const validation = validateDefectionClaim(world, actorId, targetCityId);

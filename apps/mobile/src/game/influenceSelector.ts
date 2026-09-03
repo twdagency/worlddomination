@@ -1,6 +1,9 @@
 import {
   canActorIssueInfluenceOrder,
   computePassiveInfluenceSources,
+  ANNEXATION_GOLD_COST,
+  ANNEXATION_INFLUENCE_FLOOR,
+  ANNEXATION_MANPOWER_COST,
   COUP_ATTEMPT_GOLD_COST,
   COUP_ATTEMPT_MANPOWER_COST,
   COUP_INFLUENCE_FLOOR,
@@ -27,6 +30,7 @@ import {
   MS_PER_DAY,
   TRIBUTE_EXTRACTION_COST,
   TRIBUTE_INFLUENCE_FLOOR,
+  validateAnnexationClaim,
   validateCoupAttempt,
   validateDefectionClaim,
   validateDiplomaticPressure,
@@ -163,6 +167,14 @@ const ACTION_CATALOG: {
     manpower: COUP_ATTEMPT_MANPOWER_COST,
   },
   {
+    kind: 'annexation-claim',
+    label: 'Annexation',
+    description: 'Guaranteed peaceful transfer at 70+ — costs 2× coup gold.',
+    thresholdRequired: ANNEXATION_INFLUENCE_FLOOR,
+    gold: ANNEXATION_GOLD_COST,
+    manpower: ANNEXATION_MANPOWER_COST,
+  },
+  {
     kind: 'defection-claim',
     label: 'Defection',
     description: 'Peaceful transfer at maximum influence — no risk.',
@@ -286,6 +298,10 @@ function evaluateAction(
     if (!validation.ok) rejectionReason = formatInfluenceOrderRejectedMessage(validation.reason);
   } else if (entry.kind === 'coup-attempt') {
     const validation = validateCoupAttempt(world, actorId, cityId);
+    unlocked = validation.ok;
+    if (!validation.ok) rejectionReason = formatInfluenceOrderRejectedMessage(validation.reason);
+  } else if (entry.kind === 'annexation-claim') {
+    const validation = validateAnnexationClaim(world, actorId, cityId);
     unlocked = validation.ok;
     if (!validation.ok) rejectionReason = formatInfluenceOrderRejectedMessage(validation.reason);
   } else if (entry.kind === 'defection-claim') {
@@ -497,6 +513,7 @@ export function formatThresholdProximity(
     { value: INTELLIGENCE_MIN_INFLUENCE, label: 'Intelligence' },
     { value: TRIBUTE_INFLUENCE_FLOOR, label: 'Tribute' },
     { value: COUP_INFLUENCE_FLOOR, label: 'Coup' },
+    { value: ANNEXATION_INFLUENCE_FLOOR, label: 'Annexation' },
     { value: DEFECTION_INFLUENCE_REQUIRED, label: 'Defection' },
   ];
 

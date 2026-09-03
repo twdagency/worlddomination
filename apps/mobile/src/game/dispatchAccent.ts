@@ -11,6 +11,7 @@ const INFLUENCE_THRESHOLD = new Set([
   'coupSuccess',
   'coupFailure',
   'defectionOccurred',
+  'annexationCompleted',
   'subversionDiscovered',
 ]);
 const INFLUENCE_ROUTINE = new Set([

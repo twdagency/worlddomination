@@ -18,12 +18,14 @@ import {
 } from './influence';
 import { intelligenceGarrisonCount } from './intelligenceGather';
 import {
+  ANNEXATION_INFLUENCE_FLOOR,
   COUP_INFLUENCE_FLOOR,
   DEFECTION_INFLUENCE_REQUIRED,
   DIPLOMATIC_PRESSURE_MIN_INFLUENCE,
   TRIBUTE_INFLUENCE_FLOOR,
 } from './influenceConstants';
 export {
+  ANNEXATION_INFLUENCE_FLOOR,
   COUP_INFLUENCE_FLOOR,
   DEFECTION_INFLUENCE_REQUIRED,
   DIPLOMATIC_PRESSURE_MIN_INFLUENCE,
@@ -1093,6 +1095,124 @@ export function applyDefectionClaim(
     events: [
       {
         kind: 'defectionOccurred',
+        at,
+        actorId,
+        targetCityId,
+        targetCountryId,
+        previousLeaderId: targetCountry.leaderId,
+        importance: 'high',
+      },
+      ...captured.events,
+      ...tributeCleanup.events,
+    ],
+  };
+}
+
+/** Peaceful transfer at the coup foothold; gold cost is 2× coup. No combat, no RNG. */
+export const ANNEXATION_GOLD_COST = COUP_ATTEMPT_GOLD_COST * 2;
+export const ANNEXATION_MANPOWER_COST = 0;
+export const ANNEXATION_TARGET_REPUTATION_PENALTY = -40;
+export const ANNEXATION_OBSERVER_REPUTATION_PENALTY = -8;
+
+export type AnnexationRejectionReason =
+  | 'insufficient-influence'
+  | 'insufficient-gold'
+  | 'target-is-allied'
+  | 'target-owner-defeated'
+  | 'target-city-unknown'
+  | 'target-is-own-city';
+
+export function validateAnnexationClaim(
+  world: WorldState,
+  actorId: Id,
+  targetCityId: Id,
+): { ok: true; targetCountryId: Id } | { ok: false; reason: AnnexationRejectionReason } {
+  const targetCheck = validateCoupTarget(world, actorId, targetCityId);
+  if (!targetCheck.ok) {
+    return {
+      ok: false,
+      reason: targetCheck.reason as AnnexationRejectionReason,
+    };
+  }
+
+  if (getInfluence(world, targetCityId, actorId) < ANNEXATION_INFLUENCE_FLOOR) {
+    return { ok: false, reason: 'insufficient-influence' };
+  }
+
+  const faction = world.factions[actorId];
+  if (!faction || faction.funding < ANNEXATION_GOLD_COST) {
+    return { ok: false, reason: 'insufficient-gold' };
+  }
+
+  return { ok: true, targetCountryId: targetCheck.ownerId };
+}
+
+function applyAnnexationReputation(
+  world: WorldState,
+  actorId: Id,
+  targetCountryId: Id,
+): WorldState {
+  const reputation: Reputation = {};
+
+  for (const observer of Object.keys(world.reputation).sort()) {
+    reputation[observer] = { ...world.reputation[observer] };
+  }
+
+  const applyDelta = (observer: Id, delta: number) => {
+    if (observer === actorId) return;
+    const row = reputation[observer];
+    if (!row) return;
+    row[actorId] = (row[actorId] ?? 0) + delta;
+  };
+
+  applyDelta(targetCountryId, ANNEXATION_TARGET_REPUTATION_PENALTY);
+
+  for (const observer of Object.keys(world.factions).sort()) {
+    if (observer === actorId || observer === targetCountryId) continue;
+    applyDelta(observer, ANNEXATION_OBSERVER_REPUTATION_PENALTY);
+  }
+
+  return { ...world, reputation };
+}
+
+function cancelMissionsOnCity(world: WorldState, targetCityId: Id): WorldState {
+  const remaining = (world.activeDiplomaticMissions ?? []).filter(
+    (mission) => mission.targetCityId !== targetCityId,
+  );
+  if (remaining.length === (world.activeDiplomaticMissions ?? []).length) return world;
+  return { ...world, activeDiplomaticMissions: remaining };
+}
+
+export function applyAnnexationClaim(
+  world: WorldState,
+  actorId: Id,
+  targetCityId: Id,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  const validation = validateAnnexationClaim(world, actorId, targetCityId);
+  if (!validation.ok) return { world, events: [] };
+
+  const targetCountryId = validation.targetCountryId;
+  const targetCountry = findCountry(world, targetCountryId);
+  if (!targetCountry) return { world, events: [] };
+
+  let next = ensureWorldTributes(ensureWorldInfluence(world));
+  next = deductGold(next, actorId, ANNEXATION_GOLD_COST);
+  const captured = captureCityForCoup(next, targetCityId, actorId, targetCountryId, at, {
+    captureKind: 'annexation',
+  });
+  next = captured.world;
+  next = clearInfluenceForCity(next, targetCityId);
+  next = cancelMissionsOnCity(next, targetCityId);
+  const tributeCleanup = cancelTributesOnCity(next, targetCityId, at, 'ownership-changed');
+  next = tributeCleanup.world;
+  next = applyAnnexationReputation(next, actorId, targetCountryId);
+
+  return {
+    world: next,
+    events: [
+      {
+        kind: 'annexationCompleted',
         at,
         actorId,
         targetCityId,

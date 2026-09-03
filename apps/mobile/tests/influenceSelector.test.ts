@@ -61,6 +61,15 @@ describe('influenceSelector', () => {
     expect(tribute?.unlocked).toBe(false);
     expect(tribute?.rejectionReason).toContain('50');
 
+    w = setInfluence(w, PARIS, PLAYER, 70, START_MS);
+    const mid = selectCityInfluence(w, PARIS, PLAYER);
+    expect(mid?.availableActions.find((action) => action.kind === 'annexation-claim')?.unlocked).toBe(
+      true,
+    );
+    expect(mid?.availableActions.find((action) => action.kind === 'defection-claim')?.unlocked).toBe(
+      false,
+    );
+
     w = setInfluence(w, PARIS, PLAYER, 100, START_MS);
     const high = selectCityInfluence(w, PARIS, PLAYER);
     expect(high?.availableActions.find((action) => action.kind === 'defection-claim')?.unlocked).toBe(true);

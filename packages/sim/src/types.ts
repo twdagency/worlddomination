@@ -264,6 +264,14 @@ export type Order =
       decisionTickMs: Millis;
     }
   | {
+      kind: 'annexation-claim';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
+    }
+  | {
       kind: 'gather-intelligence';
       ownerId: Id;
       targetCityId: Id;
@@ -278,6 +286,7 @@ export type InfluenceActionKind =
   | 'tribute-cancel'
   | 'coup-attempt'
   | 'defection-claim'
+  | 'annexation-claim'
   | 'gather-intelligence';
 
 export type PressureProposalKind =
@@ -577,6 +586,7 @@ export type SimEventKind =
       territoryId: Id;
       previousOwnerId?: Id;
       newOwnerId: Id;
+      captureKind?: 'annexation';
       importance?: DispatchImportance;
     }
   | {
@@ -786,6 +796,15 @@ export type SimEventKind =
     }
   | {
       kind: 'defectionOccurred';
+      at: Millis;
+      actorId: Id;
+      targetCityId: Id;
+      targetCountryId: Id;
+      previousLeaderId: Id;
+      importance?: DispatchImportance;
+    }
+  | {
+      kind: 'annexationCompleted';
       at: Millis;
       actorId: Id;
       targetCityId: Id;

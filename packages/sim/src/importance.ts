@@ -41,6 +41,7 @@ const HIGH_KINDS = new Set<SimEvent['kind']>([
   'coupSuccess',
   'coupFailure',
   'defectionOccurred',
+  'annexationCompleted',
   'victory',
 ]);
 

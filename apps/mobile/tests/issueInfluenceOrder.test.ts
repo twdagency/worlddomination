@@ -53,4 +53,23 @@ describe('issueInfluenceOrder — player intelligence and tribute cancel', () =>
     expect(cancelled.events.some((event) => event.kind === 'tributeVoluntarilyEnded')).toBe(true);
     expect(findActiveTribute(cancelled.world, PLAYER, PARIS)).toBeUndefined();
   });
+
+  it('issues annexation-claim and transfers the city', () => {
+    const prepared = setInfluence(
+      {
+        ...world(),
+        factions: {
+          ...world().factions,
+          [PLAYER]: { ...world().factions[PLAYER]!, funding: 50_000, manpower: 100, isPlayer: true },
+        },
+      },
+      PARIS,
+      PLAYER,
+      70,
+      START_MS,
+    );
+    const result = issueInfluenceOrder(prepared, 'annexation-claim', PARIS);
+    expect(result.events.some((event) => event.kind === 'annexationCompleted')).toBe(true);
+    expect(result.world.territories[PARIS]!.ownerId).toBe(PLAYER);
+  });
 });

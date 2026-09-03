@@ -8,6 +8,7 @@ export function captureCityForCoup(
   actorId: Id,
   previousOwnerId: Id,
   at: Millis,
+  options?: { captureKind?: 'annexation' },
 ): { world: WorldState; events: SimEventDraft[] } {
   const territory = world.territories[targetCityId];
   if (!territory) return { world, events: [] };
@@ -33,6 +34,7 @@ export function captureCityForCoup(
         territoryId: targetCityId,
         previousOwnerId,
         newOwnerId: actorId,
+        ...(options?.captureKind ? { captureKind: options.captureKind } : {}),
         importance: 'high',
       },
     ],

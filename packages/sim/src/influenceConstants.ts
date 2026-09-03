@@ -16,4 +16,6 @@ export const TRIBUTE_INFLUENCE_FLOOR = 50;
 export const COMPETITOR_INFLUENCE_HALVE_THRESHOLD = 50;
 
 export const COUP_INFLUENCE_FLOOR = 70;
+/** Peaceful annexation shares the coup foothold; gold cost is the spend-side differentiator. */
+export const ANNEXATION_INFLUENCE_FLOOR = COUP_INFLUENCE_FLOOR;
 export const DEFECTION_INFLUENCE_REQUIRED = 100;

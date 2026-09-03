@@ -7,8 +7,10 @@ import { createTutorialWorld } from '../../shared/src/scenario-tutorial';
 import { LEADERS_BY_ID } from '../../shared/src/leaders';
 import { UNIT_TYPES_BY_ID } from '../../shared/src/units';
 import {
+  ANNEXATION_TARGET_REPUTATION_PENALTY,
   applyAiInfluenceOrders,
   applyAiThresholdOrders,
+  applyAnnexationClaim,
   applyGatherIntelligence,
   collectAiInfluenceOrders,
   collectAiThresholdOrders,
@@ -25,8 +27,11 @@ import { MS_PER_DAY } from '../src/constants';
 import type { Country, WorldState } from '../src/types';
 
 const START_MS = 1_700_900_000_000;
+const PLAYER = 'faction-player';
+const ROME = 'faction-rome';
 const STEPPE = 'faction-steppe';
 const LONDON = 'territory-london';
+const PARIS = 'territory-paris';
 
 function migrate(world: WorldState): WorldState {
   return ensureWorldMigrations(world, {
@@ -139,9 +144,27 @@ describe('Sprint 10 contracts', () => {
     expect(isAiInfluenceAgencyActive(world)).toBe(true);
   });
 
-  it.todo(
-    'Phase 7: Annexation at 70+ influence transfers ownership peacefully and applies reputation cascade',
-  );
+  it('Phase 7: Annexation at 70+ influence transfers ownership peacefully and applies reputation cascade', () => {
+    const base = migrate(ensureWorldInfluence(createSprint4World(START_MS)));
+    const world = setInfluence(
+      {
+        ...base,
+        aiInfluenceAgencySuppressed: true,
+        factions: {
+          ...base.factions,
+          [PLAYER]: { ...base.factions[PLAYER]!, funding: 50_000, manpower: 100, isPlayer: true },
+        },
+      },
+      PARIS,
+      PLAYER,
+      70,
+      START_MS,
+    );
+    const result = applyAnnexationClaim(world, PLAYER, PARIS, START_MS);
+    expect(result.world.territories[PARIS]!.ownerId).toBe(PLAYER);
+    expect(result.events.some((event) => event.kind === 'annexationCompleted')).toBe(true);
+    expect(result.world.reputation[ROME]![PLAYER]).toBe(ANNEXATION_TARGET_REPUTATION_PENALTY);
+  });
 
   it('Phase 8: tutorial playthrough beat sequence unchanged — AI influence orders suppressed in tutorial scenario', () => {
     const world = migrate(ensureWorldInfluence(createTutorialWorld(START_MS)));

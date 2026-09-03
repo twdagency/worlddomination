@@ -38,6 +38,7 @@ const START_MS = 1_700_900_000_000;
 const PLAYER = 'faction-player';
 const STEPPE = 'faction-steppe';
 const BRITAIN = 'faction-britain';
+const ROME = 'faction-rome';
 const LONDON = 'territory-london';
 const PARIS = 'territory-paris';
 
@@ -227,6 +228,33 @@ describe('AI threshold action scoring and gating', () => {
       at,
     );
     expect(defection.score).toBeGreaterThan(tribute.score);
+  });
+
+  it('isolationist does not annex', () => {
+    const world = richAi(setInfluence(sprint4(), LONDON, ROME, COUP_INFLUENCE_FLOOR, START_MS));
+    const scored = scoreAiThresholdAction(
+      world,
+      ROME,
+      { targetCityId: LONDON, action: 'annexation-claim' },
+      eligibleAt(world),
+    );
+    expect(scored.score).toBe(-Infinity);
+  });
+
+  it('opportunist annexes when coup is blocked by manpower', () => {
+    const prepared = richAi(setInfluence(sprint4(), LONDON, STEPPE, COUP_INFLUENCE_FLOOR, START_MS));
+    const world = {
+      ...prepared,
+      factions: {
+        ...prepared.factions,
+        [STEPPE]: { ...prepared.factions[STEPPE]!, manpower: 0 },
+      },
+    };
+    const at = eligibleAt(world);
+    const orders = collectAiThresholdOrders(world, at).filter((o) => o.ownerId === STEPPE);
+    expect(orders).toHaveLength(1);
+    expect(orders[0]?.kind).toBe('annexation-claim');
+    expect(orders[0]?.targetCityId).toBe(LONDON);
   });
 
   it('returns no threshold orders in tutorial scenarios', () => {

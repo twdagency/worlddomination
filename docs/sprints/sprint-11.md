@@ -70,3 +70,15 @@ Sprint 10's "remaining 6 sim chains" **did not exist**. Phase 1 broke the **3** 
 ## Phase 3 note (cadence)
 
 P0-2 from the Sprint 10 project review **already shipped**: player and AI share `canActorIssueInfluenceOrder` / `INFLUENCE_CHANNEL_ORDER_KINDS`; intelligence and tribute-cancel stay outside the slot; player may act at t=0. Phase 3 **confirms** that lock (Annexation is spend-side and **consumes** the channel) rather than re-litigating options a/b/c unless playtest evidence appears.
+
+## Phase 3 — COMPLETE
+
+- Order `annexation-claim` at **70+** influence, **16k gold** (2× coup), 0 manpower, no RNG, no combat
+- Success emits `annexationCompleted` (high, public) and `territoryCaptured` with `captureKind: 'annexation'`
+- Ownership via `captureCityForCoup`; influence cleared for all actors; tributes auto-end `ownership-changed`; garrison stays
+- Reputation: victim **−40**, observers **−8**; alliances are not auto-broken
+- Capitals and last-city allowed (defeat cascade unchanged); war/siege preconditions skipped (no such systems)
+- Channel: `annexation-claim` / `annexationCompleted` consume the shared daily slot
+- AI: isolationist/loyal suppress like coup; opportunists still prefer cheaper coup when both are valid; annex when coup is manpower-blocked
+- Tests: **709** sim passed (0 annexation todos). Mobile typecheck clean; selector / issue / deep-link / tooltip copy tests pass
+
