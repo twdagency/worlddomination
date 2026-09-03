@@ -8,6 +8,7 @@ import {
   MS_PER_HOUR,
 } from './constants';
 import { incomePerHour } from './economy';
+import { capTutorialPlayerActionGameMs, isTutorialPlayerFaction } from './tutorial';
 import type {
   BuildQueueItem,
   Id,
@@ -15,7 +16,6 @@ import type {
   Order,
   ResourceId,
   SimEventDraft,
-  Territory,
   Unit,
   UnitType,
   WorldState,
@@ -159,7 +159,11 @@ export function buildDurationMs(
   factionId: Id,
 ): Millis {
   const mult = leaderBuildTimeMult(world, factionId);
-  return unitType.buildHours * MS_PER_HOUR * mult;
+  const raw = unitType.buildHours * MS_PER_HOUR * mult;
+  if (isTutorialPlayerFaction(world, factionId)) {
+    return capTutorialPlayerActionGameMs(world, raw);
+  }
+  return raw;
 }
 
 /** All production completion timestamps strictly after `nowMs`. */
@@ -227,8 +231,8 @@ export function applyBuildOrders(
   territories: WorldState['territories'];
   events: SimEventDraft[];
 } {
-  let factions = { ...world.factions };
-  let territories = { ...world.territories };
+  const factions = { ...world.factions };
+  const territories = { ...world.territories };
   const events: SimEventDraft[] = [];
 
   for (const order of orders) {
@@ -361,7 +365,7 @@ export function resolveProductionCompletions(
   events: SimEventDraft[];
 } {
   let units = { ...world.units };
-  let territories = { ...world.territories };
+  const territories = { ...world.territories };
   const events: SimEventDraft[] = [];
 
   for (const territory of Object.values(world.territories)) {

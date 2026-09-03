@@ -4,8 +4,8 @@ import {
   COMPACTION_THRESHOLD_MS,
   DISPATCH_LINE_CAP,
   factionIdFromEvent,
-  mediumCompactionCategory,
   resolveEventImportance,
+  shouldFoldMediumEvent,
   type MediumCompactionCategory,
 } from './importance';
 import type { Id, Millis, SimEvent, WorldState } from './types';
@@ -44,6 +44,12 @@ function formatMediumSummary(world: WorldState, bucket: MediumBucket): string {
       return `${prefix} — ${bucket.count} force repositionings (${who})`;
     case 'blocked':
       return `${prefix} — ${bucket.count} blocked build attempts (${who})`;
+    case 'missions':
+      return `${prefix} — ${bucket.count} diplomatic missions (${who})`;
+    case 'culture':
+      return `${prefix} — ${bucket.count} cultural campaigns (${who})`;
+    case 'intelligence':
+      return `${prefix} — ${bucket.count} intelligence reports (${who})`;
   }
 }
 
@@ -60,18 +66,21 @@ function bucketKeyFromFeedKey(key: string): string {
 }
 
 const SUMMARY_DROP_PRIORITY: Record<MediumCompactionCategory, number> = {
-  repositioning: 0,
-  blocked: 1,
-  production: 2,
-  construction: 3,
-  infrastructure: 4,
+  intelligence: 0,
+  missions: 1,
+  culture: 2,
+  repositioning: 3,
+  blocked: 4,
+  production: 5,
+  construction: 6,
+  infrastructure: 7,
 };
 
 /**
- * Deterministic catch-up compaction for skips longer than 12h.
- * High-importance events (attacks, battles, assault posture) stay full.
- * Medium-importance events fold into per-faction summaries.
- * Low-importance noise is suppressed; overflow line reports folded count.
+ * Catch-up compaction for skips longer than 12h, plus live grouping of ambient
+ * AI influence (canon Standard: routine items grouped).
+ * High-importance events stay full. Folded medium events become per-faction
+ * summaries. Long skips also suppress low-importance noise.
  */
 export function compactDispatchFeed(
   world: WorldState,
@@ -80,11 +89,8 @@ export function compactDispatchFeed(
   formatLine: (event: SimEvent, world: WorldState) => string = (event, w) =>
     dispatchLineForEvent(w, event),
 ): DispatchFeedItem[] {
-  if (windowMs <= COMPACTION_THRESHOLD_MS) {
-    return buildDispatchFeed(world, events, formatLine);
-  }
-
-  const highEvents: SimEvent[] = [];
+  const foldAllMedium = windowMs > COMPACTION_THRESHOLD_MS;
+  const keptEvents: SimEvent[] = [];
   const mediumBuckets = new Map<string, MediumBucket>();
   let incomeFunding = 0;
   let incomeAt: Millis = 0;
@@ -95,42 +101,59 @@ export function compactDispatchFeed(
     const importance = resolveEventImportance(world, event);
 
     if (importance === 'high') {
-      highEvents.push(event);
+      keptEvents.push(event);
       continue;
     }
 
     if (importance === 'medium') {
-      const category = mediumCompactionCategory(event);
-      const factionId = factionIdFromEvent(event);
-      if (!category || !factionId) continue;
+      const category = shouldFoldMediumEvent(world, event, foldAllMedium);
+      const factionId = category ? factionIdFromEvent(event) : undefined;
+      if (category && factionId) {
+        const key = `${factionId}:${category}`;
+        const existing = mediumBuckets.get(key);
+        if (existing) {
+          existing.count += 1;
+          continue;
+        }
 
-      const key = `${factionId}:${category}`;
-      const existing = mediumBuckets.get(key);
-      if (existing) {
-        existing.count += 1;
+        mediumBuckets.set(key, {
+          factionId,
+          category,
+          count: 1,
+          firstAt: eventAt(event),
+          firstIndex: i,
+        });
         continue;
       }
 
-      mediumBuckets.set(key, {
-        factionId,
-        category,
-        count: 1,
-        firstAt: eventAt(event),
-        firstIndex: i,
-      });
+      if (!foldAllMedium) keptEvents.push(event);
       continue;
     }
 
-    if (event.kind === 'income') {
+    if (foldAllMedium && event.kind === 'income') {
       incomeFunding += event.funding;
       incomeAt = eventAt(event);
       continue;
     }
 
-    suppressedLow += 1;
+    if (foldAllMedium) {
+      suppressedLow += 1;
+      continue;
+    }
+
+    keptEvents.push(event);
   }
 
-  const highFeed = buildDispatchFeed(world, highEvents, formatLine);
+  if (!foldAllMedium) {
+    for (const [key, bucket] of [...mediumBuckets.entries()]) {
+      if (bucket.count === 1) {
+        keptEvents.push(events[bucket.firstIndex]);
+        mediumBuckets.delete(key);
+      }
+    }
+  }
+
+  const highFeed = buildDispatchFeed(world, keptEvents, formatLine);
 
   type TimedItem = { at: Millis; index: number; item: DispatchFeedItem };
   const timed: TimedItem[] = highFeed.map((item, index) => ({
@@ -183,7 +206,7 @@ export function compactDispatchFeed(
     foldedCount += incomeEventCount - 1;
   }
 
-  if (countFeedLines(items) > DISPATCH_LINE_CAP) {
+  if (foldAllMedium && countFeedLines(items) > DISPATCH_LINE_CAP) {
     const summaries = timed.filter(
       (entry) => entry.item.key.startsWith('compact-') && entry.item.key !== 'compact-income',
     );
@@ -209,7 +232,7 @@ export function compactDispatchFeed(
     }
   }
 
-  if (foldedCount > 0 && countFeedLines(items) < DISPATCH_LINE_CAP) {
+  if (foldAllMedium && foldedCount > 0 && countFeedLines(items) < DISPATCH_LINE_CAP) {
     const anchor = events[events.length - 1];
     items.push({
       key: 'compact-overflow',

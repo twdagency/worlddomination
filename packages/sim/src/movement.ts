@@ -1,5 +1,6 @@
 import { resolveHostileArrival } from './arrivalCombat';
 import { DEFAULT_TRAIT, MS_PER_HOUR } from './constants';
+import { capTutorialPlayerActionGameMs, isTutorialPlayerFaction } from './tutorial';
 import { ensureIntelStore } from './intel';
 import { haversineKm } from './geo';
 import { arrivalImportance, departureImportance } from './importance';
@@ -79,7 +80,10 @@ export function buildTransit(
   const speed = effectiveSpeedKmh(world, unit);
   if (speed <= 0) return null;
 
-  const travelMs = (distanceKm / speed) * MS_PER_HOUR;
+  let travelMs = (distanceKm / speed) * MS_PER_HOUR;
+  if (isTutorialPlayerFaction(world, unit.ownerId)) {
+    travelMs = capTutorialPlayerActionGameMs(world, travelMs);
+  }
   const arriveMs = departMs + travelMs;
 
   return {
@@ -111,7 +115,11 @@ export function estimateTravelMs(world: WorldState, unit: Unit, toTerritoryId: I
   const speed = effectiveSpeedKmh(world, unit);
   if (speed <= 0) return null;
 
-  return (distanceKm / speed) * MS_PER_HOUR;
+  let travelMs = (distanceKm / speed) * MS_PER_HOUR;
+  if (isTutorialPlayerFaction(world, unit.ownerId)) {
+    travelMs = capTutorialPlayerActionGameMs(world, travelMs);
+  }
+  return travelMs;
 }
 
 /** Apply move orders at the start of a tick step. Pure — returns new units + departure events. */

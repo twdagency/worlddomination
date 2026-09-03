@@ -16,6 +16,13 @@ import { terminal } from '../../theme/terminal';
 import { formatFunding } from '../../utils/format';
 import type { ActionFeedback } from '../../game/actionFeedback';
 
+const ACCELERATOR_KINDS: InfluenceOrderActionKind[] = [
+  'diplomatic-mission',
+  'cultural-campaign',
+  'influence-subversion',
+];
+const RECON_KINDS: InfluenceOrderActionKind[] = ['gather-intelligence'];
+
 interface OrderInfluencePanelProps {
   world: WorldState;
   playerId: string;
@@ -28,11 +35,9 @@ interface OrderInfluencePanelProps {
 
 function InfluenceActionCard({
   action,
-  selectedCityId,
   onExecute,
 }: {
   action: AvailableInfluenceAction;
-  selectedCityId: string;
   onExecute: (kind: InfluenceOrderActionKind) => void;
 }) {
   const disabled = !action.unlocked;
@@ -74,6 +79,7 @@ function InfluenceActionCard({
           style={styles.executeButton}
           onPress={() => onExecute(action.kind)}
           accessibilityRole="button"
+          accessibilityLabel={`Execute ${action.label}`}
           testID={`influence-action-execute-${action.kind}`}
         >
           <Text style={styles.executeLabel}>Execute</Text>
@@ -108,10 +114,11 @@ export function OrderInfluencePanel({
 
   const cityView = cityId ? selectCityInfluence(world, cityId, playerId) : null;
   const accelerators = cityView?.availableActions.filter((action) =>
-    ['diplomatic-mission', 'cultural-campaign', 'influence-subversion'].includes(action.kind),
+    ACCELERATOR_KINDS.includes(action.kind),
   );
+  const recon = cityView?.availableActions.filter((action) => RECON_KINDS.includes(action.kind));
   const thresholds = cityView?.availableActions.filter(
-    (action) => !['diplomatic-mission', 'cultural-campaign', 'influence-subversion'].includes(action.kind),
+    (action) => !ACCELERATOR_KINDS.includes(action.kind) && !RECON_KINDS.includes(action.kind),
   );
 
   useEffect(() => {
@@ -159,7 +166,15 @@ export function OrderInfluencePanel({
         <InfluenceActionCard
           key={action.kind}
           action={action}
-          selectedCityId={cityId}
+          onExecute={(kind) => onExecute(cityId, kind)}
+        />
+      ))}
+
+      <Text style={styles.section}>Reconnaissance</Text>
+      {recon?.map((action) => (
+        <InfluenceActionCard
+          key={action.kind}
+          action={action}
           onExecute={(kind) => onExecute(cityId, kind)}
         />
       ))}
@@ -169,7 +184,6 @@ export function OrderInfluencePanel({
         <InfluenceActionCard
           key={action.kind}
           action={action}
-          selectedCityId={cityId}
           onExecute={(kind) => onExecute(cityId, kind)}
         />
       ))}

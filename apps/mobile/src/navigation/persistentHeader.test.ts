@@ -9,7 +9,8 @@ describe('persistent header model', () => {
   it('shows away indicator only after the collapse threshold', () => {
     const active = buildPersistentHeaderModel({
       gameDay: 12,
-      gameDateLabel: 'Mon, Jan 1',
+      gameDateLabel: '1 Jan',
+      gameTimeLabel: '12:00',
       fundingLabel: '$25,000',
       awayMs: DASHBOARD_AWAY_COLLAPSE_MS - 1,
       urgentCount: 0,
@@ -21,7 +22,8 @@ describe('persistent header model', () => {
 
     const away = buildPersistentHeaderModel({
       gameDay: 12,
-      gameDateLabel: 'Mon, Jan 1',
+      gameDateLabel: '1 Jan',
+      gameTimeLabel: '12:00',
       fundingLabel: '$25,000',
       awayMs: DASHBOARD_AWAY_COLLAPSE_MS,
       urgentCount: 2,
@@ -31,6 +33,7 @@ describe('persistent header model', () => {
     expect(away.showAwayIndicator).toBe(true);
     expect(away.awayLabel).toBe('6h');
     expect(away.urgentCount).toBe(2);
+    expect(away.gameTimeLabel).toBe('12:00');
   });
 
   it('caps urgent badge display at 9+', () => {

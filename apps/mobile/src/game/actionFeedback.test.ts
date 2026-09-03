@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSprint4World, resolvePlayerFactionId } from 'shared';
+import { createSprint4World, createTutorialWorld, resolvePlayerFactionId } from 'shared';
+import {
+  PLAYER_TUTORIAL_FACTION_ID,
+  TUTORIAL_BURGUNDY_TERRITORY_ID,
+} from 'sim';
 import {
   buildActionFeedback,
   dispatchActionFeedback,
@@ -87,6 +91,37 @@ describe('buildActionFeedback', () => {
     expect(feedback.success).toBe(false);
     expect(feedback.toastMessage).toBe(message);
     expect(feedback.dispatchEvents).toHaveLength(0);
+  });
+
+  it('prefers the influence action line over tutorialHandoffReady in action feedback', () => {
+    const world = createTutorialWorld(START_MS);
+    const at = START_MS + 60_000;
+    const mission = testSimEvent({
+      kind: 'diplomaticMissionStarted',
+      at,
+      ownerId: PLAYER_TUTORIAL_FACTION_ID,
+      targetCityId: TUTORIAL_BURGUNDY_TERRITORY_ID,
+      expiresAt: at + 48 * 3_600_000,
+      importance: 'medium',
+    });
+    const handoff = testSimEvent({
+      kind: 'tutorialHandoffReady',
+      at,
+      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      importance: 'medium',
+    });
+
+    const feedback = buildActionFeedback(
+      'influence',
+      world,
+      [mission, handoff],
+      { territoryId: TUTORIAL_BURGUNDY_TERRITORY_ID, influenceOrderKind: 'diplomatic-mission' },
+    );
+
+    expect(feedback.toastMessage).toMatch(/DIPLOMATIC MISSION/i);
+    expect(feedback.toastMessage).not.toMatch(/tutorialHandoffReady/i);
+    expect(feedback.dispatchEvents).toHaveLength(1);
+    expect(feedback.dispatchEvents[0]?.kind).toBe('diplomaticMissionStarted');
   });
 });
 

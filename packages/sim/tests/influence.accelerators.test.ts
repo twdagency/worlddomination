@@ -112,7 +112,7 @@ describe('influence accelerators (Sprint 9 Phase 2)', () => {
   });
 
   it('diplomatic mission expires after 14 game-days', () => {
-    let world = applyInfluenceOrders(influenceWorld(), [missionOrder(influenceWorld())], START_MS).world;
+    const world = applyInfluenceOrders(influenceWorld(), [missionOrder(influenceWorld())], START_MS).world;
     const expired = expireActiveInfluenceEffects(world, START_MS + DIPLOMATIC_MISSION_DURATION_MS);
     expect(expired.world.activeDiplomaticMissions).toHaveLength(0);
     expect(expired.events.some((event) => event.kind === 'diplomaticMissionExpired')).toBe(true);
@@ -247,7 +247,7 @@ describe('influence accelerators (Sprint 9 Phase 2)', () => {
     expect(result.events.find((event) => event.kind === 'culturalCampaignApplied')?.influenceDelta).toBe(5);
   });
 
-  it('issues all three accelerators in one tick', () => {
+  it('accepts only the first channel action in one tick', () => {
     const world = influenceWorld();
     const result = tick(
       world,
@@ -255,20 +255,28 @@ describe('influence accelerators (Sprint 9 Phase 2)', () => {
       0,
     );
     expect(result.world.activeDiplomaticMissions).toHaveLength(1);
-    expect(getInfluence(result.world, PARIS_ID, PLAYER)).toBe(
-      CULTURAL_CAMPAIGN_BURST + INFLUENCE_SUBVERSION_BURST,
-    );
+    expect(getInfluence(result.world, PARIS_ID, PLAYER)).toBe(0);
+    const rejected = result.events.filter((event) => event.kind === 'orderRejected');
+    expect(rejected).toHaveLength(2);
+    expect(
+      rejected.every((event) => event.reason === 'influence-channel-on-cooldown'),
+    ).toBe(true);
   });
 
-  it('stacks accelerators on the same target with passive accrual under the cap', () => {
+  it('stacks accelerators across successive days under the cap', () => {
     const world = influenceWorld();
-    const burst = applyInfluenceOrders(
-      world,
-      [campaignOrder(world), subversionOrder(world)],
-      START_MS,
+    const afterCampaign = applyInfluenceOrders(world, [campaignOrder(world)], START_MS).world;
+    const afterSubversion = applyInfluenceOrders(
+      afterCampaign,
+      [subversionOrder(afterCampaign)],
+      START_MS + MS_DAY,
     ).world;
-    const afterMission = applyInfluenceOrders(burst, [missionOrder(burst)], START_MS).world;
-    const afterPassive = accruePassiveInfluence(afterMission, START_MS + MS_DAY);
+    const afterMission = applyInfluenceOrders(
+      afterSubversion,
+      [missionOrder(afterSubversion)],
+      START_MS + MS_DAY * 2,
+    ).world;
+    const afterPassive = accruePassiveInfluence(afterMission, START_MS + MS_DAY * 3);
     expect(getInfluence(afterPassive, PARIS_ID, PLAYER)).toBeLessThanOrEqual(100);
     expect(getInfluence(afterPassive, PARIS_ID, PLAYER)).toBeGreaterThan(25);
   });

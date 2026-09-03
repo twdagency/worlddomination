@@ -56,6 +56,21 @@ describe('tutorial navigation bridge', () => {
     expect(collapseTutorialBanner).toHaveBeenCalledTimes(1);
   });
 
+  it('collapses the influence beat banner when Order is opened', () => {
+    const collapseTutorialBanner = vi.fn();
+
+    maybeCollapseTutorialBannerOnNavigation(
+      navState({ tab: 'Actions', stackScreen: 'Order' }),
+      {
+        isTutorialActive: true,
+        currentBeat: 'influence',
+        collapseTutorialBanner,
+      },
+    );
+
+    expect(collapseTutorialBanner).toHaveBeenCalledTimes(1);
+  });
+
   it('does not collapse when only the dashboard root is visible', () => {
     const collapseTutorialBanner = vi.fn();
 

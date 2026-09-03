@@ -3,8 +3,17 @@
   "private": true,
   "scripts": {
     "test": "pnpm --filter sim test && pnpm --filter mobile test",
+    "test:harness": "node scripts/test-harness.mjs",
+    "test:harness:self": "node --test scripts/test-harness.test.mjs",
+    "test:game": "node scripts/test-harness.mjs game",
+    "test:sim": "node scripts/test-harness.mjs sim",
+    "test:mobile": "node scripts/test-harness.mjs mobile",
     "lint": "eslint \"packages/**/*.{ts,tsx}\" \"apps/**/*.{ts,tsx}\"",
+    "lint:fix": "pnpm lint --fix",
+    "typecheck": "pnpm --filter shared typecheck && pnpm --filter sim typecheck && pnpm --filter mobile typecheck",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test",
     "format": "prettier --write \"packages/**/*.{ts,tsx}\" \"apps/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"packages/**/*.{ts,tsx}\" \"apps/**/*.{ts,tsx}\"",
     "mobile:start": "pnpm --filter mobile start",
     "mobile:android": "pnpm --filter mobile android",
     "mobile:ios": "pnpm --filter mobile ios"
@@ -12,6 +21,7 @@
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "eslint": "^9.28.0",
+    "eslint-plugin-unused-imports": "^4.4.1",
     "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.34.0"

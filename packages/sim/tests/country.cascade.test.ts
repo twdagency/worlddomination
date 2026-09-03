@@ -31,7 +31,6 @@ const STEPPE = 'faction-steppe';
 const BRITAIN = 'faction-britain';
 const PARIS = 'territory-paris';
 const BERLIN = 'territory-berlin';
-const LONDON = 'territory-london';
 
 function migrate(world: ReturnType<typeof createSprint4World>) {
   return ensureWorldMigrations(world, {

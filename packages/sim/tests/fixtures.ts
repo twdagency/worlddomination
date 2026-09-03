@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import type { Faction, Id, Leader, Order, OrderIntent, Territory, Unit, UnitType, WorldState } from '../src/types';
 import { diplomacyDefaults } from '../src/diplomacy';
 import { intentFromMoveStance, taggedOrderFields } from '../src/dispatch';
@@ -161,7 +160,8 @@ export function tagOrder(
     order.kind === 'tribute-extraction' ||
     order.kind === 'tribute-cancel' ||
     order.kind === 'coup-attempt' ||
-    order.kind === 'defection-claim'
+    order.kind === 'defection-claim' ||
+    order.kind === 'gather-intelligence'
   ) {
     return {
       ...order,

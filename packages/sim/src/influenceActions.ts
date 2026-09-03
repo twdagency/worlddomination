@@ -1,11 +1,12 @@
 import { areAllied, formAlliance, formTreaty, getAlliancesFor, hasActiveTreatyOn } from './diplomacy';
 import { MS_PER_DAY, MS_PER_HOUR } from './constants';
-import { findCountry, recordConquerorOnTerritoryCapture } from './country';
+import { findCountry } from './country';
 import {
   allianceFormedEvent,
   DEFAULT_TREATY_DURATION_MS,
   treatyFormedEvent,
-} from './diplomaticDispatch';
+} from './diplomaticEvents';
+import { captureCityForCoup } from './territoryOwnership';
 import { extractionPerHour, incomePerHour } from './economy';
 import {
   applyInfluenceDelta,
@@ -15,6 +16,19 @@ import {
   getInfluence,
   setInfluence,
 } from './influence';
+import { intelligenceGarrisonCount } from './intelligenceGather';
+import {
+  COUP_INFLUENCE_FLOOR,
+  DEFECTION_INFLUENCE_REQUIRED,
+  DIPLOMATIC_PRESSURE_MIN_INFLUENCE,
+  TRIBUTE_INFLUENCE_FLOOR,
+} from './influenceConstants';
+export {
+  COUP_INFLUENCE_FLOOR,
+  DEFECTION_INFLUENCE_REQUIRED,
+  DIPLOMATIC_PRESSURE_MIN_INFLUENCE,
+  TRIBUTE_INFLUENCE_FLOOR,
+} from './influenceConstants';
 import { removePendingProposal } from './pendingProposals';
 import { nextRandom } from './rng';
 import type {
@@ -36,7 +50,6 @@ import type {
 
 export const DIPLOMATIC_PRESSURE_COST = 2000;
 export const DIPLOMATIC_PRESSURE_INFLUENCE_COST = 20;
-export const DIPLOMATIC_PRESSURE_MIN_INFLUENCE = 30;
 export const DIPLOMATIC_PRESSURE_TARGET_REPUTATION_PENALTY = -15;
 export const DIPLOMATIC_PRESSURE_OBSERVER_REPUTATION_PENALTY = -5;
 export const DIPLOMATIC_PRESSURE_ALLY_OF_TARGET_REPUTATION_PENALTY = -10;
@@ -282,21 +295,10 @@ export function applyDiplomaticPressure(
   return { world: next, events };
 }
 
-export function formatDiplomaticPressureProposalLabel(proposalKind: PressureProposalKind): string {
-  switch (proposalKind) {
-    case 'accept-alliance':
-      return 'alliance';
-    case 'accept-treaty':
-      return 'treaty';
-    case 'concession-territory':
-      return 'territory concession';
-    case 'concession-resource':
-      return 'resource concession';
-  }
-}
+export { cancelTributesForDefeatedCountry } from './tributeLifecycle';
+export { formatDiplomaticPressureProposalLabel } from './influenceOrderMessages';
 
 export const TRIBUTE_EXTRACTION_COST = 5000;
-export const TRIBUTE_INFLUENCE_FLOOR = 50;
 export const TRIBUTE_INFLUENCE_DRAIN_PER_DAY = 1;
 export const TRIBUTE_GOLD_PERCENT = 0.25;
 export const TRIBUTE_RESOURCE_PERCENT = 0.15;
@@ -581,34 +583,6 @@ export function applyTributeCancel(
   };
 }
 
-export function cancelTributesForDefeatedCountry(
-  world: WorldState,
-  countryId: Id,
-  at: Millis,
-): { world: WorldState; events: SimEventDraft[] } {
-  let next = ensureWorldTributes(world);
-  const events: SimEventDraft[] = [];
-  const remaining: ActiveTribute[] = [];
-
-  for (const tribute of sortedActiveTributes(next)) {
-    if (tribute.actorId === countryId || tribute.targetCountryId === countryId) {
-      events.push({
-        kind: 'tributeAutoEnded',
-        at,
-        actorId: tribute.actorId,
-        targetCityId: tribute.targetCityId,
-        reason: 'target-defeated',
-        importance: 'medium',
-      });
-      continue;
-    }
-    remaining.push(tribute);
-  }
-
-  if (events.length === 0) return { world: next, events };
-  return { world: { ...next, activeTributes: remaining }, events };
-}
-
 export function accrueTributes(
   world: WorldState,
   at: Millis,
@@ -684,7 +658,7 @@ export function accrueTributes(
       100,
       tribute.resentment + TRIBUTE_RESENTMENT_GROWTH_PER_DAY * daysElapsed,
     );
-    let minorRebellionEmitted = tribute.minorRebellionEmitted;
+    const minorRebellionEmitted = tribute.minorRebellionEmitted;
     let updatedTribute: ActiveTribute = {
       ...tribute,
       lastAccrualAt: at,
@@ -764,9 +738,9 @@ export function accrueTributes(
 
 export const COUP_ATTEMPT_GOLD_COST = 8000;
 export const COUP_ATTEMPT_MANPOWER_COST = 1;
-export const COUP_INFLUENCE_FLOOR = 70;
 export const COUP_INFLUENCE_COST_SUCCESS = 50;
-export const COUP_INFLUENCE_COST_FAILURE = 70;
+/** Coup failure collapses the actor's influence in the city to this remainder. */
+export const COUP_FAILURE_INFLUENCE_REMAINDER = 0;
 export const COUP_BASE_SUCCESS_RATE = 0.6;
 export const COUP_FORTIFICATION_PENALTY_PER_TIER = -0.05;
 export const COUP_LOYAL_POSTURE_PENALTY = -0.1;
@@ -774,6 +748,10 @@ export const COUP_OPPORTUNIST_POSTURE_BONUS = 0.1;
 export const COUP_ALLIED_INSIDER_BONUS = 0.15;
 export const COUP_SUCCESS_TARGET_REPUTATION_PENALTY = -30;
 export const COUP_FAILURE_TARGET_REPUTATION_PENALTY = -20;
+export const COUP_INTEL_WEAK_GARRISON_THRESHOLD = 10;
+export const COUP_INTEL_WEAK_GARRISON_BONUS = 0.2;
+export const COUP_INTEL_STRONG_GARRISON_THRESHOLD = 40;
+export const COUP_INTEL_STRONG_GARRISON_PENALTY = -0.5;
 
 export type CoupRejectionReason =
   | 'insufficient-influence'
@@ -842,6 +820,7 @@ export function calculateCoupSuccessRate(
   world: WorldState,
   actorId: Id,
   targetCityId: Id,
+  at: Millis = world.nowMs,
 ): number {
   const city = world.territories[targetCityId];
   if (!city?.ownerId) return 0;
@@ -857,6 +836,15 @@ export function calculateCoupSuccessRate(
   if (posture === 'loyal') rate += COUP_LOYAL_POSTURE_PENALTY;
   if (posture === 'opportunist') rate += COUP_OPPORTUNIST_POSTURE_BONUS;
   if (areAllied(world, actorId, targetCountry.id)) rate += COUP_ALLIED_INSIDER_BONUS;
+
+  const garrison = intelligenceGarrisonCount(world, actorId, targetCityId, at);
+  if (garrison !== undefined) {
+    if (garrison <= COUP_INTEL_WEAK_GARRISON_THRESHOLD) {
+      rate += COUP_INTEL_WEAK_GARRISON_BONUS;
+    } else if (garrison >= COUP_INTEL_STRONG_GARRISON_THRESHOLD) {
+      rate += COUP_INTEL_STRONG_GARRISON_PENALTY;
+    }
+  }
 
   return Math.max(0, Math.min(1, rate));
 }
@@ -943,42 +931,6 @@ function cancelTributesOnCity(
   return { world: { ...world, activeTributes: remaining }, events };
 }
 
-function captureCityForCoup(
-  world: WorldState,
-  targetCityId: Id,
-  actorId: Id,
-  previousOwnerId: Id,
-  at: Millis,
-): { world: WorldState; events: SimEventDraft[] } {
-  const territory = world.territories[targetCityId];
-  if (!territory) return { world, events: [] };
-
-  const territories = {
-    ...world.territories,
-    [targetCityId]: { ...territory, ownerId: actorId },
-  };
-  const countries = recordConquerorOnTerritoryCapture(
-    { ...world, territories },
-    targetCityId,
-    previousOwnerId,
-    actorId,
-  ).countries;
-
-  return {
-    world: { ...world, territories, countries },
-    events: [
-      {
-        kind: 'territoryCaptured',
-        at,
-        territoryId: targetCityId,
-        previousOwnerId,
-        newOwnerId: actorId,
-        importance: 'high',
-      },
-    ],
-  };
-}
-
 function applyCoupSuccessInfluence(
   world: WorldState,
   targetCityId: Id,
@@ -986,7 +938,7 @@ function applyCoupSuccessInfluence(
   at: Millis,
 ): WorldState {
   const prior = getInfluence(world, targetCityId, actorId);
-  let next = clearInfluenceForCity(world, targetCityId);
+  const next = clearInfluenceForCity(world, targetCityId);
   return setInfluence(next, targetCityId, actorId, prior - COUP_INFLUENCE_COST_SUCCESS, at);
 }
 
@@ -1041,7 +993,7 @@ export function applyCoupAttempt(
     };
   }
 
-  next = setInfluence(next, targetCityId, actorId, 0, at);
+  next = setInfluence(next, targetCityId, actorId, COUP_FAILURE_INFLUENCE_REMAINDER, at);
   const reputationResult = applyCoupFailureReputation(next, actorId, targetCountryId);
   next = reputationResult.world;
 
@@ -1063,8 +1015,8 @@ export function applyCoupAttempt(
   };
 }
 
-export const DEFECTION_INFLUENCE_REQUIRED = 100;
-export const DEFECTION_INFLUENCE_COST = 100;
+/** Claiming consumes the required stack; `clearInfluenceForCity` implements the spend. */
+export const DEFECTION_INFLUENCE_COST = DEFECTION_INFLUENCE_REQUIRED;
 export const DEFECTION_GOLD_COST = 0;
 export const DEFECTION_MANPOWER_COST = 0;
 export const DEFECTION_TARGET_REPUTATION_PENALTY = -25;

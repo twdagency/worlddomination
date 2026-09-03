@@ -45,6 +45,74 @@ export {
   transitAwareIntelMultiplier,
 } from './ai';
 export {
+  AI_INFLUENCE_MIN_SCORE,
+  AI_SUBVERSION_SUPPRESSION_MS,
+  applyAiInfluenceOrders,
+  canActorIssueInfluenceOrder,
+  collectAiInfluenceOrders,
+  ensureWorldAiInfluenceAgency,
+  isInfluenceChannelOrderKind,
+} from './aiInfluenceOrders';
+export {
+  affordsAccelerator,
+  goldReserveFraction,
+  isSubversionSuppressedForActor,
+  leaderPosture,
+  pickBestAiInfluenceAction,
+  scoreAiInfluenceAction,
+} from './aiInfluenceScoring';
+export type {
+  AiAcceleratorKind,
+  AiInfluenceCandidate,
+  ScoreRationale,
+  ScoredAiInfluenceAction,
+} from './aiInfluenceScoring';
+export {
+  applyAiThresholdOrders,
+  collectAiThresholdOrders,
+  listAiThresholdCandidates,
+  pickBestAiThresholdAction,
+  resolveAiDailyInfluenceChannel,
+  scoreAiThresholdAction,
+} from './aiThresholdOrders';
+export type {
+  AiInfluenceChannel,
+  AiThresholdCandidate,
+  AiThresholdKind,
+  ScoredAiThresholdAction,
+} from './aiThresholdOrders';
+export {
+  applyAiIntelligenceOrders,
+  canActorGatherIntelligence,
+  collectAiIntelligenceOrders,
+  intelligenceUsesSeparateCadenceFromInfluenceChannel,
+} from './aiIntelligenceOrders';
+export {
+  AI_INTELLIGENCE_MIN_SCORE,
+  pickBestAiIntelligenceAction,
+  scoreAiIntelligenceAction,
+} from './aiIntelligenceScoring';
+export type { ScoredAiIntelligenceAction } from './aiIntelligenceScoring';
+export {
+  applyGatherIntelligence,
+  captureIntelligenceSnapshot,
+  ensureWorldIntelligenceGathers,
+  hasFreshIntelligence,
+  INTELLIGENCE_COOLDOWN_MS,
+  INTELLIGENCE_GATHER_COST,
+  INTELLIGENCE_MIN_INFLUENCE,
+  intelligenceGarrisonCount,
+  isIntelligenceOnCooldown,
+  latestIntelligenceRecord,
+  validateGatherIntelligence,
+} from './intelligenceGather';
+export {
+  COMPETITOR_INFLUENCE_HALVE_THRESHOLD,
+  INFLUENCE_SWAY_THRESHOLD,
+} from './influenceConstants';
+export type { IntelligenceRejectionReason } from './intelligenceGather';
+export { isAiInfluenceAgencyActive, isInfluenceAgencyDisabled, resolvePlayerFactionId } from './aiInfluenceAgency';
+export {
   computeVisibility,
   getFactionVisibility,
   isTerritoryVisible,
@@ -193,9 +261,18 @@ export {
   citiesOf,
   countryToFaction,
   defeatCountry,
+  evaluateLastCountryStanding,
   ensureWorldCountries,
+  ensureWorldFactionRename,
   factionToCountry,
   findCountry,
+  findFaction,
+  factionsOf,
+  countriesOf,
+  getActiveCountries,
+  getActiveFactions,
+  getCountryById,
+  getFactionById,
   isCountryDefeated,
   recordConquerorOnTerritoryCapture,
   relocateCapitalIfNeeded,
@@ -249,6 +326,7 @@ export {
   COUP_BASE_SUCCESS_RATE,
   COUP_FAILURE_TARGET_REPUTATION_PENALTY,
   COUP_FORTIFICATION_PENALTY_PER_TIER,
+  COUP_FAILURE_INFLUENCE_REMAINDER,
   COUP_INFLUENCE_COST_SUCCESS,
   COUP_INFLUENCE_FLOOR,
   COUP_LOYAL_POSTURE_PENALTY,
@@ -293,6 +371,7 @@ export {
   expireActiveInfluenceEffects,
   formatInfluenceOrderRejectedMessage,
   hasActiveDiplomaticMission,
+  isCulturalCampaignOnCooldown,
   INFLUENCE_SUBVERSION_BURST,
   INFLUENCE_SUBVERSION_COST,
   INFLUENCE_SUBVERSION_DISCOVERY_RATE,
@@ -330,7 +409,12 @@ export type { ScoutingPriority, DiplomaticPosture, TutorialBeatId, TutorialState
 export {
   TUTORIAL_BEAT_ORDER,
   TUTORIAL_ACTIVE_TIME_MULTIPLIER,
+  TUTORIAL_MAX_PLAYER_ACTION_WALL_MS,
   STANDARD_TIME_MULTIPLIER,
+  capTutorialPlayerActionGameMs,
+  tutorialPlayerActionGameCapMs,
+  isTutorialPlayerFaction,
+  isActiveTutorial,
   PLAYER_TUTORIAL_FACTION_ID,
   TUTORIAL_HOME_TERRITORY_ID,
   TUTORIAL_PARIS_TERRITORY_ID,
@@ -345,6 +429,7 @@ export {
 } from './tutorial';
 export {
   type BeatPredicate,
+  hasTutorialForeignInfluenceTarget,
   TUTORIAL_BEAT_PREDICATES,
 } from './tutorialBeats';
 export {
@@ -353,6 +438,7 @@ export {
   evaluateBeatProgression,
 } from './beatController';
 export {
+  dropPendingDilemmasForFaction,
   enqueuePendingDilemma,
   getDilemmaById,
   resolveDilemma,
@@ -369,8 +455,10 @@ export {
   arrivalImportance,
   departureImportance,
   factionIdFromEvent,
+  isAmbientInfluenceDispatch,
   mediumCompactionCategory,
   resolveEventImportance,
+  shouldFoldMediumEvent,
 } from './importance';
 export type { DispatchImportance } from './types';
 export type { MediumCompactionCategory } from './importance';

@@ -16,7 +16,6 @@ import { advanceTo } from '../src/clock';
 import { renderDigestText } from '../src/compaction';
 import { compactDispatchFeed, renderCompactDigestText } from '../src/compaction';
 import { collectAiOrders } from '../src/ai';
-import { applyAiDiplomaticDecisions } from '../src/diplomaticAi';
 import { AI_DECISION_INTERVAL_MS } from '../src/constants';
 import { computeStance, STANCE_WINDOW_MS } from '../src/stance';
 import { buildBenchWorld } from './benchWorld';

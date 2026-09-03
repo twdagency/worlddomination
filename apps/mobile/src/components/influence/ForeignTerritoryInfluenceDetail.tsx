@@ -46,6 +46,7 @@ function ActionShortcut({
     <Pressable
       onPress={() => navigateDeep(deepLinkForInfluenceAction(view.cityId, kind))}
       accessibilityRole="button"
+      accessibilityLabel={`${label} for ${view.cityName}`}
       testID={`territory-influence-action-${kind}`}
     >
       <Text style={styles.shortcut}>{label} →</Text>
@@ -130,6 +131,13 @@ export function ForeignTerritoryInfluenceDetail({
         <View style={styles.shortcuts}>
           <ActionShortcut view={view} kind="diplomatic-mission" label="Diplomatic mission" />
           <ActionShortcut view={view} kind="cultural-campaign" label="Cultural campaign" />
+          <ActionShortcut view={view} kind="influence-subversion" label="Subversion" />
+          <ActionShortcut view={view} kind="gather-intelligence" label="Intelligence" />
+          <ActionShortcut view={view} kind="diplomatic-pressure" label="Diplomatic pressure" />
+          <ActionShortcut view={view} kind="tribute-extraction" label="Tribute extraction" />
+          {view.hasActiveTribute ? (
+            <ActionShortcut view={view} kind="tribute-cancel" label="Cancel tribute" />
+          ) : null}
           <ActionShortcut view={view} kind="coup-attempt" label="Coup attempt" />
           <ActionShortcut view={view} kind="defection-claim" label="Defection" />
         </View>

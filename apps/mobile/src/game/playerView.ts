@@ -3,8 +3,10 @@ import {
   dispatchLineForEvent,
   filterDispatchesForFaction,
   hasDisplayableIncome,
+  isAmbientInfluenceDispatch,
   pendingProposalsForFaction,
   resolveEventImportance,
+  transitFraction,
   type Id,
   type SimEvent,
 } from 'sim';
@@ -20,6 +22,7 @@ import {
 } from 'sim';
 import { resolvePlayerFactionId } from 'shared';
 import { formatDateTime, formatDuration } from '../utils/format';
+import { remainingWallMs } from './timeScale';
 import { formatFactionIdentityLine, getFactionIdentity } from './factionDisplay';
 import { formatTransitEndpointLabel } from './territoryOwnerLabel';
 import {
@@ -349,6 +352,7 @@ export interface DashboardActiveForceItem {
   label: string;
   detail: string;
   inTransit: boolean;
+  progress?: number;
 }
 
 export interface DashboardActiveForcesSummary {
@@ -593,6 +597,7 @@ export function getDashboardDispatchesDigest(
   const ranked = filterDispatchesForFaction(world, events, resolvedFactionId)
     .filter((event): event is SimEvent & { at: number } => isTimestampedEvent(event))
     .filter((event) => event.kind !== 'income' || hasDisplayableIncome(event))
+    .filter((event) => !isAmbientInfluenceDispatch(world, event))
     .map((event) => {
       const importance = resolveEventImportance(world, event);
       return {
@@ -650,14 +655,15 @@ export function getDashboardActiveForcesSummary(world: WorldState): DashboardAct
     const destLabel = destId
       ? formatTransitEndpointLabel(world, destId, 'compact', playerId, undefined, true)
       : 'unknown';
-    const eta = formatDuration(
-      Math.max(0, (unit.transit?.arriveMs ?? 0) - world.nowMs),
-    );
+    const eta = formatDuration(remainingWallMs(world, unit.transit?.arriveMs ?? 0));
+    const progress =
+      unit.transit !== undefined ? transitFraction(world.nowMs, unit.transit) : undefined;
     return {
       unitId: unit.id,
       label: unitType?.name ?? unit.id,
       detail: `×${unit.count} from ${originLabel} → ${destLabel} · ETA ${eta}`,
       inTransit: true,
+      progress,
     };
   });
 

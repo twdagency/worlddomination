@@ -1,4 +1,4 @@
-import { getDilemmaById } from 'sim';
+import { findCountry, getDilemmaById } from 'sim';
 import { resolvePlayerFactionId } from 'shared';
 import type { Id, WorldState } from 'sim';
 
@@ -12,6 +12,7 @@ export function selectPendingDilemmaCards(world: WorldState | null): PendingDile
   if (!world?.pendingDilemmas?.length) return [];
 
   const playerId = resolvePlayerFactionId(world);
+  if (playerId && findCountry(world, playerId)?.defeated === true) return [];
   const cards: PendingDilemmaCard[] = [];
 
   for (const entry of world.pendingDilemmas) {

@@ -29,17 +29,38 @@ export function formatDateTime(epochMs: number): string {
   });
 }
 
+const SHORT_MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+/** Locale-stable calendar label — en-GB `toLocaleString` uses "Sept" and overflows the header. */
+export function formatGameClockDate(epochMs: number): string {
+  const date = new Date(epochMs);
+  return `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]}`;
+}
+
+/** 24-hour clock so AM/PM never steals header space. */
+export function formatGameClockTime(epochMs: number): string {
+  const date = new Date(epochMs);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
 /** Compact game-clock label for the persistent header (no weekday). */
 export function formatGameClock(epochMs: number): string {
-  const date = new Date(epochMs).toLocaleString(undefined, {
-    day: 'numeric',
-    month: 'short',
-  });
-  const time = new Date(epochMs).toLocaleString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-  return `${date} · ${time}`;
+  return `${formatGameClockDate(epochMs)} · ${formatGameClockTime(epochMs)}`;
 }
 
 export function formatFunding(amount: number): string {

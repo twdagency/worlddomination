@@ -1,13 +1,11 @@
-import { computeBeatId } from './dispatch';
+import { computeBeatId } from './beatId';
 import { garrisonDescriptor } from './diplomaticDispatch';
 import type {
   Id,
   IntelRecord,
-  IntelSource,
   IntelStore,
   Millis,
   OrderIntent,
-  SimEvent,
   SimEventDraft,
   WorldState,
 } from './types';
@@ -22,6 +20,9 @@ export function resolveIntelReportVariant(
   const territory = world.territories[territoryId];
   if ((territory?.buildQueue ?? []).length > 0) return 'construction';
   if (record.snapshot.visibleEnemyGarrison > 0 || record.snapshot.inTransitCount > 0) {
+    return 'massing';
+  }
+  if ((record.snapshot.enriched?.garrisonDetail.totalCount ?? 0) > 0) {
     return 'massing';
   }
   return 'activity';
@@ -83,6 +84,25 @@ export function intelReportFromRecord(
       garrisonDescriptor: garrisonDescriptor(record.snapshot),
       intent: inferIntelReportIntent(world, record.territoryId, record),
       beatId: computeBeatId(receiverFactionId, record.observationTime, record.source),
+      decisionTickMs: record.observationTime,
+      importance: 'medium',
+    };
+  }
+
+  if (record.source === 'intelligence') {
+    if (record.observerFaction !== receiverFactionId) return undefined;
+    return {
+      kind: 'intelReport',
+      at: record.observationTime,
+      observerFaction: receiverFactionId,
+      receiverFaction: receiverFactionId,
+      territoryId: record.territoryId,
+      source: 'intelligence',
+      variant,
+      subjectFactionId,
+      garrisonDescriptor: garrisonDescriptor(record.snapshot),
+      intent: inferIntelReportIntent(world, record.territoryId, record),
+      beatId: computeBeatId(receiverFactionId, record.observationTime, 'intelligence'),
       decisionTickMs: record.observationTime,
       importance: 'medium',
     };

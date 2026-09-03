@@ -17,7 +17,7 @@ describe('order screen influence mode', () => {
     expect(segment).toContain("id: 'influence'");
   });
 
-  it('renders three accelerator and four threshold action cards', () => {
+  it('renders accelerator, reconnaissance, and threshold action sections', () => {
     const panel = fs.readFileSync(
       path.resolve(__dirname, '../src/components/influence/OrderInfluencePanel.tsx'),
       'utf8',
@@ -27,8 +27,11 @@ describe('order screen influence mode', () => {
       'utf8',
     );
     expect(panel).toContain('Accelerators');
+    expect(panel).toContain('Reconnaissance');
     expect(panel).toContain('Threshold actions');
     expect(catalog).toContain("'diplomatic-mission'");
+    expect(catalog).toContain("'gather-intelligence'");
+    expect(catalog).toContain("'tribute-cancel'");
     expect(catalog).toContain("'defection-claim'");
   });
 

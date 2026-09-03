@@ -186,7 +186,7 @@ describe('influence decay (Sprint 9 Phase 3)', () => {
   });
 
   it('recovers war-induced negative influence after assault ends', () => {
-    let world = isolatedInfluenceWorld({
+    const world = isolatedInfluenceWorld({
       units: {
         'attacker-1': {
           id: 'attacker-1',

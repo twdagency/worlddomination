@@ -31,7 +31,7 @@ describe('eventId provenance', () => {
   });
 
   it('increments the counter monotonically', () => {
-    let world = makeWorld({ nextEventId: 0 });
+    const world = makeWorld({ nextEventId: 0 });
     const first = emit(world, {
       kind: 'income',
       at: world.nowMs,

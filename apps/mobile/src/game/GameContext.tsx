@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import type { BeatCopy } from 'shared';
-import type { SimEvent, TransitOrder, TutorialBeatId, WorldState, Millis } from 'sim';
+import type { SimEvent, TransitOrder, TutorialBeatId, WorldState } from 'sim';
 import {
-  evaluateBeatProgression,
   getDilemmaById,
   graduateTutorial,
   hasPendingProposalBetween,
+  getTimeMultiplier,
   nextEventMs,
   playerAcceptProposal,
   playerBreakAlliance,
@@ -16,7 +16,6 @@ import {
   playerProposeTreaty,
   previewMoveEtaMs,
   resolveDilemma,
-  stampEvents,
 } from 'sim';
 import type { InfluenceOrderActionKind } from './actions';
 import {
@@ -35,6 +34,7 @@ import {
   type ActionFeedbackContext,
   type ActionKind,
 } from './actionFeedback';
+import { BEAT_PROGRESSION_ACTIONS, withBeatProgression } from './beatProgression';
 import { useToast } from '../components/feedback/ToastProvider';
 import {
   createWorldForScenario,
@@ -43,6 +43,7 @@ import {
   type DevScenarioId,
   type ScenarioId,
 } from './scenarios';
+import { gameTargetAfterWallElapsed } from './timeScale';
 import {
   clearCampaignStorage,
   loadDispatches,
@@ -83,8 +84,12 @@ export interface TutorialContextSlice {
   graduate: () => Promise<void>;
 }
 
+export type SessionPhase = 'menu' | 'playing';
+
 interface GameContextValue extends TutorialContextSlice {
   ready: boolean;
+  sessionPhase: SessionPhase;
+  hasSavedCampaign: boolean;
   world: WorldState;
   dispatches: SimEvent[];
   awayMs: number;
@@ -92,6 +97,10 @@ interface GameContextValue extends TutorialContextSlice {
   markDispatchesViewed: () => void;
   scenarioId: ScenarioId;
   wallNowMs: number;
+  startCampaign: (id: ScenarioId) => Promise<void>;
+  continueCampaign: () => Promise<void>;
+  returnToMenu: () => Promise<void>;
+  resetSavedCampaign: () => Promise<void>;
   actionFeedback: ActionFeedback | null;
   clearActionFeedback: () => void;
   resolvePendingDilemma: (dilemmaId: string, optionId: string) => Promise<void>;
@@ -118,16 +127,22 @@ interface GameContextValue extends TutorialContextSlice {
 const GameContext = React.createContext<GameContextValue | null>(null);
 
 async function persist(world: WorldState, dispatches: SimEvent[]): Promise<void> {
-  await Promise.all([
-    saveWorld(world),
-    saveDispatches(dispatches),
-    saveLastActiveMs(Date.now()),
-  ]);
+  try {
+    await Promise.all([
+      saveWorld(world),
+      saveDispatches(dispatches),
+      saveLastActiveMs(Date.now()),
+    ]);
+  } catch {
+    // In-memory campaign continues if disk write fails.
+  }
 }
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   const [ready, setReady] = useState(false);
+  const [sessionPhase, setSessionPhase] = useState<SessionPhase>('menu');
+  const [hasSavedCampaign, setHasSavedCampaign] = useState(false);
   const [scenarioId, setScenarioId] = useState<ScenarioId>(FIRST_TIME_SCENARIO_ID);
   const [world, setWorld] = useState<WorldState>(() =>
     createWorldForScenario(FIRST_TIME_SCENARIO_ID),
@@ -145,8 +160,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [bannerCollapsedBeat, setBannerCollapsedBeat] = useState<TutorialBeatId | null>(null);
   const worldRef = useRef(world);
   const dispatchesRef = useRef(dispatches);
+  const lastActiveRef = useRef<number | null>(null);
+  const lastWallRef = useRef(Date.now());
+  const sessionPhaseRef = useRef(sessionPhase);
   worldRef.current = world;
   dispatchesRef.current = dispatches;
+  sessionPhaseRef.current = sessionPhase;
 
   const hasPendingEvents = nextEventMs(world) !== null;
 
@@ -223,10 +242,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         optionId,
         Date.now(),
       );
-      const progressed = evaluateBeatProgression(resolved.world, resolved.events);
-      const handoffStamped = stampEvents(progressed.world, progressed.events);
-      const allEvents = [...resolved.events, ...handoffStamped.events];
-      const nextWorld = handoffStamped.world;
+      const progressed = withBeatProgression(resolved);
+      const nextWorld = progressed.world;
+      const allEvents = progressed.events;
       const merged = mergeDispatches(nextWorld, dispatchesRef.current, allEvents);
       setWorld(nextWorld);
       setDispatches(merged);
@@ -279,7 +297,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       context: ActionFeedbackContext,
       execute: () => { world: WorldState; events: SimEvent[] },
     ) => {
-      const result = execute();
+      const raw = execute();
+      const result = BEAT_PROGRESSION_ACTIONS.has(action) ? withBeatProgression(raw) : raw;
       const applied = dispatchActionFeedback(
         {
           action,
@@ -315,45 +334,64 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     lastActive: number | null,
   ) => {
     const now = Date.now();
-    setAwayMs(lastActive && lastActive < now ? now - lastActive : 0);
-    const { world: advanced, events } = catchUp(baseWorld, now);
+    const wallElapsed = lastActive && lastActive < now ? now - lastActive : 0;
+    setAwayMs(wallElapsed);
+    const gameTarget = gameTargetAfterWallElapsed(baseWorld, wallElapsed);
+    const { world: advanced, events } = catchUp(baseWorld, gameTarget);
     const merged = mergeDispatches(advanced, prevDispatches, events);
     setWorld(advanced);
     setDispatches(merged);
+    lastActiveRef.current = now;
+    lastWallRef.current = now;
     await persist(advanced, merged);
   };
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [storedWorld, storedDispatches, lastActive, storedScenarioId, storedReadState] =
-        await Promise.all([
-        loadWorld(),
-        loadDispatches(),
-        loadLastActiveMs(),
-        loadScenarioId(),
-        loadDispatchReadState(),
-      ]);
-      if (cancelled) return;
+      try {
+        const [storedWorld, storedDispatches, lastActive, storedScenarioId, storedReadState] =
+          await Promise.all([
+            loadWorld(),
+            loadDispatches(),
+            loadLastActiveMs(),
+            loadScenarioId(),
+            loadDispatchReadState(),
+          ]);
+        if (cancelled) return;
 
-      if (storedReadState !== null) {
-        setDispatchReadState(storedReadState);
+        if (storedReadState !== null) {
+          setDispatchReadState(storedReadState);
+        }
+
+        const hasStoredWorld = storedWorld !== null;
+        const id = resolveScenarioId(storedScenarioId, hasStoredWorld);
+        setScenarioId(id);
+        lastActiveRef.current = lastActive;
+        setHasSavedCampaign(hasStoredWorld);
+        setSessionPhase('menu');
+
+        if (hasStoredWorld) {
+          const worldMatchesScenario = storedWorld.scenarioId === id;
+          if (worldMatchesScenario) {
+            setWorld(storedWorld);
+            setDispatches(storedDispatches);
+          } else {
+            const fresh = createWorldForScenario(id);
+            setWorld(fresh);
+            setDispatches([]);
+            setHasSavedCampaign(false);
+            showToast('Campaign scenario changed — dispatch history was reset.', 'info');
+          }
+        }
+      } catch {
+        if (cancelled) return;
+        setScenarioId(FIRST_TIME_SCENARIO_ID);
+        setHasSavedCampaign(false);
+        setSessionPhase('menu');
+      } finally {
+        if (!cancelled) setReady(true);
       }
-
-      const hasStoredWorld = storedWorld !== null;
-      const id = resolveScenarioId(storedScenarioId, hasStoredWorld);
-      setScenarioId(id);
-
-      const worldMatchesScenario = hasStoredWorld && storedWorld!.scenarioId === id;
-      const baseWorld = worldMatchesScenario ? storedWorld! : createWorldForScenario(id);
-      const baseDispatches = worldMatchesScenario ? storedDispatches : [];
-
-      if (!hasStoredWorld) {
-        await saveScenarioId(id);
-      }
-
-      await applyCatchUp(baseWorld, baseDispatches, worldMatchesScenario ? lastActive : null);
-      if (!cancelled) setReady(true);
     })();
     return () => {
       cancelled = true;
@@ -361,44 +399,51 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || sessionPhase !== 'playing') return;
 
     const onAppState = async (state: AppStateStatus) => {
       if (state !== 'active') return;
+      if (sessionPhaseRef.current !== 'playing') return;
       const [storedWorld, storedDispatches, lastActive] = await Promise.all([
         loadWorld(),
         loadDispatches(),
         loadLastActiveMs(),
       ]);
-      await applyCatchUp(storedWorld ?? world, storedDispatches, lastActive);
+      await applyCatchUp(storedWorld ?? worldRef.current, storedDispatches, lastActive);
     };
 
     const sub = AppState.addEventListener('change', onAppState);
     return () => sub.remove();
-  }, [ready, world]);
+  }, [ready, sessionPhase]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || sessionPhase !== 'playing') return;
 
     const onTick = () => {
       const now = Date.now();
       setWallNowMs(now);
 
       const current = worldRef.current;
-      const next = nextEventMs(current);
-      if (next === null || next > now) return;
+      const elapsed = now - lastWallRef.current;
+      lastWallRef.current = now;
+      const gameTarget = gameTargetAfterWallElapsed(current, elapsed);
+      if (gameTarget <= current.nowMs) return;
 
-      const { world: advanced, events } = catchUp(current, now);
+      const { world: advanced, events } = catchUp(current, gameTarget);
+      if (advanced.nowMs === current.nowMs && events.length === 0) return;
       const merged = mergeDispatches(advanced, dispatchesRef.current, events);
       setWorld(advanced);
-      setDispatches(merged);
-      void persist(advanced, merged);
+      if (events.length > 0) {
+        setDispatches(merged);
+        void persist(advanced, merged);
+      }
     };
 
     onTick();
-    const id = setInterval(onTick, hasPendingEvents ? 1000 : 60_000);
+    const fastClock = hasPendingEvents || getTimeMultiplier(worldRef.current) > 1;
+    const id = setInterval(onTick, fastClock ? 1000 : 60_000);
     return () => clearInterval(id);
-  }, [ready, hasPendingEvents]);
+  }, [ready, sessionPhase, hasPendingEvents]);
 
   const confirmMove = async (
     unitId: string,
@@ -457,9 +502,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     await persist(result.world, merged);
   };
 
-  const loadScenario = async (id: DevScenarioId) => {
-    if (!__DEV__) return;
-    const fresh = createWorldForScenario(id);
+  const beginWorld = async (id: ScenarioId, fresh: WorldState) => {
+    const now = Date.now();
     setScenarioId(id);
     setAwayMs(0);
     setDispatches([]);
@@ -468,13 +512,55 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setLastDismissedBeat(null);
     setBannerCollapsedBeat(null);
     setWorld(fresh);
+    setHasSavedCampaign(true);
+    lastActiveRef.current = now;
+    lastWallRef.current = now;
+    setSessionPhase('playing');
     await clearCampaignStorage();
     await Promise.all([
       saveScenarioId(id),
       saveWorld(fresh),
       saveDispatches([]),
-      saveLastActiveMs(Date.now()),
+      saveLastActiveMs(now),
     ]);
+  };
+
+  const startCampaign = async (id: ScenarioId) => {
+    await beginWorld(id, createWorldForScenario(id));
+  };
+
+  const continueCampaign = async () => {
+    if (!hasSavedCampaign) return;
+    await applyCatchUp(worldRef.current, dispatchesRef.current, lastActiveRef.current);
+    setSessionPhase('playing');
+  };
+
+  const returnToMenu = async () => {
+    await persist(worldRef.current, dispatchesRef.current);
+    lastActiveRef.current = Date.now();
+    setHasSavedCampaign(true);
+    setSessionPhase('menu');
+  };
+
+  const resetSavedCampaign = async () => {
+    await clearCampaignStorage();
+    const placeholder = createWorldForScenario(FIRST_TIME_SCENARIO_ID);
+    setScenarioId(FIRST_TIME_SCENARIO_ID);
+    setWorld(placeholder);
+    setDispatches([]);
+    setAwayMs(0);
+    setDispatchReadState(DEFAULT_DISPATCH_READ_STATE);
+    setActionFeedback(null);
+    setLastDismissedBeat(null);
+    setBannerCollapsedBeat(null);
+    setHasSavedCampaign(false);
+    lastActiveRef.current = null;
+    setSessionPhase('menu');
+  };
+
+  const loadScenario = async (id: DevScenarioId) => {
+    if (!__DEV__) return;
+    await beginWorld(id, createWorldForScenario(id));
   };
 
   const proposeAlliance = async (targetFactionId: string) => {
@@ -548,6 +634,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     <GameContext.Provider
       value={{
         ready,
+        sessionPhase,
+        hasSavedCampaign,
         world,
         dispatches,
         awayMs,
@@ -578,6 +666,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         issueUpgradeInfra: issueUpgrade,
         issueInfluence,
         skipNext,
+        startCampaign,
+        continueCampaign,
+        returnToMenu,
+        resetSavedCampaign,
         loadScenario,
         proposeAlliance,
         breakAlliance,

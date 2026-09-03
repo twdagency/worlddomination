@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   advanceTo,
   areAllied,
-  breakAlliance,
   decideOrders,
   formAlliance,
   recordAlliedObservations,

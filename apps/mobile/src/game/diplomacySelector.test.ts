@@ -6,7 +6,7 @@ import {
   recordConquerorOnTerritoryCapture,
   syncCountriesFromFactions,
 } from 'sim';
-import { diplomacyTargetFactionIds, diplomacyTargetFactions } from './diplomacySelector';
+import { diplomacyTargetCountryIds, diplomacyTargetCountries, diplomacyTargetFactionIds, diplomacyTargetFactions } from './diplomacySelector';
 import { selectDiplomacyTargets } from './countrySelector';
 
 const START_MS = 1_700_000_000_000;
@@ -42,6 +42,7 @@ describe('diplomacySelector', () => {
     const world = createTutorialWorld(START_MS);
     const lonePlayer = {
       ...world,
+      countries: undefined,
       factions: {
         'faction-britain-tutorial': world.factions['faction-britain-tutorial']!,
       },
@@ -62,5 +63,13 @@ describe('diplomacySelector', () => {
 
     expect(diplomacyTargetFactionIds(defeated)).not.toContain(ROME);
     expect(selectDiplomacyTargets(defeated).some((country) => country.id === ROME)).toBe(false);
+  });
+
+  it('diplomacyTargetCountries matches deprecated faction alias on migrated worlds', () => {
+    const world = migrate(createSprint4World(START_MS));
+    expect(diplomacyTargetCountries(world)).toEqual(diplomacyTargetFactions(world));
+    expect(diplomacyTargetCountryIds(world).sort()).toEqual(
+      diplomacyTargetFactionIds(world).sort(),
+    );
   });
 });

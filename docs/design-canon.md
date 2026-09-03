@@ -145,7 +145,7 @@ Passive baseline: Influence shifts continuously based on world conditions — pr
 Active accumulation: Specific influence actions are the primary lever. Diplomatic envoys, cultural exchanges, subsidized local factions, propaganda campaigns.
 Triggers (threshold-based actions):
 
-30+ influence: Fund factions within the city (cause unrest).
+30+ influence: Diplomatic pressure and intelligence gather. (Canon unrest / “fund factions” is deferred — not implemented.)
 50+ influence: Demand tribute from the city's owner.
 70+ influence: Attempt a coup that flips the city to your control.
 100% influence: City defects to you peacefully without military action.
@@ -350,7 +350,7 @@ Each continent expansion includes geography, era-appropriate leaders, regional r
 Scenarios
 Launch scenario set:
 
-Tutorial: small geography, 3-5 leaders, six-beat scripted onboarding.
+Tutorial: small geography, 3-5 leaders, seven-beat scripted onboarding.
 Punic Wars: ancient Mediterranean focus, Carthage vs. Rome.
 Crusader Europe: medieval era, religious conflict, European powers vs. Levantine kingdoms.
 Napoleon's Europe: industrial era, France vs. coalition.
@@ -448,7 +448,7 @@ No "silent" actions.
 No "navigation-required" feedback.
 No "ephemeral-only" feedback.
 First-session path
-Tutorial campaign with six-beat scripted onboarding, graduating to Europe sandbox.
+Tutorial campaign with seven-beat scripted onboarding, graduating to Europe sandbox.
 
 Six beats in dependency order:
 
@@ -559,3 +559,16 @@ Sprint 17+: Naval depth, air depth, multi-step diplomacy depth, content expansio
 Each sprint produces a playable intermediate version. Specific sprint scoping happens at the start of each sprint, informed by current state and play data.
 
 Canon locked through Layer 5. Future modifications happen through deliberate canon-update conversations, not silent drift during implementation sprints. When implementation surfaces a canonical question we didn't anticipate, the answer is "stop and resolve at canon level," not "decide in code."
+
+---
+
+## Version notes
+
+### Sprint 10 Phase 3 — Country canonical type
+
+- **`Country`** is the canonical political-entity type (economic ledger + diplomatic identity).
+- **Economic fields** (`funding`, `manpower`, `manpowerCap`, …) are required on `Country`; diplomatic fields (`name`, `capitalTerritoryId`, `defeated`, …) are optional until migration populates them.
+- **`Faction`** is a deprecated type alias for `Country`; existing imports continue to typecheck.
+- **`world.countries`** is the preferred runtime store after migration; **`world.factions`** remains a synced mirror field through Sprint 10 for backward compatibility (removed Sprint 11+).
+- **Country IDs** use legacy opaque slug format (`faction-player`, `faction-rome`, …) for save compatibility; slug rename deferred to Sprint 11+.
+- Dispatch event payloads still use `factionId` field names (values are country IDs); field rename deferred to Sprint 11+.

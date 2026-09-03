@@ -3,14 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { DashboardDispatchDigestItem } from '../../game/playerView';
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';
+import { dispatchAccent } from '../../game/dispatchAccent';
 import { formatDateTime } from '../../utils/format';
-
-function dispatchAccent(kind: string): string {
-  if (kind === 'battle') return terminal.danger;
-  if (kind === 'withdrawal') return terminal.warning;
-  if (kind === 'secured') return terminal.accent;
-  return terminal.text;
-}
 
 interface DispatchesCardProps {
   items: DashboardDispatchDigestItem[];

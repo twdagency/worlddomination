@@ -119,8 +119,9 @@ describe('tutorial beat sequence invariants (Sprint 8.5)', () => {
     const progressed = evaluateBeatProgression(resolved.world, resolved.events);
 
     expect(progressed.world.tutorial?.completedBeats).toContain('governance');
-    expect(progressed.world.tutorial?.completedBeats).toContain('handoff');
-    expect(progressed.events.some((event) => event.kind === 'tutorialHandoffReady')).toBe(true);
+    expect(progressed.world.tutorial?.currentBeat).toBe('influence');
+    expect(progressed.world.tutorial?.completedBeats).not.toContain('handoff');
+    expect(progressed.events.some((event) => event.kind === 'tutorialHandoffReady')).toBe(false);
   });
 
   it('does not accrue income for a territory lost to capture in the same tick', () => {

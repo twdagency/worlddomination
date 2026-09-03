@@ -127,13 +127,14 @@ describe('Sprint 7a cold-play protocol (automated)', () => {
   describe('createSprint5World', () => {
     it('loads with dashboard and faction identity across Balkan geography', () => {
       const world = createSprint5World(START_MS);
-      const { events, world: advanced } = advanceTo(world, START_MS + TWENTY_FOUR_HOURS_MS);
-      const empire = getDashboardEmpireSummary(advanced);
-      const playerId = resolvePlayerFactionId(advanced)!;
-      const belgrade = getFactionIdentity(advanced, playerId);
+      const playerId = resolvePlayerFactionId(world)!;
+      const empire = getDashboardEmpireSummary(world);
+      const belgrade = getFactionIdentity(world, playerId);
 
       expect(empire?.territoryNames).toContain('Belgrade');
       expect(belgrade.territoryNames).toContain('Belgrade');
+
+      const { events, world: advanced } = advanceTo(world, START_MS + TWENTY_FOUR_HOURS_MS);
       expect(getDashboardCatchUpSummary(advanced, events, TWENTY_FOUR_HOURS_MS).mode).toBe('away');
     });
 

@@ -23,6 +23,29 @@ describe('dilemmas', () => {
     expect(second.pendingDilemmas).toHaveLength(1);
   });
 
+  it('does not enqueue a dilemma for a defeated country', () => {
+    const base = createTutorialWorld(START_MS);
+    const player = base.countries![PLAYER_TUTORIAL_FACTION_ID]!;
+    const defeated = {
+      ...base,
+      countries: {
+        ...base.countries,
+        [PLAYER_TUTORIAL_FACTION_ID]: { ...player, defeated: true },
+      },
+      factions: {
+        ...base.factions,
+        [PLAYER_TUTORIAL_FACTION_ID]: { ...base.factions[PLAYER_TUTORIAL_FACTION_ID]!, defeated: true },
+      },
+    };
+    const next = enqueuePendingDilemma(
+      defeated,
+      'foreign-rule',
+      PLAYER_TUTORIAL_FACTION_ID,
+      START_MS,
+    );
+    expect(next.pendingDilemmas ?? []).toHaveLength(0);
+  });
+
   it('resolveDilemma applies conciliation gold and standing consequences', () => {
     const world = enqueuePendingDilemma(
       createTutorialWorld(START_MS),
@@ -178,7 +201,7 @@ describe('dilemmas', () => {
     );
     const progressed = evaluateBeatProgression(world, events);
     expect(progressed.world.tutorial?.completedBeats).toContain('governance');
-    expect(progressed.world.tutorial?.completedBeats).toContain('handoff');
-    expect(progressed.world.tutorial?.currentBeat).toBeNull();
+    expect(progressed.world.tutorial?.currentBeat).toBe('influence');
+    expect(progressed.world.tutorial?.completedBeats).not.toContain('handoff');
   });
 });

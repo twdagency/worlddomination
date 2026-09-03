@@ -1,10 +1,50 @@
-import type { Id, IntelSource, Millis, Order, OrderIntent, ResourceId, SimEvent, WorldState } from './types';
-import { findCountry } from './country';
-import { formatInfluenceOrderRejectedMessage } from './influenceAccelerators';
-import { formatDiplomaticPressureProposalLabel } from './influenceActions';
+import type { Id, Millis, Order, OrderIntent, ResourceId, SimEvent, WorldState } from './types';
+import { computeBeatId } from './beatId';
+import { isTreatyParty } from './diplomaticEvents';
+import {
+  formatAllianceBrokenLine,
+  formatAllianceDeclinedLine,
+  formatAllianceFormedLine,
+  formatAllianceProposedLine,
+  formatAllyArrivalPeacefulLine,
+  formatBuildStartedLine,
+  formatCapitalRelocatedLine,
+  formatCountryDefeatedLine,
+  formatVictoryLine,
+  formatCoupFailureLine,
+  formatCoupSuccessLine,
+  formatCulturalCampaignLine,
+  formatDefectionOccurredLine,
+  formatDiplomaticMissionExpiredLine,
+  formatDiplomaticMissionExpelledLine,
+  formatDiplomaticMissionLine,
+  formatDiplomaticPressureLine,
+  formatDispatchCancelledByAllianceLine,
+  formatInfraUpgradedLine,
+  formatIntelReportLine,
+  formatIntentArrivalLine,
+  formatIntentDepartureLine,
+  formatOrderRedirectedToAllyLine,
+  formatSubversionAppliedLine,
+  formatSubversionDiscoveredLine,
+  formatTreatyDeclinedLine,
+  formatTreatyExpiredLine,
+  formatTreatyFormedLine,
+  formatTreatyProposedLine,
+  formatTributeAccruedLine,
+  formatTributeAutoEndedLine,
+  formatTributeMajorRebellionLine,
+  formatTributeMinorRebellionLine,
+  formatTributeStartedLine,
+  formatTributeVoluntarilyEndedLine,
+} from './diplomaticDispatchLines';
+import { factionName } from './dispatchFormatHelpers';
+import {
+  formatDiplomaticPressureProposalLabel,
+  formatInfluenceOrderRejectedMessage,
+} from './influenceOrderMessages';
 import { formatOrderRejectedMessage } from './movement';
 import { isTerritoryVisible } from './visibility';
-import { isTreatyParty, otherParty } from './diplomaticDispatch';
 import {
   formatBattleNarrative,
   formatProductionNarrative,
@@ -12,22 +52,24 @@ import {
   formatWithdrawalNarrative,
 } from './reports';
 
-const ACTIONABLE_KINDS = new Set<Order['kind']>(['move', 'build', 'upgradeInfra']);
+export { computeBeatId } from './beatId';
+export {
+  formatAllianceBrokenLine,
+  formatAllianceDeclinedLine,
+  formatAllianceFormedLine,
+  formatAllianceProposedLine,
+  formatBuildStartedLine,
+  formatInfraUpgradedLine,
+  formatIntelReportLine,
+  formatIntentArrivalLine,
+  formatIntentDepartureLine,
+  formatTreatyDeclinedLine,
+  formatTreatyExpiredLine,
+  formatTreatyFormedLine,
+  formatTreatyProposedLine,
+} from './diplomaticDispatchLines';
 
-/** Deterministic beat id from faction + AI decision tick + intel source (seed-safe). */
-export function computeBeatId(
-  factionId: Id,
-  decisionTickMs: Millis,
-  source: IntelSource = 'direct',
-): string {
-  let hash = 2_166_136_261;
-  const input = `${factionId}:${decisionTickMs}:${source}`;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 1_677_761_9);
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
+const ACTIONABLE_KINDS = new Set<Order['kind']>(['move', 'build', 'upgradeInfra']);
 
 export function intentFromMoveStance(
   stance: 'assault' | 'secure' | 'hold',
@@ -54,303 +96,6 @@ export function assertActionableOrderTagged(order: Order): void {
   if (tagged.decisionTickMs === undefined) {
     throw new Error(`Order missing required decisionTickMs: ${order.kind}`);
   }
-}
-
-function factionName(world: WorldState, factionId: Id): string {
-  const leaderId = world.factions[factionId]?.leaderId;
-  return world.leaders[leaderId ?? '']?.name ?? factionId;
-}
-
-function territoryName(world: WorldState, territoryId: Id): string {
-  return world.territories[territoryId]?.name ?? territoryId;
-}
-
-/** Territory name with owning country (or unclaimed) for dispatch readability. */
-function territoryLabelWithOwner(world: WorldState, territoryId: Id): string {
-  const name = territoryName(world, territoryId);
-  const ownerId = world.territories[territoryId]?.ownerId;
-  if (!ownerId) return `${name} (unclaimed)`;
-  const country = findCountry(world, ownerId);
-  if (country) return `${name} (${country.name})`;
-  const leaderId = world.factions[ownerId]?.leaderId;
-  const region = world.leaders[leaderId ?? '']?.region;
-  if (region) return `${name} (${region})`;
-  return name;
-}
-
-function isPlayerFaction(world: WorldState, factionId: Id): boolean {
-  return world.factions[factionId]?.isPlayer === true;
-}
-
-function subject(world: WorldState, factionId: Id): string {
-  return isPlayerFaction(world, factionId) ? 'Your' : factionName(world, factionId);
-}
-
-/** Mechanical intent phrasing for move departures. */
-export function formatIntentDepartureLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'departure' }>,
-): string {
-  const who = subject(world, event.ownerId);
-  const from = territoryLabelWithOwner(world, event.fromTerritoryId);
-  const to = territoryLabelWithOwner(world, event.toTerritoryId);
-  const prefix = isPlayerFaction(world, event.ownerId) ? 'DEPARTURE' : 'INTEL';
-
-  switch (event.intent) {
-    case 'attack':
-      return `${prefix} — ${who} forces advancing from ${from} toward ${to}`;
-    case 'defend':
-      return `${prefix} — ${who} forces repositioning to ${to}`;
-    case 'expand':
-      return `${prefix} — ${who} forces moving to claim ${to}`;
-    case 'build':
-      return `${prefix} — ${who} forces redeploying to ${to}`;
-  }
-}
-
-export function formatIntentArrivalLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'arrival' }>,
-): string {
-  const who = subject(world, event.ownerId);
-  const place = territoryLabelWithOwner(world, event.territoryId);
-  const prefix = isPlayerFaction(world, event.ownerId) ? 'ARRIVAL' : 'INTEL';
-
-  switch (event.intent) {
-    case 'attack':
-      return `${prefix} — ${who} forces arrived at ${place} — contact expected`;
-    case 'defend':
-      return `${prefix} — ${who} forces arrived at ${place}`;
-    case 'expand':
-      return `${prefix} — ${who} forces arrived to claim ${place}`;
-    case 'build':
-      return `${prefix} — ${who} forces arrived at ${place}`;
-  }
-}
-
-export function formatBuildStartedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'buildStarted' }>,
-): string {
-  const place = territoryLabelWithOwner(world, event.territoryId);
-  const who = subject(world, event.factionId);
-  const prefix = isPlayerFaction(world, event.factionId) ? 'PRODUCTION' : 'INTEL';
-  return `${prefix} — Construction begun at ${place} (${who})`;
-}
-
-export function formatInfraUpgradedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'infraUpgraded' }>,
-): string {
-  const place = territoryLabelWithOwner(world, event.territoryId);
-  const who = subject(world, event.factionId);
-  const prefix = isPlayerFaction(world, event.factionId) ? 'BUILD' : 'INTEL';
-  return `${prefix} — Infrastructure upgraded at ${place} (${who})`;
-}
-
-/** Mechanical scout / allied / treaty phrasing — predictable forms for cold-read tests. */
-export function formatIntelReportLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'intelReport' }>,
-): string {
-  const place = territoryLabelWithOwner(world, event.territoryId);
-  const prefix = 'INTEL';
-
-  if (event.source === 'allied') {
-    const ally = factionName(world, event.observerFaction);
-    const who = event.subjectFactionId
-      ? factionName(world, event.subjectFactionId)
-      : 'enemy';
-    switch (event.variant) {
-      case 'construction':
-        return `${prefix} — ${ally}'s forces report construction at ${place}`;
-      case 'massing':
-        return `${prefix} — ${ally}'s forces report ${who} forces massing at ${place}`;
-      case 'activity':
-        return `${prefix} — ${ally}'s forces report ${who} activity at ${place}`;
-    }
-  }
-
-  if (event.source === 'treaty') {
-    const who = event.subjectFactionId
-      ? factionName(world, event.subjectFactionId)
-      : 'enemy';
-    const descriptor = event.garrisonDescriptor ?? 'activity';
-    if (event.variant === 'massing' || event.variant === 'construction') {
-      return `${prefix} — Per treaty, ${who} activity at ${place}: ${descriptor}`;
-    }
-    return `${prefix} — Per treaty, ${who} garrison at ${place}: ${descriptor}`;
-  }
-
-  switch (event.variant) {
-    case 'construction':
-      return `${prefix} — Scouts report construction at ${place}`;
-    case 'massing': {
-      const who = event.subjectFactionId
-        ? factionName(world, event.subjectFactionId)
-        : 'enemy';
-      return `${prefix} — Scouts report ${who} forces massing at ${place}`;
-    }
-    case 'activity': {
-      const who = event.subjectFactionId
-        ? factionName(world, event.subjectFactionId)
-        : 'enemy';
-      return `${prefix} — Scouts report ${who} activity at ${place}`;
-    }
-  }
-}
-
-export function formatAllianceFormedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'allianceFormed' }>,
-  viewingFaction?: Id,
-): string {
-  const [a, b] = event.parties;
-  if (viewingFaction && (viewingFaction === a || viewingFaction === b)) {
-    const other = otherParty(event.parties, viewingFaction);
-    return `DIPLOMACY — Alliance formed with ${factionName(world, other)}.`;
-  }
-  return `DIPLOMACY — ${factionName(world, a)} and ${factionName(world, b)} have formed an alliance.`;
-}
-
-export function formatAllianceBrokenLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'allianceBroken' }>,
-  viewingFaction?: Id,
-): string {
-  const breaker = factionName(world, event.breaker);
-  const betrayed = factionName(world, event.betrayed);
-  if (viewingFaction === event.betrayed) {
-    return `DIPLOMACY — ${breaker} has broken our alliance.`;
-  }
-  return `DIPLOMACY — ${breaker} has broken alliance with ${betrayed}.`;
-}
-
-export function formatTreatyFormedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'treatyFormed' }>,
-  viewingFaction?: Id,
-): string {
-  const scopeCount = event.territoryIds.length;
-  const hours = Math.round((event.expiresAt - event.at) / 3_600_000);
-  if (viewingFaction && (viewingFaction === event.parties[0] || viewingFaction === event.parties[1])) {
-    const other = otherParty(event.parties, viewingFaction);
-    return `DIPLOMACY — Treaty formed with ${factionName(world, other)} covering ${scopeCount} ${scopeCount === 1 ? 'territory' : 'territories'} until +${hours}h.`;
-  }
-  return `DIPLOMACY — Treaty formed (${scopeCount} territories, +${hours}h).`;
-}
-
-export function formatTreatyExpiredLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'treatyExpired' }>,
-  viewingFaction?: Id,
-): string {
-  if (viewingFaction && (viewingFaction === event.parties[0] || viewingFaction === event.parties[1])) {
-    const other = otherParty(event.parties, viewingFaction);
-    return `DIPLOMACY — Treaty with ${factionName(world, other)} has expired.`;
-  }
-  return `DIPLOMACY — Treaty has expired.`;
-}
-
-function hoursUntil(expiresAt: Millis, at: Millis): number {
-  return Math.max(1, Math.round((expiresAt - at) / 3_600_000));
-}
-
-function formatAllyArrivalPeacefulLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'allyArrivalPeaceful' }>,
-): string {
-  const allyName = factionName(world, event.allyFactionId);
-  const place = territoryLabelWithOwner(world, event.territoryId);
-  const origin = territoryLabelWithOwner(world, event.fromTerritoryId);
-  return `DIPLOMACY — Forces from ${allyName} arrived at ${place} — peaceful, returned to ${origin}.`;
-}
-
-function formatDispatchCancelledByAllianceLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'dispatchCancelledByAlliance' }>,
-): string {
-  const allyName = factionName(world, event.allyFactionId);
-  return `DIPLOMACY — Order cancelled — alliance with ${allyName} formed mid-transit.`;
-}
-
-function formatOrderRedirectedToAllyLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'orderRedirectedToAlly' }>,
-): string {
-  const allyName = factionName(world, event.newOwnerId);
-  const place = territoryLabelWithOwner(world, event.territoryId);
-  return `DIPLOMACY — Assault cancelled — ${place} now held by allied ${allyName}.`;
-}
-
-export function formatAllianceProposedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'allianceProposed' }>,
-): string {
-  const proposer = factionName(world, event.from);
-  const hours = hoursUntil(event.expiresAt, event.at);
-  return `DIPLOMACY — ${proposer} proposes alliance. (Expires in ${hours}h.)`;
-}
-
-export function formatAllianceDeclinedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'allianceDeclined' }>,
-  viewingFaction?: Id,
-): string {
-  const other = event.declinedBy === event.from ? event.to : event.from;
-  const otherName = factionName(world, other);
-  if (viewingFaction === event.declinedBy) {
-    return `DIPLOMACY — You declined alliance with ${otherName}.`;
-  }
-  return `DIPLOMACY — ${factionName(world, event.declinedBy)} declined alliance with ${otherName}.`;
-}
-
-export function formatTreatyProposedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'treatyProposed' }>,
-): string {
-  const proposer = factionName(world, event.from);
-  const place = territoryLabelWithOwner(world, event.territoryIds[0] ?? '');
-  const hours = hoursUntil(event.expiresAt, event.at);
-  return `DIPLOMACY — ${proposer} proposes intel treaty on ${place}. (Expires in ${hours}h.)`;
-}
-
-export function formatTreatyDeclinedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'treatyDeclined' }>,
-  viewingFaction?: Id,
-): string {
-  const other = event.declinedBy === event.from ? event.to : event.from;
-  const otherName = factionName(world, other);
-  if (viewingFaction === event.declinedBy) {
-    return `DIPLOMACY — You declined treaty with ${otherName}.`;
-  }
-  return `DIPLOMACY — ${factionName(world, event.declinedBy)} declined treaty with ${otherName}.`;
-}
-
-export function formatCapitalRelocatedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'capitalRelocated' }>,
-): string {
-  const country = findCountry(world, event.countryId);
-  const countryLabel = country?.name ?? event.countryId;
-  const oldName = territoryLabelWithOwner(world, event.oldCapitalTerritoryId);
-  const newName = territoryLabelWithOwner(world, event.newCapitalTerritoryId);
-  return `Capital of ${countryLabel} relocated from ${oldName} to ${newName}.`;
-}
-
-export function formatCountryDefeatedLine(
-  world: WorldState,
-  event: Extract<SimEvent, { kind: 'countryDefeated' }>,
-): string {
-  const country = findCountry(world, event.countryId);
-  const countryLabel = country?.name ?? event.countryId;
-  const leader = world.factions[event.countryId]?.leaderId
-    ? (world.leaders[world.factions[event.countryId]!.leaderId]?.name ??
-      factionName(world, event.countryId))
-    : factionName(world, event.countryId);
-  const finalCity = territoryLabelWithOwner(world, event.finalTerritoryId);
-  return `${countryLabel} has fallen. ${leader}'s reign ends at ${finalCity}.`;
 }
 
 export interface DispatchFeedItem {
@@ -476,45 +221,45 @@ export function dispatchLineForEvent(
       return `REJECTED — ${formatter(event.reason)}`;
     }
     case 'diplomaticMissionStarted':
-      return `DIPLOMATIC MISSION — envoy to ${territoryName(world, event.targetCityId)} until day ${Math.ceil((event.expiresAt - world.startMs) / 86_400_000)}`;
+      return formatDiplomaticMissionLine(world, event);
     case 'diplomaticMissionExpired':
-      return `DIPLOMATIC MISSION — envoy recalled from ${territoryName(world, event.targetCityId)}`;
+      return formatDiplomaticMissionExpiredLine(world, event);
     case 'diplomaticMissionExpelled':
-      return `DIPLOMATIC MISSION — envoy expelled from ${territoryName(world, event.targetCityId)} (${event.reason})`;
+      return formatDiplomaticMissionExpelledLine(world, event);
     case 'culturalCampaignApplied':
-      return `CULTURAL CAMPAIGN — +${event.influenceDelta} influence in ${territoryName(world, event.targetCityId)}`;
+      return formatCulturalCampaignLine(world, event);
     case 'subversionApplied':
-      return `SUBVERSION — +${event.influenceDelta} covert influence in ${territoryName(world, event.targetCityId)}`;
+      return formatSubversionAppliedLine(world, event);
     case 'subversionDiscovered':
-      return `SUBVERSION EXPOSED — ${factionName(world, event.ownerId)} caught influencing ${factionName(world, event.targetCountryId)}`;
+      return formatSubversionDiscoveredLine(world, event);
     case 'diplomaticPressureApplied':
-      return `DIPLOMATIC PRESSURE — ${factionName(world, event.actorId)} forced ${factionName(world, event.targetCountryId)} to accept ${formatDiplomaticPressureProposalLabel(event.proposalKind)}`;
+      return formatDiplomaticPressureLine(
+        world,
+        event,
+        formatDiplomaticPressureProposalLabel(event.proposalKind),
+      );
     case 'tributeStarted':
-      return `TRIBUTE — extraction begins in ${territoryName(world, event.targetCityId)}`;
+      return formatTributeStartedLine(world, event);
     case 'tributeAccrued':
-      return `TRIBUTE INCOME — +${Math.round(event.goldTransferred)} gold from ${territoryName(world, event.targetCityId)}`;
+      return formatTributeAccruedLine(world, event);
     case 'tributeMinorRebellion':
-      return `TRIBUTE UNREST — resentment rising in ${territoryName(world, event.targetCityId)}`;
+      return formatTributeMinorRebellionLine(world, event);
     case 'tributeMajorRebellion':
-      return `TRIBUTE REBELLION — ${territoryName(world, event.targetCityId)} revolts against ${factionName(world, event.actorId)}`;
+      return formatTributeMajorRebellionLine(world, event);
     case 'tributeAutoEnded':
-      return `TRIBUTE ENDED — extraction in ${territoryName(world, event.targetCityId)} (${event.reason})`;
+      return formatTributeAutoEndedLine(world, event);
     case 'tributeVoluntarilyEnded':
-      return `TRIBUTE ENDED — ${factionName(world, event.actorId)} withdrew extraction from ${territoryName(world, event.targetCityId)}`;
+      return formatTributeVoluntarilyEndedLine(world, event);
     case 'coupSuccess':
-      return `COUP SUCCEEDED — ${factionName(world, event.actorId)} seized ${territoryName(world, event.targetCityId)} from ${factionName(world, event.targetCountryId)}`;
+      return formatCoupSuccessLine(world, event);
     case 'coupFailure':
-      return `COUP FAILED — ${factionName(world, event.actorId)}'s influence collapsed in ${territoryName(world, event.targetCityId)}`;
-    case 'defectionOccurred': {
-      const city = territoryName(world, event.targetCityId);
-      const actor = factionName(world, event.actorId);
-      const targetCountry = factionName(world, event.targetCountryId);
-      const leader =
-        world.leaders[event.previousLeaderId]?.name ?? factionName(world, event.targetCountryId);
-      return `City defected: ${city} chose ${actor} over ${targetCountry}. ${leader}'s influence wanes.`;
-    }
+      return formatCoupFailureLine(world, event);
+    case 'defectionOccurred':
+      return formatDefectionOccurredLine(world, event);
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
+    case 'tutorialHandoffReady':
+      return 'Tutorial complete — continue to the full campaign when ready.';
     case 'allyArrivalPeaceful':
       return formatAllyArrivalPeacefulLine(world, event);
     case 'dispatchCancelledByAlliance':
@@ -525,6 +270,8 @@ export function dispatchLineForEvent(
       return formatCapitalRelocatedLine(world, event);
     case 'countryDefeated':
       return formatCountryDefeatedLine(world, event);
+    case 'victory':
+      return formatVictoryLine(world, event);
     default:
       return `${event.kind} event`;
   }
@@ -676,6 +423,7 @@ export function isDispatchVisibleToFaction(
     case 'allianceBroken':
     case 'capitalRelocated':
     case 'countryDefeated':
+    case 'victory':
       return true;
 
     case 'treatyFormed':
@@ -756,6 +504,10 @@ export function isDispatchVisibleToFaction(
     case 'coupFailure':
     case 'defectionOccurred':
       return true;
+
+    case 'tutorialHandoffReady':
+      // Synthetic beat-progression signal — surfaced by the tutorial banner, not the feed.
+      return false;
 
     default:
       return true;

@@ -5,20 +5,8 @@ import { BattleDetailCard } from '../BattleDetailCard';
 import { IntelSourceHint } from '../IntelSourceHint';
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';
+import { dispatchAccent } from '../../game/dispatchAccent';
 import { formatDateTime } from '../../utils/format';
-import { isDispatchDetailEvent } from '../../game/actions';
-
-function dispatchAccent(kind: string): string {
-  if (kind === 'battle') return terminal.danger;
-  if (kind === 'withdrawal') return terminal.warning;
-  if (kind === 'secured') return terminal.accent;
-  if (kind === 'income' || kind === 'production' || kind === 'buildStarted' || kind === 'infraUpgraded') {
-    return terminal.accent;
-  }
-  if (kind === 'intelReport') return terminal.text;
-  if (kind === 'buildBlocked') return terminal.warning;
-  return terminal.text;
-}
 
 interface DispatchFeedRowProps {
   item: DispatchFeedItem;
@@ -37,7 +25,6 @@ export function DispatchFeedRow({
   onPress,
   testID,
 }: DispatchFeedRowProps) {
-  const showDetail = isDispatchDetailEvent(item.event) && item.event.kind === 'battle';
   const content = (
     <TerminalCard style={highlighted ? styles.highlighted : undefined}>
       {item.header ? <Text style={styles.beatHeader}>{item.header}</Text> : null}

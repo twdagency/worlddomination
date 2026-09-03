@@ -13,7 +13,6 @@ import {
   COUP_FAILURE_TARGET_REPUTATION_PENALTY,
   COUP_FORTIFICATION_PENALTY_PER_TIER,
   COUP_INFLUENCE_COST_SUCCESS,
-  COUP_INFLUENCE_FLOOR,
   COUP_LOYAL_POSTURE_PENALTY,
   COUP_OPPORTUNIST_POSTURE_BONUS,
   COUP_SUCCESS_TARGET_REPUTATION_PENALTY,
@@ -38,7 +37,6 @@ const BRITAIN = 'faction-britain';
 const PARIS = 'territory-paris';
 const BERLIN = 'territory-berlin';
 const LONDON = 'territory-london';
-const MS_DAY = 86_400_000;
 
 function migrate(world: WorldState): WorldState {
   return ensureWorldMigrations(world, {
@@ -74,7 +72,7 @@ function coupOrder(world: WorldState, targetCityId: string = PARIS) {
 
 function findSeedForOutcome(success: boolean): number {
   for (let seed = 0; seed < 500; seed++) {
-    let world = withInfluence(coupWorld({ rng: { seed } }), 80);
+    const world = withInfluence(coupWorld({ rng: { seed } }), 80);
     const result = applyCoupAttempt(world, PLAYER, PARIS, START_MS);
     const succeeded = result.events.some((event) => event.kind === 'coupSuccess');
     if (succeeded === success) return seed;

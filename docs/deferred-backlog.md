@@ -547,3 +547,80 @@ Canonical pattern: **country display name derives from `leader.region`; faction/
 Example: `faction-britain` led by Philip II renders as "Spain" (Philip's region), not "Britain". Same pattern as Sprint 7c country-led naming ("Rome — led by Caesar"). Document in player-facing glossary / dev onboarding so future agents do not treat ID slugs as display names.
 
 Source: Sprint 8 Phase 9 acceptance + Sprint 4 cold-play Spain naming flag.
+
+## Sprint 10 process note — AI subsystem collection passes
+
+When AI behavior has a **different decision cadence** than existing scoring (e.g. military orders per tick vs. influence orders capped per day), add a **dedicated collection pass** (`collectAiInfluenceOrders`) rather than extending `decideOrders` / `collectAiOrders`. Keeps scoring loops from compounding complexity.
+
+Source: Sprint 10 Phase 0 audit — AI agency is a new tick path, not an extension of `decideOrders`.
+
+## Sprint 10 process note — cycle hub cascade resolution (Phase 1)
+
+Leaf-module extraction from cyclic **hub** modules (`dispatch.ts`, `diplomacy.ts`, …) can collapse **transitive** require cycles beyond the directly targeted pairs. Breaking hub edges removes dependencies that downstream chains relied on — the right small refactor may fix more cycles than explicitly scoped.
+
+Source: Sprint 10 Phase 1 — 12 sim cycles targeted (6 scoped), 0 remaining after `beatId.ts` + `diplomaticPair.ts` extractions.
+
+## Sprint 11+ — consolidate `diplomaticDispatch.ts` re-export barrel
+
+`diplomaticDispatch.ts` is a backward-compat re-export over `diplomaticEvents.ts`. When consumer paths are clear, deprecate the barrel and import `diplomaticEvents` directly.
+
+Source: Sprint 10 Phase 1 cycle hygiene.
+
+## Sprint 11+ — dispatch event payload rename (`factionId` → `countryId`)
+
+Dispatch event payloads and saved AsyncStorage history still use `factionId` field names (IDs are country IDs). Renaming requires save migration and optional event versioning if multiple field renames land together. Pair with slug rename consideration below.
+
+Source: Sprint 10 Phase 3 — deferred per Phase 0 audit.
+
+## Sprint 11+ — country ID slug rename (`faction-*` → `country-*`)
+
+Country IDs remain opaque legacy slugs (`faction-player`, `faction-rome`, …) for save compatibility through Sprint 10. Long-term rename to `country-*` slugs is architecturally cleaner but needs full save + snapshot migration.
+
+Source: Sprint 10 Phase 3 — explicit non-decision; IDs unchanged.
+
+## Sprint 10 Phase 9 tuning watch — intelligence channel-flip gap (Phase 6)
+
+Phase 6 keystone proves intel **changes coup success estimate and coup-vs-accelerator ranking** (dual-arm: strong garrison dissuades, weak garrison encourages). On the **strong-garrison informed arm**, `resolveAiDailyInfluenceChannel` did **not** deterministically flip from `'threshold'` to `'accelerator'` — subversion's total score still won the channel even after coup sub-score dropped.
+
+**Open question when next touching scoring weights:** does intelligence ever **flip** what the AI actually does, or only **nudge** sub-scores that get overridden by accelerators (especially subversion)? If the answer is "nudge only," the influence/intel layer may feel less impactful in play than unit tests suggest. Revisit with cold-play observation or a decision-level test that asserts channel flip on a tuned scenario.
+
+Source: Sprint 10 Phase 6 acceptance — honestly reported unasserted channel flip.
+
+## Sprint 10 cleanup — extract shared influence constants (Phase 6) — DONE
+
+Landed as `packages/sim/src/influenceConstants.ts` (leaf module). `DIPLOMATIC_PRESSURE_MIN_INFLUENCE` and `INTELLIGENCE_MIN_INFLUENCE` both alias `INFLUENCE_SWAY_THRESHOLD`. Competitor-halving 50 is `COMPETITOR_INFLUENCE_HALVE_THRESHOLD`.
+
+Source: Sprint 10 Phase 6 circular-import fix; implemented in the post-Phase-6 review pass.
+
+## Parked investigation — duplicate treaty / re-proposal stacking (Phase 6 side thread)
+
+**Status:** Parked — not blocking Sprint 10.
+
+**What was being investigated:** A hung inline diagnostic (`playerProposeTreaty` called twice on same target, treaty count via `getTreatiesBetween`, `computePassiveInfluenceSources` with duplicate treaties, treaty-sourced intel record duplication). Goal was to verify whether duplicate proposals or stacked treaties corrupt passive influence accrual or intel emission beyond the Sprint 9.5 Phase 4 `hasActiveTreatyOn` / `active-treaty-exists` guard.
+
+**Why parked:** Script hung (~3.5h, exit 1073807364); unrelated to Phase 6 Intelligence delivery. Sprint 9.5 Phase 4 already shipped four-layer duplicate-treaty **formation** guard (#27). This thread is about **re-proposal / stacking side effects** under repeated player proposes — needs a committed script with timeout + incremental logging, not inline `tsx -e`.
+
+**Next step when picked up:** `packages/sim/scripts/duplicate-treaty-diagnostic.ts` (or similar), assert treaty count, influence sources, and intel records after first + duplicate propose at +1h and same timestamp.
+
+Source: Sprint 10 Phase 6 — diagnostic parked per user; Sprint 9.5 Phase 4 for formation guard context.
+
+## Sprint 11+ — sim test-file type debt (~210 errors)
+
+Adding a `typecheck` script (Sprint 10 review, infrastructure pass) revealed that `packages/sim` had **never been type-checked** — there was no script, and `apps/mobile`'s tsconfig only covers `apps/mobile/**`. `packages/sim/src` and `packages/shared/src` are **clean**; the debt is entirely in test files and one perf bench.
+
+**Current gating:** `pnpm typecheck` runs `packages/sim/tsconfig.src.json` (src only) and **is green** — this is what CI enforces. `pnpm --filter sim typecheck:tests` runs the full surface (`src` + `tests` + `perf`) and currently reports **~210 errors**. The broad `tsconfig.json` is retained so the IDE still type-checks tests.
+
+**Error classes (all in tests, none affect runtime — vitest transpiles without type-checking):**
+
+| Class | Example | Rough count |
+|---|---|---|
+| `SimEvent` literals missing `eventId` | `tutorialBeats.test.ts:26` — required by `SimEventBase` | largest group |
+| Order literals missing tagging fields / wrong shape for `Omit<Order, 'intent' \| 'beatId' \| 'decisionTickMs'>` | `tutorial.playthrough.test.ts:39` | many |
+| Over-narrow inferred fixture types | `tutorial.playthrough.test.ts:164` — `WorldState` not assignable to inferred literal faction map | a few |
+| Incomplete event literals in perf bench | `perf/tutorialQuick.bench.ts:21` | 1 |
+
+**Highest-value fix:** a typed test-event factory in `tests/fixtures.ts` (e.g. `simEvent(kind, fields)` that stamps `eventId`) would clear the largest class in one pass. Do this before flipping `typecheck:tests` into the CI gate.
+
+**Also fixed during the same pass (for context):** `packages/sim/tsconfig.json` had `rootDir: "."` under `noEmit: true`, which produced 13 spurious `TS6059` errors on every cross-package import from `packages/shared`. `rootDir`/`outDir` removed — they were meaningless without emit.
+
+Source: Sprint 10 full project review — infrastructure pass (`docs/sprints/sprint-10-project-review.md`, P2-4).

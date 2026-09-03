@@ -38,6 +38,27 @@ describe('dilemma selector', () => {
     ]);
   });
 
+  it('does not surface dilemmas after the player country is defeated', () => {
+    const world = createTutorialWorld(START_MS);
+    const player = world.countries![PLAYER_TUTORIAL_FACTION_ID]!;
+    const defeated = {
+      ...world,
+      pendingDilemmas: [
+        {
+          dilemmaId: 'foreign-rule',
+          factionId: PLAYER_TUTORIAL_FACTION_ID,
+          offeredAt: START_MS,
+        },
+      ],
+      countries: {
+        ...world.countries,
+        [PLAYER_TUTORIAL_FACTION_ID]: { ...player, defeated: true },
+      },
+    };
+
+    expect(selectPendingDilemmaCards(defeated)).toEqual([]);
+  });
+
   it('does not surface dilemmas assigned to AI factions', () => {
     const world = createSprint4World(START_MS);
     const aiFaction = Object.values(world.factions).find((faction) => !faction.isPlayer);

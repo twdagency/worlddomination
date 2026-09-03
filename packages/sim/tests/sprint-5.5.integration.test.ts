@@ -11,11 +11,10 @@ import {
   SCOUT_UNIT_TYPE_ID,
   tick,
 } from '../src';
-import { haversineKm } from '../src/geo';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import { createSprint5World } from '../../shared/src/scenario-sprint5';
 import { tagOrder } from './fixtures';
-import { analyzeFactionScoutTransits, type ScoutTransitReport } from './scoutTransitAnalysis';
+import { analyzeFactionScoutTransits } from './scoutTransitAnalysis';
 import type { DispatchEvent, Order, WorldState } from '../src/types';
 
 const PLAYER = 'faction-player';
@@ -62,26 +61,6 @@ function etaReport(world: WorldState, scoutId: string, territoryId: string) {
     travelMs,
     travelHours: travelMs !== null ? travelMs / 3_600_000 : null,
     exceedsDecayWindow: travelMs !== null ? travelMs > INTEL_DECAY_WINDOW_MS : null,
-  };
-}
-
-function transitFromOrder(world: WorldState, order: Order): ScoutTransitReport | null {
-  if (order.kind !== 'move') return null;
-
-  const preview = previewMoveEtaMs(world, order.unitId, order.toTerritoryId);
-  const from = world.territories[world.units[order.unitId]?.locationId ?? ''];
-  const to = world.territories[order.toTerritoryId];
-  const distanceKm = from && to ? Math.round(haversineKm(from.coord, to.coord)) : 0;
-  const travelMs = preview?.travelMs ?? 0;
-
-  return {
-    unitId: order.unitId,
-    fromTerritoryId: from?.id ?? '',
-    toTerritoryId: order.toTerritoryId,
-    distanceKm,
-    transitMs: travelMs,
-    transitHours: travelMs / 3_600_000,
-    exceedsDecayWindow: travelMs > INTEL_DECAY_WINDOW_MS,
   };
 }
 

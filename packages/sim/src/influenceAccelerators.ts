@@ -6,35 +6,51 @@ import {
   getInfluence,
   INFLUENCE_CAP,
 } from './influence';
-import { formatOrderRejectedMessage } from './movement';
-import { nextRandom } from './rng';
+import {
+  applyAiInfluenceCooldownsFromEvents,
+  canActorIssueInfluenceOrder,
+  isInfluenceChannelOrderKind,
+} from './influenceChannel';
+import {
+  isInfluenceOrder,
+  validateInfluenceTarget,
+  type InfluenceOrderRejectionReason,
+} from './influenceOrderValidation';
+import {
+  applyGatherIntelligence,
+  validateGatherIntelligence,
+} from './intelligenceGather';
 import {
   applyDiplomaticPressure,
   applyCoupAttempt,
   applyDefectionClaim,
   applyTributeCancel,
   applyTributeExtraction,
-  type DiplomaticPressureRejectionReason,
-  type CoupRejectionReason,
-  type DefectionRejectionReason,
-  type TributeRejectionReason,
   validateCoupAttempt,
   validateDefectionClaim,
   validateDiplomaticPressure,
   validateTributeCancel,
   validateTributeExtraction,
 } from './influenceActions';
+import { nextRandom } from './rng';
 import type {
   ActiveDiplomaticMission,
   CulturalCampaignRecord,
   Id,
-  InfluenceOrderKind,
   Millis,
   Order,
   Reputation,
   SimEventDraft,
   WorldState,
 } from './types';
+
+export {
+  formatInfluenceOrderRejectedMessage,
+} from './influenceOrderMessages';
+export {
+  isInfluenceOrder,
+  type InfluenceOrderRejectionReason,
+} from './influenceOrderValidation';
 
 export const DIPLOMATIC_MISSION_COST = 1500;
 export const DIPLOMATIC_MISSION_DURATION_MS = 14 * MS_PER_DAY;
@@ -49,76 +65,6 @@ export const INFLUENCE_SUBVERSION_BURST = 20;
 export const INFLUENCE_SUBVERSION_DISCOVERY_RATE = 0.3;
 export const INFLUENCE_SUBVERSION_REPUTATION_PENALTY = -25;
 export const INFLUENCE_SUBVERSION_REPUTATION_BOLD_BONUS = 5;
-
-export type InfluenceOrderRejectionReason =
-  | DiplomaticPressureRejectionReason
-  | TributeRejectionReason
-  | CoupRejectionReason
-  | DefectionRejectionReason
-  | 'insufficient-gold'
-  | 'insufficient-manpower'
-  | 'target-is-own-city'
-  | 'target-is-allied'
-  | 'target-owner-defeated'
-  | 'target-city-unknown'
-  | 'mission-already-active'
-  | 'cultural-campaign-cooldown'
-  | 'no-active-mission';
-
-const INFLUENCE_ORDER_KINDS = new Set<Order['kind']>([
-  'diplomatic-mission',
-  'cultural-campaign',
-  'influence-subversion',
-  'cancel-diplomatic-mission',
-  'diplomatic-pressure',
-  'tribute-extraction',
-  'tribute-cancel',
-  'coup-attempt',
-  'defection-claim',
-]);
-
-export function isInfluenceOrder(order: Order): boolean {
-  return INFLUENCE_ORDER_KINDS.has(order.kind);
-}
-
-export function formatInfluenceOrderRejectedMessage(reason: InfluenceOrderRejectionReason | string): string {
-  switch (reason) {
-    case 'insufficient-gold':
-      return 'Insufficient gold for this influence action.';
-    case 'insufficient-manpower':
-      return 'Insufficient manpower for subversion.';
-    case 'target-is-own-city':
-      return 'Cannot apply influence in your own cities.';
-    case 'target-is-allied':
-      return 'Cannot target allied territory with influence actions.';
-    case 'target-owner-defeated':
-      return 'Cannot target a defeated country.';
-    case 'target-city-unknown':
-      return 'Target city not found.';
-    case 'mission-already-active':
-      return 'A diplomatic mission is already active in this city.';
-    case 'cultural-campaign-cooldown':
-      return 'Cultural campaign is still on cooldown for this city.';
-    case 'no-active-mission':
-      return 'No active diplomatic mission to cancel.';
-    case 'insufficient-influence':
-      return 'Insufficient influence for diplomatic pressure (requires 30+).';
-    case 'no-pending-proposal':
-      return 'No matching pending proposal to force acceptance.';
-    case 'unsupported-proposal-kind':
-      return 'This diplomatic pressure proposal kind is not yet available.';
-    case 'target-country-mismatch':
-      return 'Target city is not owned by the specified country.';
-    case 'active-treaty-exists':
-      return 'An active treaty already covers this territory.';
-    case 'tribute-already-active':
-      return 'A tribute extraction is already active in this city.';
-    case 'no-active-tribute':
-      return 'No active tribute extraction to cancel.';
-    default:
-      return formatOrderRejectedMessage(reason);
-  }
-}
 
 function targetOwnerId(world: WorldState, cityId: Id): Id | undefined {
   return world.territories[cityId]?.ownerId;
@@ -152,6 +98,15 @@ export function hasActiveDiplomaticMission(
   return hasActiveMission(world, ownerId, targetCityId, at);
 }
 
+export function isCulturalCampaignOnCooldown(
+  world: WorldState,
+  ownerId: Id,
+  targetCityId: Id,
+  at: Millis = world.nowMs,
+): boolean {
+  return culturalCampaignOnCooldown(world, ownerId, targetCityId, at);
+}
+
 function culturalCampaignOnCooldown(
   world: WorldState,
   ownerId: Id,
@@ -164,21 +119,6 @@ function culturalCampaignOnCooldown(
       record.targetCityId === targetCityId &&
       at < record.cooldownUntil,
   );
-}
-
-function validateInfluenceTarget(
-  world: WorldState,
-  ownerId: Id,
-  targetCityId: Id,
-): { ok: true; ownerId: Id } | { ok: false; reason: InfluenceOrderRejectionReason } {
-  const city = world.territories[targetCityId];
-  if (!city) return { ok: false, reason: 'target-city-unknown' };
-  const cityOwnerId = city.ownerId;
-  if (!cityOwnerId) return { ok: false, reason: 'target-city-unknown' };
-  if (cityOwnerId === ownerId) return { ok: false, reason: 'target-is-own-city' };
-  if (areAllied(world, ownerId, cityOwnerId)) return { ok: false, reason: 'target-is-allied' };
-  if (isOwnerDefeated(world, cityOwnerId)) return { ok: false, reason: 'target-owner-defeated' };
-  return { ok: true, ownerId: cityOwnerId };
 }
 
 function rejectInfluenceOrder(
@@ -287,7 +227,6 @@ function hasActiveAssaultAgainstOwner(
 function missionExpulsionReason(
   world: WorldState,
   mission: ActiveDiplomaticMission,
-  at: Millis,
 ): 'alliance-broken' | 'war-declared' | 'target-defeated' | null {
   const ownerId = targetOwnerId(world, mission.targetCityId);
   if (!ownerId || isOwnerDefeated(world, ownerId)) return 'target-defeated';
@@ -308,8 +247,17 @@ export function applyInfluenceOrders(
     if (!isInfluenceOrder(order)) continue;
     if (!('ownerId' in order) || !('targetCityId' in order)) continue;
 
+    next = applyAiInfluenceCooldownsFromEvents(next, events, at);
     const ownerId = order.ownerId;
     const targetCityId = order.targetCityId;
+
+    if (
+      isInfluenceChannelOrderKind(order.kind) &&
+      !canActorIssueInfluenceOrder(next, ownerId, at)
+    ) {
+      rejectInfluenceOrder(next, order, 'influence-channel-on-cooldown', events);
+      continue;
+    }
 
     if (order.kind === 'diplomatic-pressure') {
       const validation = validateDiplomaticPressure(
@@ -380,6 +328,18 @@ export function applyInfluenceOrders(
         continue;
       }
       const result = applyDefectionClaim(next, ownerId, targetCityId, at);
+      next = result.world;
+      events.push(...result.events);
+      continue;
+    }
+
+    if (order.kind === 'gather-intelligence') {
+      const validation = validateGatherIntelligence(next, ownerId, targetCityId, at);
+      if (!validation.ok) {
+        rejectInfluenceOrder(next, order, validation.reason, events);
+        continue;
+      }
+      const result = applyGatherIntelligence(next, ownerId, targetCityId, at);
       next = result.world;
       events.push(...result.events);
       continue;
@@ -521,6 +481,7 @@ export function applyInfluenceOrders(
     }
   }
 
+  next = applyAiInfluenceCooldownsFromEvents(next, events, at);
   return { world: next, events };
 }
 
@@ -544,7 +505,7 @@ export function expireActiveInfluenceEffects(
       continue;
     }
 
-    const expulsion = missionExpulsionReason(next, mission, at);
+    const expulsion = missionExpulsionReason(next, mission);
     if (expulsion) {
       events.push({
         kind: 'diplomaticMissionExpelled',

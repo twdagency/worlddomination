@@ -1,5 +1,5 @@
 export { LEADERS, LEADERS_BY_ID } from './leaders';
-export { resolvePlayerFactionId } from './playerFaction';
+export { resolvePlayerFactionId, resolvePlayerCountryId } from './playerFaction';
 export { UNIT_TYPES, UNIT_TYPES_BY_ID } from './units';
 export { createSprint1World, SPRINT1_TERRITORIES } from './scenario-sprint1';
 export { createSprint2World, SPRINT2_TERRITORIES } from './scenario-sprint2';
@@ -15,7 +15,11 @@ export {
   TUTORIAL_HOME_TERRITORY_ID,
   TUTORIAL_PARIS_TERRITORY_ID,
 } from './tutorialConstants';
-export { TUTORIAL_BEAT_COPY, type BeatCopy } from './tutorialBeatCopy';
+export {
+  TUTORIAL_BEAT_COPY,
+  TUTORIAL_SCENE_COPY,
+  type BeatCopy,
+} from './tutorialBeatCopy';
 export type {
   Dilemma,
   DilemmaOption,

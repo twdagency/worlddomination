@@ -8,12 +8,11 @@ import {
   sidePower,
 } from './combat';
 import { areAllied } from './diplomacy';
-import { recordConquerorOnTerritoryCapture } from './country';
+import { findCountry, recordConquerorOnTerritoryCapture } from './country';
 import { recordDestroyedScoutIntel, ensureIntelStore } from './intel';
 import { emitIntelReportEvents } from './intelDispatch';
 import {
   formatBattleNarrative,
-  formatSecuredNarrative,
 } from './reports';
 import type { Id, IntelStore, Millis, SimEventDraft, Unit, WorldState } from './types';
 
@@ -150,6 +149,9 @@ function captureTerritory(
   if (!territory) {
     return { territories, countries, events: [] };
   }
+  if (findCountry({ ...world, countries }, newOwnerId)?.defeated === true) {
+    return { territories, countries, events: [] };
+  }
 
   const nextTerritories = {
     ...territories,
@@ -238,15 +240,17 @@ export function resolveHostileArrival(
       territories = captured.territories;
       countries = captured.countries;
       events.push(...captured.events);
-      events.push({
-        kind: 'secured',
-        at,
-        territoryId,
-        factionId: attackerId,
-        unitIds: [arrivingUnit.id],
-        enemyWithdrew: false,
-        importance: 'high',
-      });
+      if (captured.events.length > 0) {
+        events.push({
+          kind: 'secured',
+          at,
+          territoryId,
+          factionId: attackerId,
+          unitIds: [arrivingUnit.id],
+          enemyWithdrew: false,
+          importance: 'high',
+        });
+      }
     }
     return { units, territories, countries, rng, intel, events };
   }
@@ -344,15 +348,17 @@ export function resolveHostileArrival(
     if (survivor) {
       units[arrivingUnit.id] = { ...survivor, locationId: territoryId };
     }
-    events.push({
-      kind: 'secured',
-      at,
-      territoryId,
-      factionId: attackerId,
-      unitIds: [arrivingUnit.id].filter((id) => units[id]),
-      enemyWithdrew: fleeing.length > 0,
-      importance: 'high',
-    });
+    if (captured.events.length > 0) {
+      events.push({
+        kind: 'secured',
+        at,
+        territoryId,
+        factionId: attackerId,
+        unitIds: [arrivingUnit.id].filter((id) => units[id]),
+        enemyWithdrew: fleeing.length > 0,
+        importance: 'high',
+      });
+    }
     return { units, territories, countries, rng, intel, events };
   }
 
@@ -419,15 +425,17 @@ export function resolveHostileArrival(
     if (survivor) {
       units[arrivingUnit.id] = { ...survivor, locationId: territoryId };
     }
-    events.push({
-      kind: 'secured',
-      at,
-      territoryId,
-      factionId: attackerId,
-      unitIds: [arrivingUnit.id].filter((id) => units[id]),
-      enemyWithdrew: false,
-      importance: 'high',
-    });
+    if (captured.events.length > 0) {
+      events.push({
+        kind: 'secured',
+        at,
+        territoryId,
+        factionId: attackerId,
+        unitIds: [arrivingUnit.id].filter((id) => units[id]),
+        enemyWithdrew: false,
+        importance: 'high',
+      });
+    }
   } else {
     delete units[arrivingUnit.id];
   }

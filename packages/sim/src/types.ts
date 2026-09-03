@@ -147,7 +147,11 @@ export interface Policies {
   governance?: number;
 }
 
-export interface Faction {
+/**
+ * Canonical political entity — economic ledger + diplomatic identity.
+ * Diplomatic fields are populated by `ensureWorldCountries` / `ensureWorldFactionRename`.
+ */
+export interface Country {
   id: Id;
   leaderId: Id;
   isPlayer: boolean;
@@ -160,20 +164,13 @@ export interface Faction {
   tension?: Record<Id, number>;
   /** Accumulated identity tags from dilemma resolutions. */
   identityTags?: string[];
-}
-
-/** Political entity — 1:1 with legacy `Faction` IDs during the Sprint 8 alias period. */
-export interface Country {
-  id: Id;
   /** Display name — typically the leader's region (e.g. England, France). */
-  name: string;
-  leaderId: Id;
+  name?: string;
   /** Designated capital city; empty when the country holds no cities. */
-  capitalTerritoryId: Id;
-  defeated: boolean;
-  isPlayer: boolean;
+  capitalTerritoryId?: Id;
+  defeated?: boolean;
   diplomaticPosture?: DiplomaticPosture;
-  /** Faction that captured the most recently lost city (defeat attribution). */
+  /** Country that captured the most recently lost city (defeat attribution). */
   lastConquerorId?: Id;
   /** Territory ID of the most recently lost city (defeat narrative). */
   lastLostTerritoryId?: Id;
@@ -182,6 +179,12 @@ export interface Country {
   /** Alliance partner IDs at the moment of defeat (empty for migrated saves). */
   formerAllianceIds?: Id[];
 }
+
+/**
+ * @deprecated Use `Country` instead. Faction is preserved as alias for backward compat.
+ * Will be removed in Sprint 11+ once all consumers migrate.
+ */
+export type Faction = Country;
 
 export type Order =
   | {
@@ -259,6 +262,14 @@ export type Order =
       intent: OrderIntent;
       beatId: string;
       decisionTickMs: Millis;
+    }
+  | {
+      kind: 'gather-intelligence';
+      ownerId: Id;
+      targetCityId: Id;
+      intent: OrderIntent;
+      beatId: string;
+      decisionTickMs: Millis;
     };
 
 export type InfluenceActionKind =
@@ -266,7 +277,8 @@ export type InfluenceActionKind =
   | 'tribute-extraction'
   | 'tribute-cancel'
   | 'coup-attempt'
-  | 'defection-claim';
+  | 'defection-claim'
+  | 'gather-intelligence';
 
 export type PressureProposalKind =
   | 'accept-alliance'
@@ -291,6 +303,13 @@ export interface CulturalCampaignRecord {
   ownerId: Id;
   targetCityId: Id;
   appliedAt: Millis;
+  cooldownUntil: Millis;
+}
+
+export interface IntelligenceGatherRecord {
+  ownerId: Id;
+  targetCityId: Id;
+  gatheredAt: Millis;
   cooldownUntil: Millis;
 }
 
@@ -550,7 +569,7 @@ export type SimEventKind =
     }
   | { kind: 'procedural'; at: Millis; catalogEventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
-  | { kind: 'victory'; at: Millis; factionId: Id }
+  | { kind: 'victory'; at: Millis; factionId: Id; importance?: DispatchImportance }
   | { kind: 'espionage'; at: Millis; report: string; exposed: boolean }
   | {
       kind: 'territoryCaptured';
@@ -784,7 +803,18 @@ export type SimEvent = SimEventBase & SimEventKind;
 /** Event payload before `eventId` is assigned at emission. */
 export type SimEventDraft = SimEventKind;
 
-export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty';
+export type IntelSource = 'direct' | 'scout' | 'allied' | 'treaty' | 'intelligence';
+
+export interface IntelligenceGarrisonDetail {
+  totalCount: number;
+  byTypeId: Record<Id, number>;
+}
+
+export interface IntelligenceEnrichedSnapshot {
+  garrisonDetail: IntelligenceGarrisonDetail;
+  productionQueue: Territory['buildQueue'];
+  standingBreakdown: Record<Id, number>;
+}
 
 export interface TerritorySnapshot {
   ownerId?: Id;
@@ -792,6 +822,7 @@ export interface TerritorySnapshot {
   garrisonCount: number;
   visibleEnemyGarrison: number;
   inTransitCount: number;
+  enriched?: IntelligenceEnrichedSnapshot;
 }
 
 export interface IntelRecord {
@@ -841,10 +872,11 @@ export type TutorialBeatId =
   | 'economy'
   | 'pinch'
   | 'governance'
+  | 'influence'
   | 'handoff';
 
 export interface TutorialState {
-  /** True during beats 1–6; false after graduation. */
+  /** True during beats 1–7; false after graduation. */
   active: boolean;
   currentBeat: TutorialBeatId | null;
   completedBeats: TutorialBeatId[];
@@ -891,8 +923,12 @@ export interface WorldState {
   rng: RngState;
   territories: Record<Id, Territory>;
   units: Record<Id, Unit>;
-  factions: Record<Id, Faction>;
-  /** Populated by `ensureWorldCountries` — parallel to `factions` during alias period. */
+  /**
+   * @deprecated Prefer `world.countries`. Kept in sync during Sprint 10 transition.
+   * Sprint 11+ removes this field once all consumers migrate.
+   */
+  factions: Record<Id, Country>;
+  /** Canonical country records — populated by `ensureWorldFactionRename`. */
   countries?: Record<Id, Country>;
   leaders: Record<Id, Leader>;
   unitTypes: Record<Id, UnitType>;
@@ -904,6 +940,8 @@ export interface WorldState {
   pendingDilemmas?: PendingDilemma[];
   scenarioId: Id;
   victoryThreshold?: number;
+  /** Set once when last-country-standing victory is awarded. Missing means no victor yet. */
+  victorId?: Id;
   /** Undefined on non-tutorial worlds. Populated by tutorial scenario or migration backfill. */
   tutorial?: TutorialState;
   /** Game-time pacing knob. 30 during active tutorial; 1 otherwise. Set by migration if missing. */
@@ -916,6 +954,14 @@ export interface WorldState {
   activeDiplomaticMissions?: ActiveDiplomaticMission[];
   /** Cultural campaign cooldown records per (actor, city). */
   culturalCampaigns?: CulturalCampaignRecord[];
+  /** Intelligence gather cooldown records per (actor, city). */
+  intelligenceGathers?: IntelligenceGatherRecord[];
   /** Ongoing tribute extractions with resentment tracking. */
   activeTributes?: ActiveTribute[];
+  /** Per-actor timestamp of last successful influence-channel order (daily cadence). */
+  aiInfluenceCooldowns?: Record<Id, Millis>;
+  /** Recent subversion discoveries — suppresses repeat subversion attempts per actor. */
+  aiSubversionDiscoveryLog?: Array<{ actorId: Id; targetCityId: Id; at: Millis }>;
+  /** When true, AI influence accelerators and threshold actions are suppressed for the world. */
+  aiInfluenceAgencySuppressed?: boolean;
 }

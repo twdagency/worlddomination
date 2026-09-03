@@ -6,19 +6,32 @@ import { UNIT_TYPES_BY_ID } from 'shared';
 import { STORAGE_KEYS } from '../theme/terminal';
 import { clearTooltipDismissals } from '../game/tooltipDismissal';
 import {
-  DEFAULT_DISPATCH_READ_STATE,
   parseDispatchReadState,
   serializeDispatchReadState,
   type DispatchReadState,
 } from '../game/dispatchReadState';
 
+function parseStoredJson<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 export async function loadWorld(): Promise<WorldState | null> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.world);
-  if (!raw) return null;
-  return ensureWorldMigrations(JSON.parse(raw) as WorldState, {
-    unitTypes: UNIT_TYPES_BY_ID,
-    leaders: LEADERS_BY_ID,
-  });
+  const parsed = parseStoredJson<WorldState>(raw);
+  if (!parsed) return null;
+  try {
+    return ensureWorldMigrations(parsed, {
+      unitTypes: UNIT_TYPES_BY_ID,
+      leaders: LEADERS_BY_ID,
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function saveWorld(world: WorldState): Promise<void> {
@@ -27,8 +40,13 @@ export async function saveWorld(world: WorldState): Promise<void> {
 
 export async function loadDispatches(): Promise<SimEvent[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.dispatches);
-  if (!raw) return [];
-  return backfillLegacyDispatchEventIds(JSON.parse(raw) as SimEvent[]);
+  const parsed = parseStoredJson<SimEvent[]>(raw);
+  if (!Array.isArray(parsed)) return [];
+  try {
+    return backfillLegacyDispatchEventIds(parsed);
+  } catch {
+    return [];
+  }
 }
 
 export async function saveDispatches(events: SimEvent[]): Promise<void> {
@@ -87,6 +105,7 @@ export async function clearCampaignStorage(): Promise<void> {
     STORAGE_KEYS.dispatches,
     STORAGE_KEYS.lastActiveMs,
     STORAGE_KEYS.lastViewedDispatchesAt,
+    STORAGE_KEYS.scenarioId,
   ]);
   await clearTooltipDismissals();
 }

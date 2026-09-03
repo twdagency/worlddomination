@@ -6,7 +6,8 @@ describe('influence tooltip contracts (Sprint 9 Phase 9)', () => {
   it('tooltip provider mounts at app root above navigation', () => {
     const app = fs.readFileSync(path.resolve(__dirname, '../App.tsx'), 'utf8');
     expect(app).toContain('TooltipProvider');
-    expect(app).toContain('<RootTabs />');
+    expect(app).toContain('AppErrorBoundary');
+    expect(app).toContain('<AppShell />');
   });
 
   it('dashboard influence card uses persistent first-view tooltip', () => {

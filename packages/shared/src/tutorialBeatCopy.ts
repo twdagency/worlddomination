@@ -3,16 +3,28 @@ import type { TutorialBeatId } from 'sim';
 export interface BeatCopy {
   beat: TutorialBeatId;
   title: string;
+  /** Scene-setting line shown before the main instruction. */
+  intro?: string;
   body: string;
   hint?: string;
 }
+
+/** Landing-menu copy for the guided tutorial path. */
+export const TUTORIAL_SCENE_COPY = {
+  landingHint:
+    'London, 1603 — march on Paris, learn combat and economy, then graduate to the full campaign.',
+  optionsBlurb:
+    'Tutorial time runs at 30× with instant player actions. Full campaigns run at real-time 1×.',
+} as const;
 
 export const TUTORIAL_BEAT_COPY: Record<TutorialBeatId, BeatCopy> = {
   movement: {
     beat: 'movement',
     title: 'Send your forces to Paris',
-    body: 'Open the Order screen and dispatch your London garrison to Paris. Marches take real time — at tutorial speed (30×), this arrives in minutes.',
-    hint: 'Why: Every action in this game takes time. Watching the clock tick is part of the strategy. Tap the Actions tab → Order to begin.',
+    intro:
+      'Your Channel garrison holds London while French troops dig in at Paris. The first move sets the tone.',
+    body: 'Open Order and dispatch your London stack toward Paris. Tutorial marches resolve in seconds so you learn the loop without waiting.',
+    hint: 'Why: Every action takes time in a live campaign. The tutorial compresses that wait so you can focus on decisions.',
   },
   combat: {
     beat: 'combat',
@@ -38,10 +50,16 @@ export const TUTORIAL_BEAT_COPY: Record<TutorialBeatId, BeatCopy> = {
     body: "With Henry IV defeated, the French throne is yours to claim. Your decision will shape your country's identity.",
     hint: 'Why: You are not just a general — you are a leader. The policies you set and the dilemmas you resolve define what your empire becomes.',
   },
+  influence: {
+    beat: 'influence',
+    title: 'Sway a foreign city',
+    body: 'Open Order and start a Diplomatic Mission in a Burgundian city. Influence is the non-military path — one deliberate action per day. Intelligence is separate and can run the same day.',
+    hint: 'Why: Armies take cities. Influence takes them without a fight — pressure, tribute, coup, and defection all require sway you build over time.',
+  },
   handoff: {
     beat: 'handoff',
     title: 'Your campaign begins',
     body: 'The tutorial is complete. Continue into the full Europe sandbox to pursue your chosen path to victory.',
-    hint: 'New systems unlock as you play — including influence over foreign cities. Build influence through alliances, scouts, and diplomatic missions. Use it to pressure, extract from, or claim foreign cities. Watch the influence card on your Dashboard for opportunities.',
+    hint: 'Keep using the Dashboard influence card. Build sway, then pressure, extract from, or claim foreign cities.',
   },
 };

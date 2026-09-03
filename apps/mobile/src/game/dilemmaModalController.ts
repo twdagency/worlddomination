@@ -1,4 +1,4 @@
-import { getDilemmaById, playerFactionId } from 'sim';
+import { findCountry, getDilemmaById, playerFactionId } from 'sim';
 import type { Id, WorldState } from 'sim';
 import type { Dilemma, DilemmaUrgency } from 'shared';
 
@@ -29,6 +29,7 @@ export function shouldShowDilemmaModal(
   if (!world?.pendingDilemmas?.length) return null;
 
   const playerId = playerFactionId(world);
+  if (playerId && findCountry(world, playerId)?.defeated === true) return null;
   const pending = world.pendingDilemmas.filter(
     (entry) => !playerId || entry.factionId === playerId,
   );

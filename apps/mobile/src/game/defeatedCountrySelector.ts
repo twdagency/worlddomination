@@ -50,7 +50,7 @@ function buildDefeatedCountryView(world: WorldState, countryId: Id): DefeatedCou
 
   return {
     id: record.id,
-    name: record.name,
+    name: record.name ?? leader?.region ?? record.id,
     leaderId: record.leaderId,
     leaderName: leader?.name ?? record.leaderId,
     defeatedBy: record.lastConquerorId,

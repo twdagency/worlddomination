@@ -4,13 +4,13 @@ import type {
   Id,
   Millis,
   Reputation,
-  SimEvent,
   SimEventDraft,
   Treaty,
   WorldState,
 } from './types';
 import { pruneAlliedIntelOnBreak } from './intel';
-import { allianceBrokenEvent, treatyExpiredEvent } from './diplomaticDispatch';
+import { allianceBrokenEvent, treatyExpiredEvent } from './diplomaticEvents';
+import { normalizeFactionPair } from './diplomaticPair';
 import {
   applyAllianceBreakReputationPenalty,
   applyDefeatAllianceDissolutionReputationPenalty,
@@ -18,13 +18,9 @@ import {
 } from './reputation';
 
 export { createInitialReputation } from './reputation';
+export { normalizeFactionPair } from './diplomaticPair';
 
 // SPRINT-6 PHASE-6: pending proposals queue in pendingProposals.ts + playerDiplomacy.ts.
-
-/** Lexicographic ordering for symmetric faction pairs (alliances, treaty parties). */
-export function normalizeFactionPair(factionA: Id, factionB: Id): [Id, Id] {
-  return factionA < factionB ? [factionA, factionB] : [factionB, factionA];
-}
 
 function deterministicTreatyId(
   parties: [Id, Id],

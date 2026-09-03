@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  advanceTo,
   ALLIANCE_ACCEPT_THRESHOLD,
   areAllied,
   createInitialReputation,

@@ -5,7 +5,7 @@ import {
   getAlliancesFor,
 } from './diplomacy';
 import { clearInfluenceForCountry } from './influence';
-import { cancelTributesForDefeatedCountry } from './influenceActions';
+import { cancelTributesForDefeatedCountry } from './tributeLifecycle';
 
 /**
  * Scenario-specific capital assignments. Same faction ID may map to different
@@ -98,7 +98,9 @@ export function relocateCapitalIfNeeded(world: WorldState, countryId: Id): World
   const country = findCountry(world, countryId);
   if (!country || country.defeated) return world;
 
-  const capital = world.territories[country.capitalTerritoryId];
+  const capitalId = country.capitalTerritoryId;
+  if (!capitalId) return world;
+  const capital = world.territories[capitalId];
   if (capital?.ownerId === countryId) return world;
 
   const cities = citiesOf(world, countryId);
@@ -137,12 +139,10 @@ function buildCountryFromFaction(world: WorldState, faction: Faction): Country {
   }
 
   return {
-    id: faction.id,
+    ...faction,
     name: countryName(world, faction),
-    leaderId: faction.leaderId,
     capitalTerritoryId,
     defeated: ownedIds.length === 0,
-    isPlayer: faction.isPlayer,
     diplomaticPosture: leader?.weights.diplomaticPosture,
   };
 }
@@ -210,7 +210,7 @@ function buildCountryDefeatedEvent(
     at,
     countryId: country.id,
     defeatedBy: country.lastConquerorId,
-    finalTerritoryId: country.lastLostTerritoryId ?? country.capitalTerritoryId,
+    finalTerritoryId: country.lastLostTerritoryId ?? country.capitalTerritoryId ?? '',
     formerAlliances,
     importance: 'high',
   };
@@ -326,7 +326,7 @@ export function syncCountriesFromFactions(world: WorldState): CountrySyncResult 
     const capitalHeld = cities.some((city) => city.id === country.capitalTerritoryId);
 
     if (!capitalHeld && cities.length > 0) {
-      const oldCapitalTerritoryId = country.capitalTerritoryId;
+      const oldCapitalTerritoryId = country.capitalTerritoryId ?? '';
       const newCapital = selectNewCapital(cities);
       if (newCapital.id !== country.capitalTerritoryId) {
         w = setCountryCapital(w, countryId, newCapital.id);
@@ -352,17 +352,137 @@ export function syncCountriesFromFactions(world: WorldState): CountrySyncResult 
 }
 
 export function findCountry(world: WorldState, countryId: Id): Country | undefined {
-  return world.countries?.[countryId];
+  return world.countries?.[countryId] ?? world.factions[countryId];
 }
 
 export function activeCountries(world: WorldState): Country[] {
-  return Object.values(world.countries ?? {}).filter((country) => !country.defeated);
+  const source = world.countries ?? world.factions;
+  return Object.values(source).filter((country) => !country.defeated);
 }
 
+/**
+ * Last country standing: emit `victory` once when exactly one undefeated country
+ * remains and at least one other country has already been defeated.
+ * Tutorial worlds are skipped — France falls in beat 2 while Burgundy still stands.
+ */
+export function evaluateLastCountryStanding(
+  world: WorldState,
+  at: Millis,
+): { world: WorldState; events: SimEventDraft[] } {
+  if (world.victorId) return { world, events: [] };
+  if (world.scenarioId?.startsWith('tutorial')) return { world, events: [] };
+
+  const source = world.countries ?? world.factions;
+  const countries = Object.values(source);
+  const standing = countries.filter((country) => !country.defeated);
+  const defeated = countries.filter((country) => country.defeated === true);
+
+  if (standing.length !== 1 || defeated.length < 1) {
+    return { world, events: [] };
+  }
+
+  const winner = standing[0]!;
+  return {
+    world: { ...world, victorId: winner.id },
+    events: [
+      {
+        kind: 'victory',
+        at,
+        factionId: winner.id,
+        importance: 'high',
+      },
+    ],
+  };
+}
+
+/** @deprecated Use findCountry */
 export function factionToCountry(world: WorldState, factionId: Id): Country | undefined {
   return findCountry(world, factionId);
 }
 
-export function countryToFaction(world: WorldState, countryId: Id): Faction | undefined {
-  return world.factions[countryId];
+/** @deprecated Use findCountry for diplomatic reads; economic data lives on the same record. */
+export function countryToFaction(world: WorldState, countryId: Id): Country | undefined {
+  return world.factions[countryId] ?? world.countries?.[countryId];
+}
+
+export function getCountryById(world: WorldState, countryId: Id): Country | undefined {
+  return findCountry(world, countryId);
+}
+
+/**
+ * @deprecated Use `getCountryById` instead.
+ */
+export function getFactionById(world: WorldState, factionId: Id): Country | undefined {
+  return getCountryById(world, factionId);
+}
+
+/**
+ * @deprecated Use `findCountry` instead.
+ */
+export function findFaction(world: WorldState, factionId: Id): Country | undefined {
+  return findCountry(world, factionId);
+}
+
+export function getActiveCountries(world: WorldState): Country[] {
+  return activeCountries(world);
+}
+
+/**
+ * @deprecated Use `getActiveCountries` instead.
+ */
+export function getActiveFactions(world: WorldState): Country[] {
+  return getActiveCountries(world);
+}
+
+export function countriesOf(world: WorldState): Country[] {
+  return Object.values(world.countries ?? world.factions);
+}
+
+/**
+ * @deprecated Use `countriesOf` instead.
+ */
+export function factionsOf(world: WorldState): Country[] {
+  return countriesOf(world);
+}
+
+function mergeCountryRecords(factionRow: Country, countryRow?: Country): Country {
+  if (!countryRow) return { ...factionRow };
+  return {
+    ...countryRow,
+    ...factionRow,
+    name: countryRow.name ?? factionRow.name,
+    capitalTerritoryId: countryRow.capitalTerritoryId ?? factionRow.capitalTerritoryId,
+    defeated: countryRow.defeated ?? factionRow.defeated,
+    diplomaticPosture: countryRow.diplomaticPosture ?? factionRow.diplomaticPosture,
+    lastConquerorId: countryRow.lastConquerorId ?? factionRow.lastConquerorId,
+    lastLostTerritoryId: countryRow.lastLostTerritoryId ?? factionRow.lastLostTerritoryId,
+    defeatedAt: countryRow.defeatedAt ?? factionRow.defeatedAt,
+    formerAllianceIds: countryRow.formerAllianceIds ?? factionRow.formerAllianceIds,
+  };
+}
+
+/**
+ * Sync `world.countries` and `world.factions` to identical merged records.
+ * Idempotent — safe to call on every load via `ensureWorldMigrations`.
+ */
+export function ensureWorldFactionRename(world: WorldState): WorldState {
+  const next = world.countries ? world : ensureWorldCountries(world);
+  if (!next.countries || Object.keys(next.factions).length === 0) {
+    return next;
+  }
+
+  const ids = new Set([
+    ...Object.keys(next.factions),
+    ...Object.keys(next.countries),
+  ]);
+  const countries: Record<Id, Country> = {};
+  const factions: Record<Id, Country> = {};
+
+  for (const id of ids) {
+    const merged = mergeCountryRecords(next.factions[id]!, next.countries[id]);
+    countries[id] = merged;
+    factions[id] = merged;
+  }
+
+  return { ...next, countries, factions };
 }

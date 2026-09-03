@@ -127,7 +127,6 @@ describe('ForcesScreen move integration', () => {
 
   it('renders in-transit force row without move affordance', () => {
     const base = createSprint4World();
-    const london = base.territories['territory-london']!;
     mockGameState.world = {
       ...base,
       units: {

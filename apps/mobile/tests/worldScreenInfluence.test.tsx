@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createSprint4World, LEADERS_BY_ID, UNIT_TYPES_BY_ID } from 'shared';
-import { ensureWorldMigrations, setInfluence } from 'sim';
+import { ensureWorldMigrations } from 'sim';
 import { formatThresholdStars } from '../src/game/influenceDisplay';
 
 describe('world screen influence indicators', () => {

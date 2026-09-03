@@ -117,14 +117,6 @@ describe('scout unit', () => {
 
   it('scout lifecycle is deterministic from seed', () => {
     const world = withLondonScout(createSprint4World(START_MS));
-    const moveOrder = tagOrder(world, {
-      kind: 'move',
-      unitId: 'unit-player-scout',
-      toTerritoryId: BERLIN,
-      stanceOnArrival: 'hold',
-      count: 1,
-    }) as Order;
-
     const eta = previewMoveEtaMs(world, 'unit-player-scout', BERLIN)!;
     const endMs = eta.etaMs + 6 * 3_600_000;
 

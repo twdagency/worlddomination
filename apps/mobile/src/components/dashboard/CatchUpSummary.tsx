@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import type { DashboardCatchUpSummary } from '../../game/playerView';
 import { TerminalCard } from '../TerminalCard';
 import { terminal } from '../../theme/terminal';
@@ -13,7 +13,7 @@ interface CatchUpSummaryProps {
 export function CatchUpSummary({ summary, onOpenDispatches }: CatchUpSummaryProps) {
   if (summary.mode === 'current') {
     return (
-      <TerminalCard>
+      <TerminalCard testID="dashboard-catch-up">
         <Text style={styles.label}>{formatCatchUpHeading(summary)}</Text>
         <Text style={styles.body}>{formatCatchUpBody(summary)}</Text>
       </TerminalCard>
@@ -21,7 +21,12 @@ export function CatchUpSummary({ summary, onOpenDispatches }: CatchUpSummaryProp
   }
 
   return (
-    <Pressable onPress={onOpenDispatches}>
+    <Pressable
+      onPress={onOpenDispatches}
+      accessibilityRole="button"
+      accessibilityLabel="Open dispatches for catch-up summary"
+      testID="dashboard-catch-up"
+    >
       <TerminalCard style={styles.tappable}>
         <Text style={styles.label}>{formatCatchUpHeading(summary)}</Text>
         <Text style={styles.body}>{formatCatchUpBody(summary)}</Text>

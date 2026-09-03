@@ -13,6 +13,7 @@ export function formatIntelSourceLabel(sources: IntelSource[]): string | null {
     scout: 'via scouts',
     allied: 'via ally',
     treaty: 'per treaty',
+    intelligence: 'via intelligence',
   };
 
   const text = attributed.map((source) => labels[source]).filter(Boolean).join(' · ');

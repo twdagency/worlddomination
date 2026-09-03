@@ -1,6 +1,10 @@
 import { AI_DECISION_INTERVAL_MS, INFRA_UPGRADE_BASE_COST, MAX_INFRA_LEVEL } from './constants';
 import { findCountry } from './country';
 import { areAllied } from './diplomacy';
+import {
+  computeAttackInfluenceScoreAdjustment,
+  computeDefendInfluenceScoreAdjustment,
+} from './aiInfluenceSignals';
 import { taggedOrderFields, assertActionableOrderTagged } from './dispatch';
 import { haversineKm } from './geo';
 import { INTEL_DECAY_WINDOW_MS } from './intel';
@@ -358,16 +362,21 @@ function scoreDefend(
   decisionTickMs: Millis,
 ): ScoredOrder | null {
   const enemies = visibleEnemyUnits(world, factionId);
-  if (enemies.length === 0) return null;
-
   let best: ScoredOrder | null = null;
+
   for (const owned of ownedTerritories(world, factionId)) {
     const threatened = enemies.some(
       (enemy) =>
         enemy.locationId &&
         haversineKm(world.territories[enemy.locationId]!.coord, owned.coord) <= 600,
     );
-    if (!threatened) continue;
+    const influenceBonus = computeDefendInfluenceScoreAdjustment(
+      world,
+      factionId,
+      owned.id,
+      weights,
+    );
+    if (!threatened && influenceBonus <= 0) continue;
 
     for (const unit of idleUnits(world, factionId)) {
       if (!unit.locationId || unit.locationId === owned.id) continue;
@@ -382,7 +391,8 @@ function scoreDefend(
       };
       if (!buildTransit(world, unit, owned.id, order, world.nowMs)) continue;
 
-      const score = weights.aggression * 4 + weights.risk * 6;
+      const score =
+        weights.aggression * 4 + weights.risk * 6 + influenceBonus;
       if (!best || score > best.score) best = { score, order };
     }
   }
@@ -422,12 +432,20 @@ function scoreAttack(
       };
       if (!buildTransit(world, unit, territory.id, moveFields, world.nowMs)) continue;
 
+      const influenceAdjustment = computeAttackInfluenceScoreAdjustment(
+        world,
+        factionId,
+        territory.id,
+        weights,
+      );
+
       const score =
         weights.aggression * 12 +
         weights.expansion * 6 -
         weights.risk * Math.max(1, defenderPower / Math.max(1, unit.count)) -
         weights.economy * 2 -
-        (needsScoutIntel(world, factionId, territory.id) ? weights.aggression * 5 : 0);
+        (needsScoutIntel(world, factionId, territory.id) ? weights.aggression * 5 : 0) +
+        influenceAdjustment;
 
       const order: Order = {
         kind: 'move',
