@@ -114,11 +114,11 @@ export function formatProductionNarrative(
   const place = territoryName(world, event.territoryId);
   const force = forceLabel(world, event.unitTypeId, event.count);
 
-  if (isPlayerFaction(world, event.factionId)) {
+  if (isPlayerFaction(world, event.countryId)) {
     return `PRODUCTION — Your ${force} ready at ${place}`;
   }
 
-  const who = factionName(world, event.factionId);
+  const who = factionName(world, event.countryId);
   return `INTEL — ${who} — ${force} ready at ${place}`;
 }
 

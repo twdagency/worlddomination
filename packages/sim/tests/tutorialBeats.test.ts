@@ -48,7 +48,7 @@ describe('tutorial beat predicates', () => {
       kind: 'infraUpgraded',
       at: START_MS,
       territoryId: TUTORIAL_PARIS_TERRITORY_ID,
-      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      countryId: PLAYER_TUTORIAL_FACTION_ID,
       infraLevel: 2,
       intent: 'build',
       source: 'direct',
@@ -63,7 +63,7 @@ describe('tutorial beat predicates', () => {
       kind: 'infraUpgraded',
       at: START_MS,
       territoryId: TUTORIAL_HOME_TERRITORY_ID,
-      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      countryId: PLAYER_TUTORIAL_FACTION_ID,
       infraLevel: 2,
       intent: 'build',
       source: 'direct',
@@ -103,7 +103,7 @@ describe('tutorial beat predicates', () => {
       kind: 'infraUpgraded',
       at: START_MS,
       territoryId: TUTORIAL_HOME_TERRITORY_ID,
-      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      countryId: PLAYER_TUTORIAL_FACTION_ID,
       infraLevel: 2,
       intent: 'build',
       source: 'direct',
@@ -117,7 +117,7 @@ describe('tutorial beat predicates', () => {
     const event: SimEvent = {
       kind: 'dilemmaResolved',
       at: START_MS,
-      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      countryId: PLAYER_TUTORIAL_FACTION_ID,
       dilemmaId: 'foreign-rule',
       optionId: 'conciliation',
     };
@@ -154,7 +154,7 @@ describe('tutorial beat predicates', () => {
     const event: SimEvent = {
       kind: 'tutorialHandoffReady',
       at: START_MS,
-      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      countryId: PLAYER_TUTORIAL_FACTION_ID,
     };
     expect(predicateFor('handoff').isComplete(event, world)).toBe(true);
   });

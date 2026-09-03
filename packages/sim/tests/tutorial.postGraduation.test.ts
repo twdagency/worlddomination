@@ -102,7 +102,7 @@ describe('tutorial post-graduation', () => {
     expect(events).toEqual([
       expect.objectContaining({
         kind: 'tutorialGraduated',
-        factionId: PLAYER_TUTORIAL_FACTION_ID,
+        countryId: PLAYER_TUTORIAL_FACTION_ID,
       }),
     ]);
   });

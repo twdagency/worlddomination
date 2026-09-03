@@ -114,7 +114,7 @@ describe('transit-aware scout scoring', () => {
       scoutBuilds: events.filter(
         (event) =>
           event.kind === 'buildStarted' &&
-          event.factionId === STEPPE &&
+          event.countryId === STEPPE &&
           event.unitTypeId === SCOUT_UNIT_TYPE_ID,
       ).length,
       scoutMoves: events.filter(

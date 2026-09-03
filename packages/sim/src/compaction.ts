@@ -3,7 +3,7 @@ import type { DispatchFeedItem } from './dispatch';
 import {
   COMPACTION_THRESHOLD_MS,
   DISPATCH_LINE_CAP,
-  factionIdFromEvent,
+  countryIdFromEvent,
   resolveEventImportance,
   shouldFoldMediumEvent,
   type MediumCompactionCategory,
@@ -107,7 +107,7 @@ export function compactDispatchFeed(
 
     if (importance === 'medium') {
       const category = shouldFoldMediumEvent(world, event, foldAllMedium);
-      const factionId = category ? factionIdFromEvent(event) : undefined;
+      const factionId = category ? countryIdFromEvent(event) : undefined;
       if (category && factionId) {
         const key = `${factionId}:${category}`;
         const existing = mediumBuckets.get(key);

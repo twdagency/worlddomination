@@ -180,7 +180,7 @@ describe('sprint 5.5 integration', () => {
     const steppeScoutBuilds = events.filter(
       (event) =>
         event.kind === 'buildStarted' &&
-        event.factionId === STEPPE &&
+        event.countryId === STEPPE &&
         event.unitTypeId === SCOUT_UNIT_TYPE_ID,
     );
     const steppeScoutMoves = events.filter(

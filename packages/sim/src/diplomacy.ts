@@ -207,7 +207,7 @@ export function recallHostileAssaultsBetweenAllies(
     events.push({
       kind: 'dispatchCancelledByAlliance',
       at,
-      factionId: unit.ownerId,
+      countryId: unit.ownerId,
       allyFactionId: destinationOwnerId,
       unitId,
       fromTerritoryId: transit.fromId,

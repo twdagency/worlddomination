@@ -82,7 +82,7 @@ function maybeEmitTutorialHandoff(world: WorldState): { world: WorldState; event
   const event: SimEventDraft = {
     kind: 'tutorialHandoffReady',
     at: world.nowMs,
-    factionId: PLAYER_TUTORIAL_FACTION_ID,
+    countryId: PLAYER_TUTORIAL_FACTION_ID,
     importance: 'medium',
   };
   return {

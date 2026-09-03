@@ -32,7 +32,7 @@ function isPlayerParisCapture(event: SimEventKind, _world: WorldState): boolean 
 function isPlayerInfraUpgrade(event: SimEventKind, _world: WorldState): boolean {
   return (
     event.kind === 'infraUpgraded' &&
-    event.factionId === PLAYER_TUTORIAL_FACTION_ID &&
+    event.countryId === PLAYER_TUTORIAL_FACTION_ID &&
     event.territoryId === TUTORIAL_PARIS_TERRITORY_ID
   );
 }
@@ -61,7 +61,7 @@ function isPinchResolved(event: SimEventKind, _world: WorldState): boolean {
 
   if (
     event.kind === 'infraUpgraded' &&
-    event.factionId === PLAYER_TUTORIAL_FACTION_ID &&
+    event.countryId === PLAYER_TUTORIAL_FACTION_ID &&
     event.territoryId === TUTORIAL_HOME_TERRITORY_ID
   ) {
     return true;
@@ -82,7 +82,7 @@ function isPinchConquest(event: SimEventKind): boolean {
 function isForeignRuleResolved(event: SimEventKind, _world: WorldState): boolean {
   return (
     event.kind === 'dilemmaResolved' &&
-    event.factionId === PLAYER_TUTORIAL_FACTION_ID &&
+    event.countryId === PLAYER_TUTORIAL_FACTION_ID &&
     event.dilemmaId === 'foreign-rule'
   );
 }
@@ -90,7 +90,7 @@ function isForeignRuleResolved(event: SimEventKind, _world: WorldState): boolean
 function isTutorialHandoffReady(event: SimEventKind, _world: WorldState): boolean {
   return (
     event.kind === 'tutorialHandoffReady' &&
-    event.factionId === PLAYER_TUTORIAL_FACTION_ID
+    event.countryId === PLAYER_TUTORIAL_FACTION_ID
   );
 }
 

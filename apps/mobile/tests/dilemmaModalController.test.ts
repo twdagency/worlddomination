@@ -38,7 +38,7 @@ function pendingWorld(dilemmaIds: string[]) {
     ...base,
     pendingDilemmas: dilemmaIds.map((dilemmaId, index) => ({
       dilemmaId,
-      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      countryId: PLAYER_TUTORIAL_FACTION_ID,
       offeredAt: START_MS + index,
     })),
   };

@@ -45,7 +45,7 @@ describe('dashboard catch-up selector', () => {
         kind: 'buildStarted',
         at: START_MS + 3 * 3_600_000,
         territoryId: 'territory-london',
-        factionId: sprint4PlayerId(),
+        countryId: sprint4PlayerId(),
         unitTypeId: 'levy-t1',
         count: 1,
         intent: 'build',

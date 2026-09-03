@@ -35,7 +35,7 @@ function buildStarted(factionId: string, at: number = AS_OF): SimEvent {
     kind: 'buildStarted',
     at,
     territoryId: 't1',
-    factionId,
+    countryId: factionId,
     unitTypeId: 'mg-armor-t5',
     count: 1,
     intent: 'build',

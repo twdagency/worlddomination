@@ -1,3 +1,4 @@
+import { migrateDispatchEventCountryIds } from './eventCountryId';
 import type { Id, SimEvent, SimEventBase, SimEventDraft, WorldState } from './types';
 
 /** Starting counter for migrated saves — avoids collision with legacy backfill IDs. */
@@ -50,7 +51,7 @@ export function ensureWorldEventCounter(world: WorldState): WorldState {
 
 /** Best-effort IDs for display-only events persisted before Sprint 7c. */
 export function backfillLegacyDispatchEventIds(events: SimEvent[]): SimEvent[] {
-  return events.map((event, index) => {
+  return migrateDispatchEventCountryIds(events).map((event, index) => {
     if (event.eventId) return event;
     return { ...event, eventId: `${LEGACY_EVENT_ID_PREFIX}${index}` };
   });

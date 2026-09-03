@@ -246,10 +246,10 @@ describe('country defeat cascade (Phase 3)', () => {
     const base = migrate(createSprint4World(START_MS));
     const withDilemma = {
       ...base,
-      pendingDilemmas: [{ dilemmaId: 'dilemma-test', factionId: ROME, offeredAt: START_MS }],
+      pendingDilemmas: [{ dilemmaId: 'dilemma-test', countryId: ROME, offeredAt: START_MS }],
     };
     const { world } = defeatCountry(captureCity(withDilemma, PARIS, ROME, BRITAIN), ROME, START_MS);
-    expect(world.pendingDilemmas?.some((entry) => entry.factionId === ROME)).toBe(false);
+    expect(world.pendingDilemmas?.some((entry) => entry.countryId === ROME)).toBe(false);
   });
 });
 

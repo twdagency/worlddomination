@@ -16,13 +16,13 @@ export function selectPendingDilemmaCards(world: WorldState | null): PendingDile
   const cards: PendingDilemmaCard[] = [];
 
   for (const entry of world.pendingDilemmas) {
-    if (playerId && entry.factionId !== playerId) continue;
+    if (playerId && entry.countryId !== playerId) continue;
     const dilemma = getDilemmaById(entry.dilemmaId);
     if (!dilemma) continue;
     cards.push({
       dilemmaId: entry.dilemmaId,
       title: dilemma.title,
-      factionId: entry.factionId,
+      factionId: entry.countryId,
     });
   }
 

@@ -8,7 +8,7 @@ const ORDER_EVENT_KINDS = new Set<SimEvent['kind']>(['departure', 'buildStarted'
 
 function factionIdForOrderEvent(event: SimEvent): Id | undefined {
   if (event.kind === 'departure') return event.ownerId;
-  if (event.kind === 'buildStarted' || event.kind === 'infraUpgraded') return event.factionId;
+  if (event.kind === 'buildStarted' || event.kind === 'infraUpgraded') return event.countryId;
   return undefined;
 }
 

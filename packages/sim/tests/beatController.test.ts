@@ -42,7 +42,7 @@ function buildStartedEvent(): Extract<SimEvent, { kind: 'buildStarted' }> {
     kind: 'buildStarted',
     at: START_MS,
     territoryId: TUTORIAL_HOME_TERRITORY_ID,
-    factionId: PLAYER_TUTORIAL_FACTION_ID,
+    countryId: PLAYER_TUTORIAL_FACTION_ID,
     unitTypeId: 'levy-t1',
     count: 1,
     intent: 'build',
@@ -148,7 +148,7 @@ describe('beat controller', () => {
       pendingDilemmas: [
         {
           dilemmaId: 'foreign-rule',
-          factionId: PLAYER_TUTORIAL_FACTION_ID,
+          countryId: PLAYER_TUTORIAL_FACTION_ID,
           offeredAt: START_MS,
         },
       ],

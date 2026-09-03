@@ -23,7 +23,7 @@ describe('dilemma selector', () => {
       pendingDilemmas: [
         {
           dilemmaId: 'foreign-rule',
-          factionId: PLAYER_TUTORIAL_FACTION_ID,
+          countryId: PLAYER_TUTORIAL_FACTION_ID,
           offeredAt: START_MS,
         },
       ],
@@ -46,7 +46,7 @@ describe('dilemma selector', () => {
       pendingDilemmas: [
         {
           dilemmaId: 'foreign-rule',
-          factionId: PLAYER_TUTORIAL_FACTION_ID,
+          countryId: PLAYER_TUTORIAL_FACTION_ID,
           offeredAt: START_MS,
         },
       ],
@@ -69,7 +69,7 @@ describe('dilemma selector', () => {
       pendingDilemmas: [
         {
           dilemmaId: 'foreign-rule',
-          factionId: aiFaction!.id,
+          countryId: aiFaction!.id,
           offeredAt: START_MS,
         },
       ],

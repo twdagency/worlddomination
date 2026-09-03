@@ -179,6 +179,7 @@ export {
   buildDispatchFeed,
   computeBeatId,
   dispatchLineForEvent,
+  filterDispatchesForCountry,
   filterDispatchesForFaction,
   formatBuildStartedLine,
   formatIncomeDispatchLine,
@@ -292,6 +293,11 @@ export {
   nextEventId,
   stampEvents,
 } from './events';
+export {
+  migrateDispatchEventCountryIds,
+  migrateLegacyCountryIdFields,
+  payloadCountryId,
+} from './eventCountryId';
 export type { WorldMigrationCatalog } from './migrations';
 export {
   accruePassiveInfluence,
@@ -454,6 +460,7 @@ export {
   DISPATCH_LINE_CAP,
   arrivalImportance,
   departureImportance,
+  countryIdFromEvent,
   factionIdFromEvent,
   isAmbientInfluenceDispatch,
   mediumCompactionCategory,

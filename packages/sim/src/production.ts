@@ -287,7 +287,7 @@ export function applyBuildOrders(
         kind: 'buildStarted',
         at: world.nowMs,
         territoryId: order.territoryId,
-        factionId,
+        countryId: factionId,
         unitTypeId: order.unitTypeId,
         count: order.count,
         intent: order.intent,
@@ -341,7 +341,7 @@ export function applyBuildOrders(
         kind: 'infraUpgraded',
         at: world.nowMs,
         territoryId: order.territoryId,
-        factionId,
+        countryId: factionId,
         infraLevel,
         intent: order.intent,
         source: 'direct',
@@ -392,7 +392,7 @@ export function resolveProductionCompletions(
         territoryId: territory.id,
         unitTypeId: item.unitTypeId,
         count: item.count,
-        factionId: ownerId,
+        countryId: ownerId,
         importance: 'medium',
       });
       territoryChanged = true;

@@ -141,7 +141,7 @@ function rejectInfluenceOrder(
   events.push({
     kind: 'orderRejected',
     at: world.nowMs,
-    factionId: order.ownerId,
+    countryId: order.ownerId,
     influenceOrderKind,
     targetCityId: order.targetCityId,
     reason,

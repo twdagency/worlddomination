@@ -163,8 +163,8 @@ export function formatVictoryLine(
   world: WorldState,
   event: Extract<SimEvent, { kind: 'victory' }>,
 ): string {
-  const country = findCountry(world, event.factionId);
-  const countryLabel = country?.name ?? event.factionId;
+  const country = findCountry(world, event.countryId);
+  const countryLabel = country?.name ?? event.countryId;
   return `${countryLabel} is the last country standing.`;
 }
 
@@ -214,8 +214,8 @@ export function formatBuildStartedLine(
   event: Extract<SimEvent, { kind: 'buildStarted' }>,
 ): string {
   const place = territoryLabelWithOwner(world, event.territoryId);
-  const who = subject(world, event.factionId);
-  const prefix = isPlayerFaction(world, event.factionId) ? 'PRODUCTION' : 'INTEL';
+  const who = subject(world, event.countryId);
+  const prefix = isPlayerFaction(world, event.countryId) ? 'PRODUCTION' : 'INTEL';
   return `${prefix} — Construction begun at ${place} (${who})`;
 }
 
@@ -224,8 +224,8 @@ export function formatInfraUpgradedLine(
   event: Extract<SimEvent, { kind: 'infraUpgraded' }>,
 ): string {
   const place = territoryLabelWithOwner(world, event.territoryId);
-  const who = subject(world, event.factionId);
-  const prefix = isPlayerFaction(world, event.factionId) ? 'BUILD' : 'INTEL';
+  const who = subject(world, event.countryId);
+  const prefix = isPlayerFaction(world, event.countryId) ? 'BUILD' : 'INTEL';
   return `${prefix} — Infrastructure upgraded at ${place} (${who})`;
 }
 

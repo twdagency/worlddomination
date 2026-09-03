@@ -52,7 +52,7 @@ describe('last country standing victory', () => {
     expect(first.events).toEqual([
       expect.objectContaining({
         kind: 'victory',
-        factionId: PLAYER,
+        countryId: PLAYER,
         importance: 'high',
       }),
     ]);

@@ -40,6 +40,8 @@ Touched surfaces (audit, not a mechanical 2,600-string sweep):
 | Selector/filter alias | ~2 |
 | Snapshot / digest contract updates | ~3 |
 
-## Risk
+## Phase 2 — COMPLETE
+
+Delivered: event/dilemma/`setPolicy` field rename + additive load migration. Slug rename **not** taken.
 
 High snapshot churn. Isolate payload rename from Annexation (Phase 3) so influence transfer events are not renamed in the same commit as peaceful capture.

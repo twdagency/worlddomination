@@ -57,7 +57,7 @@ describe('dispatch beat grouping', () => {
     kind: 'buildStarted',
     at: world.nowMs,
     territoryId: PARIS.id,
-    factionId: 'faction-steppe',
+    countryId: 'faction-steppe',
     unitTypeId: 'levy-t1',
     count: 1,
     intent: 'build',

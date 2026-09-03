@@ -57,7 +57,7 @@ describe('dispatch visibility', () => {
     const handoff: SimEvent = {
       kind: 'tutorialHandoffReady',
       at: world.nowMs,
-      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      countryId: PLAYER_TUTORIAL_FACTION_ID,
       importance: 'medium',
     };
 

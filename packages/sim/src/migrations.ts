@@ -1,3 +1,4 @@
+import { migratePendingDilemmaCountryIds } from './eventCountryId';
 import type { Leader, TutorialState, UnitType, WorldState } from './types';
 import { ensureWorldCountries, ensureWorldFactionRename } from './country';
 import { ensureWorldDiplomacy } from './diplomacy';
@@ -60,7 +61,7 @@ function ensureFactionFields(world: WorldState): WorldState {
   return {
     ...world,
     factions,
-    pendingDilemmas: world.pendingDilemmas ?? [],
+    pendingDilemmas: migratePendingDilemmaCountryIds(world.pendingDilemmas) ?? [],
   };
 }
 

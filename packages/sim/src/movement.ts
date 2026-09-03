@@ -139,7 +139,7 @@ export function applyMoveOrders(
         events.push({
           kind: 'orderRejected',
           at: world.nowMs,
-          factionId: unit.ownerId,
+          countryId: unit.ownerId,
           unitId: order.unitId,
           attemptedDestinationId: order.toTerritoryId,
           reason: assaultValidation.reason,

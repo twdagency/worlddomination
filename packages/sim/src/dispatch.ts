@@ -199,7 +199,7 @@ export function dispatchLineForEvent(
       return formatWithdrawalNarrative(
         world,
         event.territoryId,
-        event.factionId,
+        event.countryId,
         event.toTerritoryId,
         event.destroyed,
         event.defenderLosses,
@@ -207,7 +207,7 @@ export function dispatchLineForEvent(
         event.underFire,
       );
     case 'secured':
-      return formatSecuredNarrative(world, event.territoryId, event.factionId, event.enemyWithdrew);
+      return formatSecuredNarrative(world, event.territoryId, event.countryId, event.enemyWithdrew);
     case 'income':
       return formatIncomeDispatchLine(world, event);
     case 'production':
@@ -366,8 +366,9 @@ export function groupEventsByBeat(world: WorldState, events: SimEvent[]): Dispat
           observerFaction?: Id;
           ownerId?: Id;
           factionId?: Id;
+          countryId?: Id;
         };
-        factionId = tagged.observerFaction ?? tagged.ownerId ?? tagged.factionId;
+        factionId = tagged.observerFaction ?? tagged.ownerId ?? tagged.countryId ?? tagged.factionId;
       }
     }
     const decisionTickMs = 'decisionTickMs' in event ? event.decisionTickMs : undefined;
@@ -457,11 +458,11 @@ export function isDispatchVisibleToFaction(
     case 'infraUpgraded':
     case 'production':
     case 'buildBlocked':
-      if ('factionId' in event && event.factionId === factionId) return true;
+      if ('countryId' in event && event.countryId === factionId) return true;
       return isTerritoryVisible(world, factionId, event.territoryId);
 
     case 'orderRejected':
-      return event.factionId === factionId;
+      return event.countryId === factionId;
 
     case 'battle':
     case 'withdrawal':
@@ -470,7 +471,7 @@ export function isDispatchVisibleToFaction(
 
     case 'allyArrivalPeaceful':
     case 'dispatchCancelledByAlliance':
-      return event.factionId === factionId;
+      return event.countryId === factionId;
 
     case 'orderRedirectedToAlly':
       return event.orderingFactionId === factionId;
@@ -512,11 +513,19 @@ export function isDispatchVisibleToFaction(
   }
 }
 
-/** Player/AI-facing dispatch feed — not the global sim event log. */
+export function filterDispatchesForCountry(
+  world: WorldState,
+  events: SimEvent[],
+  countryId: Id,
+): SimEvent[] {
+  return events.filter((event) => isDispatchVisibleToFaction(world, event, countryId));
+}
+
+/** @deprecated Use `filterDispatchesForCountry`. */
 export function filterDispatchesForFaction(
   world: WorldState,
   events: SimEvent[],
   factionId: Id,
 ): SimEvent[] {
-  return events.filter((event) => isDispatchVisibleToFaction(world, event, factionId));
+  return filterDispatchesForCountry(world, events, factionId);
 }

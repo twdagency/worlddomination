@@ -218,7 +218,7 @@ function buildCountryDefeatedEvent(
 
 function clearPendingDilemmasForCountry(world: WorldState, countryId: Id): WorldState {
   const pending = world.pendingDilemmas ?? [];
-  const next = pending.filter((entry) => entry.factionId !== countryId);
+  const next = pending.filter((entry) => entry.countryId !== countryId);
   if (next.length === pending.length) return world;
   return { ...world, pendingDilemmas: next };
 }
@@ -388,7 +388,7 @@ export function evaluateLastCountryStanding(
       {
         kind: 'victory',
         at,
-        factionId: winner.id,
+        countryId: winner.id,
         importance: 'high',
       },
     ],

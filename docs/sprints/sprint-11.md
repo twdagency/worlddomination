@@ -45,6 +45,15 @@ Stop-and-report after each phase. Mid-sprint additions → `docs/deferred-backlo
 - `tutorial.ts` does not import new influence/AI modules
 - Annexation reuses `territoryOwnership.ts` / defeat cascade; no parallel capture path
 
+## Phase 2 — COMPLETE
+
+- SimEvent payload field `factionId` → `countryId` (writers emit `countryId` only)
+- PendingDilemma and `setPolicy` order field follow the same rename
+- `migrateLegacyCountryIdFields` / `backfillLegacyDispatchEventIds` copy saved `factionId` → `countryId` and drop the old key
+- `filterDispatchesForCountry` with deprecated `filterDispatchesForFaction` alias
+- ID slugs unchanged (`faction-*`)
+- Tests: **688** sim passed (+2 Phase 2 contracts vs Phase 1)
+
 ## Phase 1 — COMPLETE
 
 - Madge `packages/sim/src/index.ts`: **3 → 0** cycles (70 files; no longer walks shared barrel)

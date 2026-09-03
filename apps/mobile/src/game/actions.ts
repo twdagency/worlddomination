@@ -214,7 +214,7 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
     return formatWithdrawalNarrative(
       world,
       event.territoryId,
-      event.factionId,
+      event.countryId,
       event.toTerritoryId,
       event.destroyed,
       event.defenderLosses,
@@ -224,7 +224,7 @@ export function formatDispatchLine(event: SimEvent, world: WorldState): string {
   }
 
   if (event.kind === 'secured') {
-    return formatSecuredNarrative(world, event.territoryId, event.factionId, event.enemyWithdrew);
+    return formatSecuredNarrative(world, event.territoryId, event.countryId, event.enemyWithdrew);
   }
 
   if (event.kind === 'income') {

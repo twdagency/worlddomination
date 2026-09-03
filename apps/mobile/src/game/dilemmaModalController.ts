@@ -31,7 +31,7 @@ export function shouldShowDilemmaModal(
   const playerId = playerFactionId(world);
   if (playerId && findCountry(world, playerId)?.defeated === true) return null;
   const pending = world.pendingDilemmas.filter(
-    (entry) => !playerId || entry.factionId === playerId,
+    (entry) => !playerId || entry.countryId === playerId,
   );
 
   const ranked = pending.flatMap((entry) => {

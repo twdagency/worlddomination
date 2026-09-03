@@ -122,7 +122,7 @@ describe('dispatch narratives', () => {
       territoryId: LONDON.id,
       unitTypeId: 'levy-t1',
       count: 5,
-      factionId: 'faction-player',
+      countryId: 'faction-player',
     });
     expect(playerLine).toBe('PRODUCTION — Your 5× Levy ready at London');
 
@@ -145,7 +145,7 @@ describe('dispatch narratives', () => {
       territoryId: LONDON.id,
       unitTypeId: 'levy-t1',
       count: 40,
-      factionId: 'faction-britain',
+      countryId: 'faction-britain',
     });
     expect(aiLine).toBe('INTEL — Elizabeth — 40× Levy ready at London');
   });

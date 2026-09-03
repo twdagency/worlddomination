@@ -107,7 +107,7 @@ describe('buildActionFeedback', () => {
     const handoff = testSimEvent({
       kind: 'tutorialHandoffReady',
       at,
-      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      countryId: PLAYER_TUTORIAL_FACTION_ID,
       importance: 'medium',
     });
 

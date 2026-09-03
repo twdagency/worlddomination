@@ -104,7 +104,7 @@ describe('dilemmas', () => {
       expect.objectContaining({
         kind: 'dilemmaResolved',
         at: START_MS,
-        factionId: PLAYER_TUTORIAL_FACTION_ID,
+        countryId: PLAYER_TUTORIAL_FACTION_ID,
         dilemmaId: 'foreign-rule',
         optionId: 'conciliation',
         importance: 'high',

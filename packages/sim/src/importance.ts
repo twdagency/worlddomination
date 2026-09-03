@@ -82,13 +82,16 @@ export function resolveEventImportance(world: WorldState, event: SimEvent): Disp
   return 'low';
 }
 
-export function factionIdFromEvent(event: SimEvent): Id | undefined {
+export function countryIdFromEvent(event: SimEvent): Id | undefined {
   if (event.kind === 'intelReport') return event.receiverFaction ?? event.observerFaction;
   if ('ownerId' in event) return event.ownerId;
-  if ('factionId' in event) return event.factionId;
+  if ('countryId' in event) return event.countryId;
   if (event.kind === 'battle') return event.report.attackerId;
   return undefined;
 }
+
+/** @deprecated Use `countryIdFromEvent`. */
+export const factionIdFromEvent = countryIdFromEvent;
 
 export type MediumCompactionCategory =
   | 'construction'
@@ -141,7 +144,7 @@ function isPlayerActor(world: WorldState, factionId: Id): boolean {
 export function isAmbientInfluenceDispatch(world: WorldState, event: SimEvent): boolean {
   const category = mediumCompactionCategory(event);
   if (!category || !LIVE_ROUTINE_CATEGORIES.has(category)) return false;
-  const factionId = factionIdFromEvent(event);
+  const factionId = countryIdFromEvent(event);
   return Boolean(factionId && !isPlayerActor(world, factionId));
 }
 
@@ -152,7 +155,7 @@ export function shouldFoldMediumEvent(
 ): MediumCompactionCategory | null {
   const category = mediumCompactionCategory(event);
   if (!category) return null;
-  const factionId = factionIdFromEvent(event);
+  const factionId = countryIdFromEvent(event);
   if (!factionId) return null;
   if (foldAllMedium) return category;
   if (!LIVE_ROUTINE_CATEGORIES.has(category)) return null;

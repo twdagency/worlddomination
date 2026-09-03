@@ -188,7 +188,7 @@ describe('AI scouting behavior', () => {
       (event) =>
         event.kind === 'buildStarted' &&
         event.unitTypeId === SCOUT_UNIT_TYPE_ID &&
-        event.factionId !== 'faction-player',
+        event.countryId !== 'faction-player',
     );
     const aiScoutMoves = events.filter(
       (event) =>

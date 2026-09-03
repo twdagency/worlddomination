@@ -125,7 +125,7 @@ export function graduateTutorial(
     {
       kind: 'tutorialGraduated',
       at,
-      factionId,
+      countryId: factionId,
       importance: 'high',
     },
   ]);

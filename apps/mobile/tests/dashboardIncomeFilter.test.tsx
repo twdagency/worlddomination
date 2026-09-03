@@ -34,7 +34,7 @@ describe('dashboard income filter', () => {
         territoryId: 'territory-london',
         unitTypeId: 'levy-t1',
         count: 1,
-        factionId: playerId,
+        countryId: playerId,
         importance: 'low',
       }),
     ]);

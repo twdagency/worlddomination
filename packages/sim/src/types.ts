@@ -213,7 +213,7 @@ export type Order =
       beatId: string;
       decisionTickMs: Millis;
     }
-  | { kind: 'setPolicy'; factionId: Id; policies: Partial<Policies> }
+  | { kind: 'setPolicy'; countryId: Id; policies: Partial<Policies> }
   | { kind: 'setStance'; unitId: Id; stance: Unit['stance'] }
   | { kind: 'eventChoice'; eventId: Id; choiceId: Id }
   | { kind: 'covertOp'; spyUnitId: Id; targetId: Id; op: CovertOpKind }
@@ -387,7 +387,7 @@ export type SimEventKind =
       kind: 'withdrawal';
       at: Millis;
       territoryId: Id;
-      factionId: Id;
+      countryId: Id;
       unitIds: Id[];
       toTerritoryId?: Id;
       destroyed: boolean;
@@ -400,7 +400,7 @@ export type SimEventKind =
       kind: 'secured';
       at: Millis;
       territoryId: Id;
-      factionId: Id;
+      countryId: Id;
       unitIds: Id[];
       enemyWithdrew: boolean;
       importance?: DispatchImportance;
@@ -418,14 +418,14 @@ export type SimEventKind =
       territoryId: Id;
       unitTypeId: Id;
       count: number;
-      factionId: Id;
+      countryId: Id;
       importance?: DispatchImportance;
     }
   | {
       kind: 'buildStarted';
       at: Millis;
       territoryId: Id;
-      factionId: Id;
+      countryId: Id;
       unitTypeId: Id;
       count: number;
       intent: OrderIntent;
@@ -438,7 +438,7 @@ export type SimEventKind =
       kind: 'infraUpgraded';
       at: Millis;
       territoryId: Id;
-      factionId: Id;
+      countryId: Id;
       infraLevel: number;
       intent: OrderIntent;
       source: IntelSource;
@@ -559,7 +559,7 @@ export type SimEventKind =
   | {
       kind: 'orderRejected';
       at: Millis;
-      factionId: Id;
+      countryId: Id;
       unitId?: Id;
       attemptedDestinationId?: Id;
       influenceOrderKind?: InfluenceOrderKind | 'cancel-diplomatic-mission';
@@ -569,7 +569,7 @@ export type SimEventKind =
     }
   | { kind: 'procedural'; at: Millis; catalogEventId: Id; templateId: Id; payload: unknown }
   | { kind: 'unrest'; at: Millis; territoryId: Id; standing: number }
-  | { kind: 'victory'; at: Millis; factionId: Id; importance?: DispatchImportance }
+  | { kind: 'victory'; at: Millis; countryId: Id; importance?: DispatchImportance }
   | { kind: 'espionage'; at: Millis; report: string; exposed: boolean }
   | {
       kind: 'territoryCaptured';
@@ -590,7 +590,7 @@ export type SimEventKind =
   | {
       kind: 'dilemmaResolved';
       at: Millis;
-      factionId: Id;
+      countryId: Id;
       dilemmaId: Id;
       optionId: Id;
       importance?: DispatchImportance;
@@ -598,19 +598,19 @@ export type SimEventKind =
   | {
       kind: 'tutorialHandoffReady';
       at: Millis;
-      factionId: Id;
+      countryId: Id;
       importance?: DispatchImportance;
     }
   | {
       kind: 'tutorialGraduated';
       at: Millis;
-      factionId: Id;
+      countryId: Id;
       importance?: DispatchImportance;
     }
   | {
       kind: 'allyArrivalPeaceful';
       at: Millis;
-      factionId: Id;
+      countryId: Id;
       allyFactionId: Id;
       territoryId: Id;
       fromTerritoryId: Id;
@@ -620,7 +620,7 @@ export type SimEventKind =
   | {
       kind: 'dispatchCancelledByAlliance';
       at: Millis;
-      factionId: Id;
+      countryId: Id;
       allyFactionId: Id;
       unitId: Id;
       fromTerritoryId: Id;
@@ -886,7 +886,7 @@ export interface TutorialState {
 
 export interface PendingDilemma {
   dilemmaId: Id;
-  factionId: Id;
+  countryId: Id;
   offeredAt: Millis;
 }
 

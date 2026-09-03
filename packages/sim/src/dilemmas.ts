@@ -14,7 +14,7 @@ export function getDilemmaById(dilemmaId: Id): Dilemma | undefined {
 
 export function dropPendingDilemmasForFaction(world: WorldState, factionId: Id): WorldState {
   const pending = world.pendingDilemmas ?? [];
-  const next = pending.filter((entry) => entry.factionId !== factionId);
+  const next = pending.filter((entry) => entry.countryId !== factionId);
   if (next.length === pending.length) return world;
   return { ...world, pendingDilemmas: next };
 }
@@ -27,10 +27,10 @@ export function enqueuePendingDilemma(
 ): WorldState {
   if (findCountry(world, factionId)?.defeated === true) return world;
   const pending = world.pendingDilemmas ?? [];
-  if (pending.some((entry) => entry.dilemmaId === dilemmaId && entry.factionId === factionId)) {
+  if (pending.some((entry) => entry.dilemmaId === dilemmaId && entry.countryId === factionId)) {
     return world;
   }
-  const entry: PendingDilemma = { dilemmaId, factionId, offeredAt: at };
+  const entry: PendingDilemma = { dilemmaId, countryId: factionId, offeredAt: at };
   return { ...world, pendingDilemmas: [...pending, entry] };
 }
 
@@ -130,7 +130,7 @@ export function resolveDilemma(
 
   const pending = world.pendingDilemmas ?? [];
   const hasPending = pending.some(
-    (entry) => entry.dilemmaId === dilemmaId && entry.factionId === factionId,
+    (entry) => entry.dilemmaId === dilemmaId && entry.countryId === factionId,
   );
   if (!hasPending) {
     return { world, events: [] };
@@ -160,14 +160,14 @@ export function resolveDilemma(
   next = {
     ...next,
     pendingDilemmas: pending.filter(
-      (entry) => !(entry.dilemmaId === dilemmaId && entry.factionId === factionId),
+      (entry) => !(entry.dilemmaId === dilemmaId && entry.countryId === factionId),
     ),
   };
 
   const event: SimEventDraft = {
     kind: 'dilemmaResolved',
     at,
-    factionId,
+    countryId: factionId,
     dilemmaId,
     optionId,
     importance: 'high',

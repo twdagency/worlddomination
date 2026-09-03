@@ -118,7 +118,7 @@ describe('production', () => {
       at: completeAt,
       unitTypeId: 'levy-t1',
       count: 5,
-      factionId: 'faction-player',
+      countryId: 'faction-player',
     });
 
     const spawned = Object.values(units).find(

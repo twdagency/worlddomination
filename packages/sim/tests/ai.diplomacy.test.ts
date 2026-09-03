@@ -283,7 +283,7 @@ describe('AI diplomacy cold-play #1 (72h, pre-transit scoring)', () => {
     const steppeScoutBuilds = events.filter(
       (event) =>
         event.kind === 'buildStarted' &&
-        event.factionId === GENGHIS &&
+        event.countryId === GENGHIS &&
         event.unitTypeId === SCOUT_UNIT_TYPE_ID,
     );
     const steppeScoutMoves = events.filter(
