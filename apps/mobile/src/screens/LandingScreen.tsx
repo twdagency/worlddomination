@@ -5,6 +5,7 @@ import { useGame } from '../game/GameContext';
 import { DEFAULT_SCENARIO_ID } from '../game/scenarios';
 import { DevScenarioSelector } from '../components/DevScenarioSelector';
 import { landingActions } from './landingMenu';
+import { TUTORIAL_SCENE_COPY } from 'shared';
 import { terminal } from '../theme/terminal';
 
 type LandingView = 'home' | 'options';
@@ -25,9 +26,7 @@ export function LandingScreen() {
       <View style={[styles.shell, { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24 }]}>
         <Text style={styles.kicker}>Command</Text>
         <Text style={styles.title}>Options</Text>
-        <Text style={styles.blurb}>
-          Tutorial time runs at 30× so marches resolve in minutes. Full campaigns run at 1×.
-        </Text>
+        <Text style={styles.blurb}>{TUTORIAL_SCENE_COPY.optionsBlurb}</Text>
         {hasSavedCampaign ? (
           <Pressable
             accessibilityRole="button"
@@ -70,7 +69,7 @@ export function LandingScreen() {
             : action.id === 'start'
               ? 'Europe campaign at standard speed.'
               : action.id === 'tutorial'
-                ? 'Channel March · 30× time.'
+                ? TUTORIAL_SCENE_COPY.landingHint
                 : undefined;
         const onPress =
           action.id === 'continue'

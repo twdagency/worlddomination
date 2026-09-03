@@ -12,6 +12,7 @@ import { UNIT_TYPES } from 'shared';
 import { resolvePlayerFactionId } from 'shared';
 import { useGame } from '../game/GameContext';
 import { ForeignTerritoryInfluenceDetail } from '../components/influence/ForeignTerritoryInfluenceDetail';
+import { TerminalProgressBar } from '../components/TerminalProgressBar';
 import { selectCountryById, selectPlayerCountry } from '../game/countrySelector';
 import { playerOwnedTerritories } from '../game/playerView';
 import {
@@ -37,7 +38,7 @@ import { ExpandableRow } from '../components/disclosure/ExpandableRow';
 import { WhyBlock } from '../components/disclosure/WhyBlock';
 import { DevTimeSkip } from '../components/DevTimeSkip';
 import { showDevControls } from '../game/devFlag';
-import { remainingWallMs } from '../game/timeScale';
+import { actionProgressFraction, remainingWallMs } from '../game/timeScale';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import {
@@ -198,6 +199,10 @@ export function TerritoryScreen() {
                     ? `${formatDuration(entry.remainingMs)} remaining`
                     : 'Completing…'}
                 </Text>
+                <TerminalProgressBar
+                  progress={entry.progress}
+                  testID={`build-progress-${entry.territoryId}-${entry.unitTypeId}`}
+                />
               </TerminalCard>
             );
           })}
@@ -345,11 +350,18 @@ function TerritoryDetail({
             const unitType = world.unitTypes[item.unitTypeId];
             const completeAt = item.startMs + item.durationMs;
             const remaining = remainingWallMs(world, completeAt);
+            const progress = actionProgressFraction(world, item.startMs, completeAt);
             return (
-              <Text key={`${item.unitTypeId}-${item.startMs}-${i}`} style={styles.stat}>
-                {unitType?.name ?? item.unitTypeId} ×{item.count} —{' '}
-                {remaining > 0 ? `${formatDuration(remaining)} left` : 'Completing…'}
-              </Text>
+              <View key={`${item.unitTypeId}-${item.startMs}-${i}`}>
+                <Text style={styles.stat}>
+                  {unitType?.name ?? item.unitTypeId} ×{item.count} —{' '}
+                  {remaining > 0 ? `${formatDuration(remaining)} left` : 'Completing…'}
+                </Text>
+                <TerminalProgressBar
+                  progress={progress}
+                  testID={`territory-build-progress-${item.unitTypeId}-${i}`}
+                />
+              </View>
             );
           })}
         </>

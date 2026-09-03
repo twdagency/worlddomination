@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useGame } from '../game/GameContext';
 import { selectPlayerCountry } from '../game/countrySelector';
@@ -30,16 +30,9 @@ type DashboardNavigation = NativeStackNavigationProp<HomeStackParamList, 'Dashbo
 
 export function DashboardScreen() {
   const navigation = useNavigation<DashboardNavigation>();
-  const { world, dispatches, dispatchReadState, awayMs, markDispatchesViewed, openDilemmaModal } =
-    useGame();
+  const { world, dispatches, dispatchReadState, awayMs, openDilemmaModal } = useGame();
   const [fallenAcknowledged, setFallenAcknowledged] = useState(false);
   const [victoryAcknowledged, setVictoryAcknowledged] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      markDispatchesViewed();
-    }, [markDispatchesViewed]),
-  );
 
   const pendingDilemmas = useMemo(() => selectPendingDilemmaCards(world), [world]);
   const playerCountry = useMemo(() => selectPlayerCountry(world), [world]);

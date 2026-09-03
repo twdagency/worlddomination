@@ -74,6 +74,7 @@ export function TutorialBanner({
 
       {!collapsed ? (
         <>
+          {copy.intro ? <Text style={styles.intro}>{copy.intro}</Text> : null}
           <Text style={styles.body}>{copy.body}</Text>
           {copy.hint ? (
             <ExpandableRow
@@ -144,6 +145,12 @@ const styles = StyleSheet.create({
   },
   body: {
     color: terminal.muted,
+    fontFamily: terminal.mono,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  intro: {
+    color: terminal.text,
     fontFamily: terminal.mono,
     fontSize: 12,
     lineHeight: 18,

@@ -259,10 +259,7 @@ export function buildDisplayDispatchFeed(
   const playerId = resolvePlayerFactionId(world);
   if (!playerId) return [];
   const visible = filterDispatchesForFaction(world, events, playerId);
-  if (awayMs > COMPACTION_THRESHOLD_MS) {
-    return compactDispatchFeed(world, visible, awayMs, formatDispatchLine);
-  }
-  return buildDispatchFeed(world, visible, formatDispatchLine);
+  return compactDispatchFeed(world, visible, awayMs, formatDispatchLine);
 }
 
 export function isDispatchDetailEvent(

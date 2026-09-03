@@ -1,4 +1,4 @@
-import type { Millis, SimEvent, TutorialBeatId, TutorialState, WorldState } from './types';
+import type { Id, Millis, SimEvent, TutorialBeatId, TutorialState, WorldState } from './types';
 import {
   PLAYER_TUTORIAL_FACTION_ID,
 } from '../../shared/src/tutorialConstants';
@@ -17,6 +17,29 @@ export const TUTORIAL_BEAT_ORDER: readonly TutorialBeatId[] = [
 
 export const TUTORIAL_ACTIVE_TIME_MULTIPLIER = 30;
 export const STANDARD_TIME_MULTIPLIER = 1;
+/** Max wall-clock wait for player marches/builds while the tutorial is active. */
+export const TUTORIAL_MAX_PLAYER_ACTION_WALL_MS = 2_000;
+
+export function isActiveTutorial(world: WorldState): boolean {
+  return world.tutorial?.active === true;
+}
+
+export function isTutorialPlayerFaction(world: WorldState, factionId: Id): boolean {
+  if (!isActiveTutorial(world)) return false;
+  const player = playerFactionId(world);
+  return player !== undefined && player === factionId;
+}
+
+/** Game-ms ceiling for a player action so wall wait stays within the tutorial cap. */
+export function tutorialPlayerActionGameCapMs(world: WorldState): Millis {
+  const multiplier = world.timeMultiplier ?? STANDARD_TIME_MULTIPLIER;
+  return TUTORIAL_MAX_PLAYER_ACTION_WALL_MS * multiplier;
+}
+
+export function capTutorialPlayerActionGameMs(world: WorldState, gameMs: Millis): Millis {
+  if (!isActiveTutorial(world)) return gameMs;
+  return Math.min(gameMs, tutorialPlayerActionGameCapMs(world));
+}
 
 export {
   PLAYER_TUTORIAL_FACTION_ID,

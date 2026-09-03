@@ -8,6 +8,7 @@ import {
   MS_PER_HOUR,
 } from './constants';
 import { incomePerHour } from './economy';
+import { capTutorialPlayerActionGameMs, isTutorialPlayerFaction } from './tutorial';
 import type {
   BuildQueueItem,
   Id,
@@ -158,7 +159,11 @@ export function buildDurationMs(
   factionId: Id,
 ): Millis {
   const mult = leaderBuildTimeMult(world, factionId);
-  return unitType.buildHours * MS_PER_HOUR * mult;
+  const raw = unitType.buildHours * MS_PER_HOUR * mult;
+  if (isTutorialPlayerFaction(world, factionId)) {
+    return capTutorialPlayerActionGameMs(world, raw);
+  }
+  return raw;
 }
 
 /** All production completion timestamps strictly after `nowMs`. */

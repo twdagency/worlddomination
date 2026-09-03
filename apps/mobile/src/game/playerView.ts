@@ -3,8 +3,10 @@ import {
   dispatchLineForEvent,
   filterDispatchesForFaction,
   hasDisplayableIncome,
+  isAmbientInfluenceDispatch,
   pendingProposalsForFaction,
   resolveEventImportance,
+  transitFraction,
   type Id,
   type SimEvent,
 } from 'sim';
@@ -350,6 +352,7 @@ export interface DashboardActiveForceItem {
   label: string;
   detail: string;
   inTransit: boolean;
+  progress?: number;
 }
 
 export interface DashboardActiveForcesSummary {
@@ -594,6 +597,7 @@ export function getDashboardDispatchesDigest(
   const ranked = filterDispatchesForFaction(world, events, resolvedFactionId)
     .filter((event): event is SimEvent & { at: number } => isTimestampedEvent(event))
     .filter((event) => event.kind !== 'income' || hasDisplayableIncome(event))
+    .filter((event) => !isAmbientInfluenceDispatch(world, event))
     .map((event) => {
       const importance = resolveEventImportance(world, event);
       return {
@@ -652,11 +656,14 @@ export function getDashboardActiveForcesSummary(world: WorldState): DashboardAct
       ? formatTransitEndpointLabel(world, destId, 'compact', playerId, undefined, true)
       : 'unknown';
     const eta = formatDuration(remainingWallMs(world, unit.transit?.arriveMs ?? 0));
+    const progress =
+      unit.transit !== undefined ? transitFraction(world.nowMs, unit.transit) : undefined;
     return {
       unitId: unit.id,
       label: unitType?.name ?? unit.id,
       detail: `×${unit.count} from ${originLabel} → ${destLabel} · ETA ${eta}`,
       inTransit: true,
+      progress,
     };
   });
 

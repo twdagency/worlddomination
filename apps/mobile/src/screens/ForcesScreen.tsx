@@ -11,11 +11,13 @@ import {
 import { formatTransitEndpointLabel } from '../game/territoryOwnerLabel';
 import { navigateTo } from '../navigation/deepLinks';
 import { ExpandableRow } from '../components/disclosure/ExpandableRow';
+import { TerminalProgressBar } from '../components/TerminalProgressBar';
 import { ScreenBackButton } from '../components/navigation/ScreenBackButton';
 import { TerminalCard } from '../components/TerminalCard';
 import { terminal } from '../theme/terminal';
 import { remainingWallMs } from '../game/timeScale';
 import { formatDuration } from '../utils/format';
+import { transitFraction } from 'sim';
 
 export function ForcesScreen() {
   const navigation = useNavigation();
@@ -87,12 +89,23 @@ export function ForcesScreen() {
             ? formatTransitEndpointLabel(world, originId, 'inline', playerId)
             : 'Unknown';
           const remaining = remainingWallMs(world, inTransit.arriveMs);
+          const progress = transitFraction(world.nowMs, inTransit);
           return (
             <View testID={`force-in-transit-${item.id}`}>
               <ExpandableRow
                 rowId={item.id}
                 title={label}
-                subtitle={`×${item.count} · IN TRANSIT ${originLabel} → ${destLabel}`}
+                subtitleContent={
+                  <View>
+                    <Text style={styles.rowSubtitle}>
+                      ×{item.count} · IN TRANSIT {originLabel} → {destLabel}
+                    </Text>
+                    <TerminalProgressBar
+                      progress={progress}
+                      testID={`force-in-transit-progress-${item.id}`}
+                    />
+                  </View>
+                }
                 expanded={expandedUnitId === item.id}
                 highlighted
                 onToggle={(id) => setExpandedUnitId((prev) => toggleExpandedRow(prev, id))}

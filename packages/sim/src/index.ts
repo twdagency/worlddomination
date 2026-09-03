@@ -409,7 +409,12 @@ export type { ScoutingPriority, DiplomaticPosture, TutorialBeatId, TutorialState
 export {
   TUTORIAL_BEAT_ORDER,
   TUTORIAL_ACTIVE_TIME_MULTIPLIER,
+  TUTORIAL_MAX_PLAYER_ACTION_WALL_MS,
   STANDARD_TIME_MULTIPLIER,
+  capTutorialPlayerActionGameMs,
+  tutorialPlayerActionGameCapMs,
+  isTutorialPlayerFaction,
+  isActiveTutorial,
   PLAYER_TUTORIAL_FACTION_ID,
   TUTORIAL_HOME_TERRITORY_ID,
   TUTORIAL_PARIS_TERRITORY_ID,
@@ -450,8 +455,10 @@ export {
   arrivalImportance,
   departureImportance,
   factionIdFromEvent,
+  isAmbientInfluenceDispatch,
   mediumCompactionCategory,
   resolveEventImportance,
+  shouldFoldMediumEvent,
 } from './importance';
 export type { DispatchImportance } from './types';
 export type { MediumCompactionCategory } from './importance';

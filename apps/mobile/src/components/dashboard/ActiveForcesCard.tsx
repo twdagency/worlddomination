@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { DashboardActiveForcesSummary } from '../../game/playerView';
 import { TerminalCard } from '../TerminalCard';
+import { TerminalProgressBar } from '../TerminalProgressBar';
 import { terminal } from '../../theme/terminal';
 
 interface ActiveForcesCardProps {
@@ -22,6 +23,12 @@ export function ActiveForcesCard({ summary }: ActiveForcesCardProps) {
           <View key={item.unitId} style={styles.row}>
             <Text style={styles.unitLabel}>{item.label}</Text>
             <Text style={styles.unitDetail}>{item.detail}</Text>
+            {item.inTransit && item.progress !== undefined ? (
+              <TerminalProgressBar
+                progress={item.progress}
+                testID={`dashboard-force-progress-${item.unitId}`}
+              />
+            ) : null}
           </View>
         ))
       )}

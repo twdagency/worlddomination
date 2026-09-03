@@ -4,6 +4,7 @@ import { useRoute, type RouteProp } from '@react-navigation/native';
 import type { TransitOrder } from 'sim';
 import { moveDistanceKm, previewMoveEtaMs, TUTORIAL_PARIS_TERRITORY_ID } from 'sim';
 import { useGame } from '../game/GameContext';
+import { remainingWallMs } from '../game/timeScale';
 import { formatIntelAge } from '../game/intelDisplay';
 import { toggleExpandedRow } from '../game/expandableRowState';
 import { ActionFeedbackBanner } from '../components/feedback/ActionFeedbackBanner';
@@ -177,9 +178,11 @@ export function OrderScreen() {
   );
 
   const unitLabel = unit ? world.unitTypes[unit.typeId]?.name ?? unit.id : 'Force';
+  const previewWallMs = preview ? remainingWallMs(world, preview.etaMs) : null;
+
   const confirmSubtitle =
-    fromName && toName && preview
-      ? `${fromName} → ${toName} · ETA ${formatDuration(preview.travelMs)}`
+    fromName && toName && preview && previewWallMs !== null
+      ? `${fromName} → ${toName} · ETA ${formatDuration(previewWallMs)}`
       : 'Select force and destination';
 
   const destinationEmptyCopy =
@@ -359,7 +362,7 @@ export function OrderScreen() {
               <Text style={styles.route}>Route: {fromName} → {toName}</Text>
               <Text style={styles.route}>Distance: {formatDistance(distance)}</Text>
               <Text style={styles.route}>Speed: {formatSpeed(preview.speedKmh)}</Text>
-              <Text style={styles.eta}>ETA: {formatDuration(preview.travelMs)}</Text>
+              <Text style={styles.eta}>ETA: {formatDuration(previewWallMs ?? preview.travelMs)}</Text>
               <Text style={styles.arrival}>Arrival: {formatDateTime(preview.etaMs)}</Text>
               <Text style={styles.noCost}>No resource cost for movement.</Text>
               {selectedDestination?.state === 'stale' && selectedDestination.lastObservedAt !== undefined && (

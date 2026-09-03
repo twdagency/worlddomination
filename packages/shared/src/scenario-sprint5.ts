@@ -98,9 +98,9 @@ export function createSprint5World(nowMs: number = Date.now()): WorldState {
     units: {
       'unit-player-mg': {
         id: 'unit-player-mg',
-        typeId: 'mg-armor-t5',
+        typeId: 'infantry-t2',
         ownerId: 'faction-player',
-        count: 10,
+        count: 40,
         locationId: 'territory-belgrade',
         stance: 'defend',
       },

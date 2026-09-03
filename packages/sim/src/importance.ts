@@ -56,6 +56,7 @@ const MEDIUM_KINDS = new Set<SimEvent['kind']>([
   'treatyDeclined',
   'intelReport',
   'diplomaticMissionStarted',
+  'diplomaticMissionExpired',
   'diplomaticMissionExpelled',
   'culturalCampaignApplied',
   'tributeAutoEnded',
@@ -94,7 +95,16 @@ export type MediumCompactionCategory =
   | 'infrastructure'
   | 'production'
   | 'repositioning'
-  | 'blocked';
+  | 'blocked'
+  | 'missions'
+  | 'culture'
+  | 'intelligence';
+
+const LIVE_ROUTINE_CATEGORIES: ReadonlySet<MediumCompactionCategory> = new Set([
+  'missions',
+  'culture',
+  'intelligence',
+]);
 
 export function mediumCompactionCategory(event: SimEvent): MediumCompactionCategory | null {
   switch (event.kind) {
@@ -110,7 +120,42 @@ export function mediumCompactionCategory(event: SimEvent): MediumCompactionCateg
       return 'blocked';
     case 'departure':
       return event.intent === 'defend' ? 'repositioning' : null;
+    case 'diplomaticMissionStarted':
+    case 'diplomaticMissionExpired':
+    case 'diplomaticMissionExpelled':
+      return 'missions';
+    case 'culturalCampaignApplied':
+      return 'culture';
+    case 'intelReport':
+      return 'intelligence';
     default:
       return null;
   }
+}
+
+function isPlayerActor(world: WorldState, factionId: Id): boolean {
+  return world.factions[factionId]?.isPlayer === true;
+}
+
+/** Ambient AI influence traffic — grouped live; excluded from the dashboard digest. */
+export function isAmbientInfluenceDispatch(world: WorldState, event: SimEvent): boolean {
+  const category = mediumCompactionCategory(event);
+  if (!category || !LIVE_ROUTINE_CATEGORIES.has(category)) return false;
+  const factionId = factionIdFromEvent(event);
+  return Boolean(factionId && !isPlayerActor(world, factionId));
+}
+
+export function shouldFoldMediumEvent(
+  world: WorldState,
+  event: SimEvent,
+  foldAllMedium: boolean,
+): MediumCompactionCategory | null {
+  const category = mediumCompactionCategory(event);
+  if (!category) return null;
+  const factionId = factionIdFromEvent(event);
+  if (!factionId) return null;
+  if (foldAllMedium) return category;
+  if (!LIVE_ROUTINE_CATEGORIES.has(category)) return null;
+  if (isPlayerActor(world, factionId)) return null;
+  return category;
 }

@@ -15,7 +15,11 @@ export {
   TUTORIAL_HOME_TERRITORY_ID,
   TUTORIAL_PARIS_TERRITORY_ID,
 } from './tutorialConstants';
-export { TUTORIAL_BEAT_COPY, type BeatCopy } from './tutorialBeatCopy';
+export {
+  TUTORIAL_BEAT_COPY,
+  TUTORIAL_SCENE_COPY,
+  type BeatCopy,
+} from './tutorialBeatCopy';
 export type {
   Dilemma,
   DilemmaOption,

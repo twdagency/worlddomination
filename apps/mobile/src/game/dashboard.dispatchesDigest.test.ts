@@ -71,4 +71,39 @@ describe('dashboard dispatches digest', () => {
 
     expect(getDashboardUnreadDispatchCount(world, events, { atMs: 0, throughEventSerial: -1 })).toBe(1);
   });
+
+  it('omits ambient AI influence from the dashboard digest', () => {
+    const world = createSprint4World(START_MS);
+    const playerId = resolvePlayerFactionId(world)!;
+    const { events } = stampEvents(world, [
+      testSimEvent({
+        kind: 'diplomaticMissionStarted',
+        at: START_MS + 10,
+        ownerId: 'faction-rome',
+        targetCityId: 'territory-london',
+        expiresAt: START_MS + 86_400_000,
+        importance: 'medium',
+      }),
+      testSimEvent({
+        kind: 'culturalCampaignApplied',
+        at: START_MS + 20,
+        ownerId: 'faction-rome',
+        targetCityId: 'territory-london',
+        influenceDelta: 5,
+        importance: 'medium',
+      }),
+      testSimEvent({
+        kind: 'diplomaticMissionStarted',
+        at: START_MS + 30,
+        ownerId: playerId,
+        targetCityId: 'territory-paris',
+        expiresAt: START_MS + 86_400_000,
+        importance: 'medium',
+      }),
+    ]);
+
+    const digest = getDashboardDispatchesDigest(world, events);
+    expect(digest.every((item) => item.kind !== 'culturalCampaignApplied')).toBe(true);
+    expect(digest.some((item) => item.eventId === events[2]?.eventId)).toBe(true);
+  });
 });

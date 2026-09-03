@@ -3,6 +3,11 @@
   "private": true,
   "scripts": {
     "test": "pnpm --filter sim test && pnpm --filter mobile test",
+    "test:harness": "node scripts/test-harness.mjs",
+    "test:harness:self": "node --test scripts/test-harness.test.mjs",
+    "test:game": "node scripts/test-harness.mjs game",
+    "test:sim": "node scripts/test-harness.mjs sim",
+    "test:mobile": "node scripts/test-harness.mjs mobile",
     "lint": "eslint \"packages/**/*.{ts,tsx}\" \"apps/**/*.{ts,tsx}\"",
     "lint:fix": "pnpm lint --fix",
     "typecheck": "pnpm --filter shared typecheck && pnpm --filter sim typecheck && pnpm --filter mobile typecheck",

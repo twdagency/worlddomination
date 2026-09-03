@@ -1,5 +1,5 @@
 import type { Territory, WorldState } from 'sim';
-import { remainingWallMs } from './timeScale';
+import { remainingWallMs, actionProgressFraction } from './timeScale';
 
 export interface ActiveBuildEntry {
   territoryId: string;
@@ -7,6 +7,7 @@ export interface ActiveBuildEntry {
   unitTypeId: string;
   count: number;
   remainingMs: number;
+  progress: number;
 }
 
 export function territoryHasFoodShortage(territory: Territory): boolean {
@@ -50,6 +51,7 @@ export function collectActiveBuilds(
         unitTypeId: item.unitTypeId,
         count: item.count,
         remainingMs: remainingWallMs(world, completeAt),
+        progress: actionProgressFraction(world, item.startMs, completeAt),
       });
     }
   }

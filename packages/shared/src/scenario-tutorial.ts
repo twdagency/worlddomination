@@ -36,8 +36,8 @@ function buildTutorialCountries(factions: Record<string, Country>): Record<strin
 }
 
 /**
- * Tutorial map uses compressed Channel-adjacent coords so levy marches land in
- * ~4–8 game-hours at 5 km/h (Beat 1 pacing at 30× wall-clock).
+ * Tutorial map uses compressed Channel-adjacent coords. Player marches and builds
+ * are capped to ~2s wall time during the active tutorial (see tutorial.ts).
  */
 export const TUTORIAL_TERRITORIES = {
   'territory-london-tutorial': {
