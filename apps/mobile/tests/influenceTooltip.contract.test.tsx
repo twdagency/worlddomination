@@ -7,7 +7,7 @@ describe('influence tooltip contracts (Sprint 9 Phase 9)', () => {
     const app = fs.readFileSync(path.resolve(__dirname, '../App.tsx'), 'utf8');
     expect(app).toContain('TooltipProvider');
     expect(app).toContain('AppErrorBoundary');
-    expect(app).toContain('<RootTabs />');
+    expect(app).toContain('<AppShell />');
   });
 
   it('dashboard influence card uses persistent first-view tooltip', () => {
