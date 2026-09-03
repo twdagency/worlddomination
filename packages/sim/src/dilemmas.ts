@@ -1,4 +1,4 @@
-import type { Dilemma, DilemmaConsequence, DilemmaOption } from 'shared';
+import type { Dilemma, DilemmaConsequence, DilemmaOption } from 'shared/dilemmas';
 import type { Faction, Id, Millis, PendingDilemma, Reputation, SimEvent, SimEventDraft, Territory, WorldState } from './types';
 import { findCountry } from './country';
 import { stampEvents } from './events';

@@ -7,6 +7,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./dilemmas": "./src/dilemmas.ts",
     "./tutorialConstants": "./src/tutorialConstants.ts"
   },
   "scripts": {

@@ -1,4 +1,4 @@
-import type { Leader } from 'sim';
+import type { Leader } from 'sim/types';
 
 export const LEADERS: Leader[] = [
   {

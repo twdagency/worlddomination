@@ -1,4 +1,4 @@
-import { formatOrderRejectedMessage } from './movement';
+import { formatOrderRejectedMessage } from './orderRejectedMessage';
 import type { PressureProposalKind } from './types';
 import type { InfluenceOrderRejectionReason } from './influenceOrderValidation';
 

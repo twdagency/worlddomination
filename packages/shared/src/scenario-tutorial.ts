@@ -1,4 +1,4 @@
-import type { Country, WorldState } from 'sim';
+import type { Country, WorldState } from 'sim/types';
 import { createInitialTutorialState, diplomacyDefaults, TUTORIAL_ACTIVE_TIME_MULTIPLIER } from 'sim';
 import { LEADERS_BY_ID } from './leaders';
 import {

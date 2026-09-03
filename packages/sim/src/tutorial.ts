@@ -3,7 +3,7 @@ import {
   PLAYER_TUTORIAL_FACTION_ID,
 } from '../../shared/src/tutorialConstants';
 import { stampEvents } from './events';
-import { playerFactionId } from './dispatch';
+import { playerFactionId } from './playerIdentity';
 
 export const TUTORIAL_BEAT_ORDER: readonly TutorialBeatId[] = [
   'movement',

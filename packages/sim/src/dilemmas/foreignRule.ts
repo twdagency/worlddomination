@@ -1,4 +1,4 @@
-import type { Dilemma } from 'shared';
+import type { Dilemma } from 'shared/dilemmas';
 
 export const FOREIGN_RULE_DILEMMA: Dilemma = {
   id: 'foreign-rule',

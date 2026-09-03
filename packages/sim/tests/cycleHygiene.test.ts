@@ -16,6 +16,8 @@ import {
 } from '../src/influenceConstants';
 import { formatInfluenceOrderRejectedMessage } from '../src/influenceOrderMessages';
 import { isInfluenceOrder, validateInfluenceTarget } from '../src/influenceOrderValidation';
+import { formatOrderRejectedMessage } from '../src/orderRejectedMessage';
+import { playerFactionId } from '../src/playerIdentity';
 import { captureCityForCoup } from '../src/territoryOwnership';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
 
@@ -97,5 +99,16 @@ describe('cycle hygiene — extracted modules', () => {
   it('influenceOrderMessages formats rejection copy without validation imports', () => {
     expect(formatInfluenceOrderRejectedMessage('insufficient-gold')).toContain('gold');
     expect(formatInfluenceOrderRejectedMessage('target-is-allied')).toContain('allied');
+  });
+
+  it('playerIdentity resolves the player without importing dispatch', () => {
+    expect(playerFactionId(world())).toBe('faction-player');
+  });
+
+  it('orderRejectedMessage formats assault rejection without movement', () => {
+    expect(formatOrderRejectedMessage('cannot-assault-own-territory')).toContain('own territory');
+    expect(formatInfluenceOrderRejectedMessage('cannot-assault-own-territory')).toContain(
+      'own territory',
+    );
   });
 });

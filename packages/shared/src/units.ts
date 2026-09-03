@@ -1,4 +1,4 @@
-import type { UnitType } from 'sim';
+import type { UnitType } from 'sim/types';
 
 export const UNIT_TYPES: UnitType[] = [
   {

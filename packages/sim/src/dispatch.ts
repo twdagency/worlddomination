@@ -43,7 +43,7 @@ import {
   formatDiplomaticPressureProposalLabel,
   formatInfluenceOrderRejectedMessage,
 } from './influenceOrderMessages';
-import { formatOrderRejectedMessage } from './movement';
+import { formatOrderRejectedMessage } from './orderRejectedMessage';
 import { isTerritoryVisible } from './visibility';
 import {
   formatBattleNarrative,
@@ -402,9 +402,7 @@ export function taggedOrderFields(
   };
 }
 
-export function playerFactionId(world: WorldState): Id | undefined {
-  return Object.values(world.factions).find((faction) => faction.isPlayer)?.id;
-}
+export { playerFactionId } from './playerIdentity';
 
 /**
  * Whether a dispatch line is legible to `factionId`.

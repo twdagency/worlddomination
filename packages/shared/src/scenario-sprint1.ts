@@ -1,4 +1,4 @@
-import type { WorldState } from 'sim';
+import type { WorldState } from 'sim/types';
 import { diplomacyDefaults } from 'sim';
 import { LEADERS_BY_ID } from './leaders';
 import { UNIT_TYPES_BY_ID } from './units';

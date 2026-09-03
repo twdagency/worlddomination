@@ -1,5 +1,5 @@
 import { createSprint2World, SPRINT2_TERRITORIES } from './scenario-sprint2';
-import type { WorldState } from 'sim';
+import type { WorldState } from 'sim/types';
 
 const SPRINT3_TERRITORY_OVERRIDES = {
   'territory-london': {

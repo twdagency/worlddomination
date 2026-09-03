@@ -4,7 +4,11 @@ import { capTutorialPlayerActionGameMs, isTutorialPlayerFaction } from './tutori
 import { ensureIntelStore } from './intel';
 import { haversineKm } from './geo';
 import { arrivalImportance, departureImportance } from './importance';
+import type { AssaultOrderRejectionReason } from './orderRejectedMessage';
 import type { Id, IntelStore, Millis, Order, OrderIntent, SimEventDraft, TraitKey, TransitOrder, Unit, WorldState } from './types';
+
+export type { AssaultOrderRejectionReason } from './orderRejectedMessage';
+export { formatOrderRejectedMessage } from './orderRejectedMessage';
 
 type TransitOrderFields = {
   stanceOnArrival: TransitOrder['stanceOnArrival'];
@@ -12,15 +16,6 @@ type TransitOrderFields = {
   beatId: string;
   decisionTickMs: Millis;
 };
-
-export type AssaultOrderRejectionReason = 'cannot-assault-own-territory';
-
-export function formatOrderRejectedMessage(reason: AssaultOrderRejectionReason | string): string {
-  if (reason === 'cannot-assault-own-territory') {
-    return 'Cannot issue assault on own territory.';
-  }
-  return reason;
-}
 
 export function validateAssaultOrder(
   world: WorldState,

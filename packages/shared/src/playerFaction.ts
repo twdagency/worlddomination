@@ -1,4 +1,4 @@
-import type { Id, WorldState } from 'sim';
+import type { Id, WorldState } from 'sim/types';
 
 /** Human-controlled country for the active scenario (tutorial or sandbox). */
 export function resolvePlayerCountryId(world: WorldState): Id | undefined {

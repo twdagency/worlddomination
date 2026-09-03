@@ -1,4 +1,4 @@
-import type { TutorialBeatId } from 'sim';
+import type { TutorialBeatId } from 'sim/types';
 
 export interface BeatCopy {
   beat: TutorialBeatId;
