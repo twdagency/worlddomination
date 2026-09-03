@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import { createTutorialWorld } from '../../shared/src/scenario-tutorial';
 import {
   computeBeatId,
+  dispatchLineForEvent,
   filterDispatchesForFaction,
   isDispatchVisibleToFaction,
-} from '../src/dispatch';
+  PLAYER_TUTORIAL_FACTION_ID,
+} from '../src';
 import { createSprint4World } from '../../shared/src/scenario-sprint4';
 import type { SimEvent } from '../src/types';
 
@@ -47,5 +50,23 @@ describe('dispatch visibility', () => {
     };
 
     expect(isDispatchVisibleToFaction(world, playerReport, PLAYER)).toBe(true);
+  });
+
+  it('hides tutorialHandoffReady from the player dispatch feed', () => {
+    const world = createTutorialWorld(START_MS);
+    const handoff: SimEvent = {
+      kind: 'tutorialHandoffReady',
+      at: world.nowMs,
+      factionId: PLAYER_TUTORIAL_FACTION_ID,
+      importance: 'medium',
+    };
+
+    expect(isDispatchVisibleToFaction(world, handoff, PLAYER_TUTORIAL_FACTION_ID)).toBe(false);
+    expect(
+      filterDispatchesForFaction(world, [handoff], PLAYER_TUTORIAL_FACTION_ID),
+    ).toHaveLength(0);
+    expect(dispatchLineForEvent(world, handoff, PLAYER_TUTORIAL_FACTION_ID)).toMatch(
+      /Tutorial complete/i,
+    );
   });
 });

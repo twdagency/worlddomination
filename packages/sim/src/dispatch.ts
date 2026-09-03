@@ -258,6 +258,8 @@ export function dispatchLineForEvent(
       return formatDefectionOccurredLine(world, event);
     case 'tutorialGraduated':
       return 'Your tutorial is complete. Your full campaign begins now.';
+    case 'tutorialHandoffReady':
+      return 'Tutorial complete — continue to the full campaign when ready.';
     case 'allyArrivalPeaceful':
       return formatAllyArrivalPeacefulLine(world, event);
     case 'dispatchCancelledByAlliance':
@@ -502,6 +504,10 @@ export function isDispatchVisibleToFaction(
     case 'coupFailure':
     case 'defectionOccurred':
       return true;
+
+    case 'tutorialHandoffReady':
+      // Synthetic beat-progression signal — surfaced by the tutorial banner, not the feed.
+      return false;
 
     default:
       return true;

@@ -34,7 +34,7 @@ import {
   type ActionFeedbackContext,
   type ActionKind,
 } from './actionFeedback';
-import { withBeatProgression } from './beatProgression';
+import { BEAT_PROGRESSION_ACTIONS, withBeatProgression } from './beatProgression';
 import { useToast } from '../components/feedback/ToastProvider';
 import {
   createWorldForScenario,
@@ -297,7 +297,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       context: ActionFeedbackContext,
       execute: () => { world: WorldState; events: SimEvent[] },
     ) => {
-      const result = withBeatProgression(execute());
+      const raw = execute();
+      const result = BEAT_PROGRESSION_ACTIONS.has(action) ? withBeatProgression(raw) : raw;
       const applied = dispatchActionFeedback(
         {
           action,
